@@ -1,0 +1,171 @@
+# finmc-tech
+
+**Machine Learning + Monte Carlo Simulation for Tech Stock Forecasting with HPC parallelization and uncertainty quantification**
+
+`finmc-tech` is a minimal prototype for real-world stock forecasting that combines **machine learning signals** with **Monte Carlo uncertainty modeling** and **HPC-ready parallel execution**.
+
+The initial demo focuses on **NVIDIA (NVDA)** using real daily data from the Yahoo Finance API to compute returns, volatility, and rolling μ–σ parameters as inputs for simulation.
+
+This project serves as the foundation for scaling to multi-asset (Magnificent 7) analysis, integrating predictive modeling, uncertainty quantification, and performance benchmarking.
+
+## Features
+
+- **Data Pipeline**: Yahoo Finance API integration for historical stock data
+- **Monte Carlo Simulation**: Probability-based forecasting with configurable parameters
+- **Uncertainty Quantification**: Statistical analysis of returns, volatility, and confidence intervals
+- **HPC-Ready**: Parallel execution using multiprocessing for scalable performance
+- **ML Integration**: Feature engineering and predictive modeling pipeline
+- **Visualization**: Results analysis and forecasting plots
+
+## Project Structure
+
+```
+finmc-tech/
+├── README.md
+├── requirements.txt
+├── setup.py
+├── LICENSE
+├── src/
+│   ├── __init__.py
+│   ├── data/
+│   │   ├── __init__.py
+│   │   └── fetch.py           # Yahoo Finance data fetching
+│   ├── simulation/
+│   │   ├── __init__.py
+│   │   ├── monte_carlo.py     # Monte Carlo core
+│   │   └── uncertainty.py     # Uncertainty quantification
+│   ├── ml/
+│   │   ├── __init__.py
+│   │   ├── features.py        # Feature engineering
+│   │   └── models.py          # ML models
+│   ├── parallel/
+│   │   ├── __init__.py
+│   │   └── executor.py        # HPC parallel execution
+│   └── visualization/
+│       ├── __init__.py
+│       └── plots.py           # Results visualization
+├── examples/
+│   └── quick_start.py         # Quick start example
+├── notebooks/
+│   └── demo_nvda.ipynb        # Demo notebook
+└── tests/
+    ├── __init__.py
+    ├── test_data.py
+    └── test_simulation.py
+```
+
+## Installation
+
+```bash
+# Clone the repository
+git clone https://github.com/yixuan116/finmc-tech.git
+cd finmc-tech
+
+# Create virtual environment
+python -m venv venv
+source venv/bin/activate  # On Windows: venv\Scripts\activate
+
+# Install dependencies
+pip install -r requirements.txt
+
+# Install package in development mode
+pip install -e .
+```
+
+## Quick Start
+
+```python
+from src.data.fetch import fetch_stock_data
+from src.simulation.monte_carlo import MonteCarloForecast
+
+# Fetch NVIDIA data (default: 2010-2025)
+data = fetch_stock_data("NVDA")
+
+# Run Monte Carlo simulation
+forecast = MonteCarloForecast(n_simulations=10000, days_ahead=30)
+results = forecast.run(data)
+
+# Analyze results
+print(f"Expected Return: {results['expected_return']:.2%}")
+print(f"95% Confidence Interval: [${results['ci_lower']:.2f}, ${results['ci_upper']:.2f}]")
+```
+
+Or run the quick start example:
+
+```bash
+python examples/quick_start.py
+```
+
+## Usage Examples
+
+### Basic Monte Carlo Simulation
+
+```python
+from src.simulation.monte_carlo import MonteCarloForecast
+
+forecast = MonteCarloForecast(
+    n_simulations=10000,
+    days_ahead=30,
+    confidence_level=0.95
+)
+results = forecast.run(data)
+```
+
+### Parallel Execution
+
+```python
+from src.parallel.executor import run_parallel_simulations
+
+# Run multiple simulations in parallel
+configs = [
+    {"n_simulations": 10000, "days_ahead": 30},
+    {"n_simulations": 10000, "days_ahead": 60},
+    {"n_simulations": 10000, "days_ahead": 90},
+]
+
+results = run_parallel_simulations(data, configs, n_workers=4)
+```
+
+### ML-Enhanced Forecasting
+
+```python
+from src.ml.models import train_forecasting_model
+from src.ml.features import engineer_features
+
+# Engineer features
+features = engineer_features(data)
+
+# Train model
+model = train_forecasting_model(features)
+
+# Make predictions
+predictions = model.predict(features[-30:])
+```
+
+## Dependencies
+
+- `numpy` - Numerical computations
+- `pandas` - Data manipulation
+- `yfinance` - Yahoo Finance API
+- `scipy` - Statistical functions
+- `scikit-learn` - Machine learning
+- `matplotlib` - Visualization
+- `seaborn` - Statistical plotting
+- `joblib` - Parallel processing
+
+## License
+
+MIT License - see LICENSE file for details
+
+## Contributing
+
+This is a research prototype. Contributions, suggestions, and feedback are welcome!
+
+## Roadmap
+
+- [ ] Multi-asset support (Magnificent 7)
+- [ ] Advanced ML models (LSTM, Transformer)
+- [ ] Real-time data streaming
+- [ ] Risk metrics integration
+- [ ] Performance benchmarking suite
+
