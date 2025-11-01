@@ -17,6 +17,8 @@ This project serves as the foundation for scaling to multi-asset (Magnificent 7)
 - **ML Integration**: Feature engineering and predictive modeling pipeline
 - **Visualization**: Results analysis and forecasting plots
 
+# Appendix
+
 ## Technology Stack
 
 **Language**: Python 3.9+  
@@ -200,7 +202,6 @@ This is a research prototype. Contributions, suggestions, and feedback are welco
 - [ ] Risk metrics integration
 - [ ] Performance benchmarking suite
 
-# Appendix
 
 ## Running the Jupyter Notebook
 
