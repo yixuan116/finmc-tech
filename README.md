@@ -98,6 +98,26 @@ python examples/quick_start.py
 
 ## Usage Examples
 
+### Data Fetching
+
+```python
+from src.data.fetch import fetch_stock_data
+
+# Fetch NVDA data (default: 2010-2025)
+data = fetch_stock_data("NVDA")
+
+# Custom date range
+data = fetch_stock_data("AAPL", start="2020-01-01", end="2023-12-31")
+
+# Use period parameter
+data = fetch_stock_data("MSFT", period="max")
+
+# Get additional tickers
+magnificent_7 = ["NVDA", "AAPL", "MSFT", "GOOGL", "META", "AMZN", "TSLA"]
+```
+
+**Note**: This project uses `yfinance` library, which fetches free data from Yahoo Finance. No API key required!
+
 ### Basic Monte Carlo Simulation
 
 ```python
