@@ -12,6 +12,8 @@ This project serves as the foundation for scaling to multi-asset (Magnificent 7)
 
 **Live Demo Results** (NVDA 2010-2025):
 
+![ML vs Monte Carlo Results](outputs/comparison_ml_vs_mc.png)
+
 - **Machine Learning Model**: 
   - Linear Regression baseline
   - R² Score: -0.02 (negative indicates worse than naive baseline)
