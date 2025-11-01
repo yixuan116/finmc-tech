@@ -17,6 +17,44 @@ This project serves as the foundation for scaling to multi-asset (Magnificent 7)
 - **ML Integration**: Feature engineering and predictive modeling pipeline
 - **Visualization**: Results analysis and forecasting plots
 
+## Technology Stack
+
+### Core Libraries
+- **Python 3.9+** - Programming language
+- **NumPy** - Numerical computing and array operations
+- **Pandas** - Data manipulation and analysis
+- **SciPy** - Statistical functions and optimization
+
+### Data & Finance
+- **yfinance** - Yahoo Finance API for stock data fetching
+- **Historical Data** - 2010-present with automatic updates
+
+### Machine Learning
+- **scikit-learn** - ML models (Random Forest, Gradient Boosting, Ridge, Lasso)
+- **Feature Engineering** - Technical indicators (SMA, EMA, MACD, RSI, Bollinger Bands, etc.)
+- **Model Evaluation** - Time series cross-validation and metrics
+
+### Simulation & Analysis
+- **Monte Carlo** - Geometric Brownian Motion (GBM) for price simulation
+- **Uncertainty Quantification** - Risk metrics (VaR, CVaR, Expected Shortfall)
+- **Statistical Analysis** - Returns, volatility, Sharpe ratio, skewness, kurtosis
+
+### Parallelization & HPC
+- **joblib** - Parallel processing for multi-worker simulations
+- **Multiprocessing** - CPU-optimized parallel execution
+- **Scalable** - Supports multiple tickers and parameter grids
+
+### Visualization
+- **Matplotlib** - Plotting and charting
+- **Seaborn** - Statistical visualization
+- **Interactive Plots** - Price history, Monte Carlo paths, risk metrics
+
+### Development Tools
+- **pytest** - Unit testing framework
+- **black** - Code formatting
+- **flake8** - Linting
+- **Jupyter** - Interactive notebooks
+
 # Appendix
 
 ## Project Structure
