@@ -200,6 +200,8 @@ This is a research prototype. Contributions, suggestions, and feedback are welco
 - [ ] Risk metrics integration
 - [ ] Performance benchmarking suite
 
+# Appendix
+
 ## Running the Jupyter Notebook
 
 The main demo is in `notebooks/demo_nvda.ipynb`.
