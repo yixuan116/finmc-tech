@@ -28,8 +28,6 @@ This project serves as the foundation for scaling to multi-asset (Magnificent 7)
 **Visualization**: Matplotlib, Seaborn  
 **Testing**: pytest, black, flake8, Jupyter
 
-# Appendix
-
 ## Project Structure
 
 ```
@@ -201,4 +199,54 @@ This is a research prototype. Contributions, suggestions, and feedback are welco
 - [ ] Real-time data streaming
 - [ ] Risk metrics integration
 - [ ] Performance benchmarking suite
+
+## Running the Jupyter Notebook
+
+The main demo is in `notebooks/demo_nvda.ipynb`.
+
+### Quick Start
+
+```bash
+jupyter notebook notebooks/demo_nvda.ipynb
+```
+
+Then click **"Run All"** to execute all cells.
+
+### What It Does
+
+The notebook builds a complete **ML → Monte Carlo** pipeline in 5 steps:
+
+1. **Data Loading**: Loads NVDA stock data, computes rolling statistics
+2. **ML Baseline**: Predicts next-day returns using Linear Regression
+3. **Monte Carlo**: Runs 5,000 simulated price paths (Serial + Numba backends)
+4. **Visualizations**: Shows path samples and price distributions
+5. **Sanity Checks**: Prints summary statistics
+
+### Understanding Results
+
+**ML Predictions**:
+- R² Score: prediction accuracy (0-1, higher is better)
+- Typical range: 0.01-0.05 for noisy returns
+
+**Monte Carlo Results**:
+- Terminal prices show where NVDA might be in 1 year
+- P5/P50/P95: downside/expected/upside scenarios
+- Speedup: Numba vs serial performance comparison
+
+**Output Files** (saved in `outputs/`):
+- `nvda_ml_pred.csv` - ML predictions (date, actual, predicted)
+- `nvda_mc_terminals.csv` - MC terminal prices
+- `nvda_mc_meta.json` - Simulation metadata
+
+### Example Results
+
+**ML Performance**:
+- R² Score: -0.02 (baseline Linear Regression)
+- Predictions: 785 test samples
+
+**Monte Carlo Forecast** (5,000 paths, 252 days):
+- Starting Price: $202.49
+- Terminal Range: $185.36 - $220.18
+- Key Quantiles: P5=$195.90, P50=$203.44, P95=$210.93
+- Backend: Numba (runtime: 0.81s)
 
