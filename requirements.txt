@@ -15,6 +15,7 @@ seaborn>=0.12.0
 
 # Parallel processing
 joblib>=1.3.0
+numba>=0.59.0  # Optional: for HPC backend
 
 # Utilities
 tqdm>=4.65.0
