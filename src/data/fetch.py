@@ -11,7 +11,7 @@ def fetch_stock_data(
     period: str = None,
     interval: str = "1d",
     start: Optional[str] = "2010-01-01",
-    end: Optional[str] = "2025-01-01",
+    end: Optional[str] = None,
 ) -> pd.DataFrame:
     """
     Fetch stock data from Yahoo Finance API.
@@ -27,8 +27,9 @@ def fetch_stock_data(
         Data interval. Valid intervals: 1m, 2m, 5m, 15m, 30m, 60m, 90m, 1h, 1d, 5d, 1wk, 1mo, 3mo
     start : str, default "2010-01-01"
         Start date in YYYY-MM-DD format. If provided, takes precedence over period.
-    end : str, default "2025-01-01"
-        End date in YYYY-MM-DD format. If provided, takes precedence over period.
+    end : str, optional
+        End date in YYYY-MM-DD format. If None, fetches up to latest available data.
+        If provided, takes precedence over period.
 
     Returns
     -------
@@ -43,7 +44,7 @@ def fetch_stock_data(
 
     Examples
     --------
-    >>> data = fetch_stock_data("NVDA")  # Default: 2010-2025
+    >>> data = fetch_stock_data("NVDA")  # Default: 2010 to latest
     >>> data = fetch_stock_data("AAPL", start="2020-01-01", end="2023-12-31")
     >>> data = fetch_stock_data("NVDA", period="max")  # Use period instead
     """
@@ -53,6 +54,9 @@ def fetch_stock_data(
     try:
         if start and end:
             data = stock.history(start=start, end=end, interval=interval)
+        elif start:
+            # Fetch from start to latest available
+            data = stock.history(start=start, interval=interval)
         else:
             data = stock.history(period=period, interval=interval)
     except Exception as e:

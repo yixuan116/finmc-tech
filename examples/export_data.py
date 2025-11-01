@@ -22,6 +22,13 @@ def main():
         print(f"✗ Error: {e}")
         return
     
+    # Add ticker column
+    data['ticker'] = 'NVDA'
+    
+    # Reorder columns to put ticker first
+    cols = ['ticker'] + [col for col in data.columns if col != 'ticker']
+    data = data[cols]
+    
     # Export to CSV
     output_file = "NVDA_data_2010_2025.csv"
     data.to_csv(output_file, index=False)
