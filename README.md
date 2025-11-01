@@ -8,6 +8,23 @@ The initial demo focuses on **NVIDIA (NVDA)** using real daily data from the Yah
 
 This project serves as the foundation for scaling to multi-asset (Magnificent 7) analysis, integrating predictive modeling, uncertainty quantification, and performance benchmarking.
 
+## Results
+
+**Live Demo Results** (NVDA 2010-2025):
+
+- **Machine Learning Model**: 
+  - Linear Regression baseline
+  - R² Score: -0.02 (negative indicates worse than naive baseline)
+  - 785 test predictions
+  - Insight: Simple models struggle with noisy returns; advanced features needed
+
+- **Monte Carlo Simulation**:
+  - 5,000 simulated paths over 252 trading days
+  - Starting price: **$202.49**
+  - Terminal forecast: **$185.36 - $220.18**
+  - Key quantiles: P5=$195.90, P50=$203.44, P95=$210.93
+  - HPC acceleration: Numba parallel backend (0.81s runtime)
+
 ## Features
 
 - **Data Pipeline**: Yahoo Finance API integration for historical stock data
@@ -241,15 +258,4 @@ The notebook builds a complete **ML → Monte Carlo** pipeline in 5 steps:
 - `nvda_mc_terminals.csv` - MC terminal prices
 - `nvda_mc_meta.json` - Simulation metadata
 
-### Example Results
-
-**ML Performance**:
-- R² Score: -0.02 (baseline Linear Regression)
-- Predictions: 785 test samples
-
-**Monte Carlo Forecast** (5,000 paths, 252 days):
-- Starting Price: $202.49
-- Terminal Range: $185.36 - $220.18
-- Key Quantiles: P5=$195.90, P50=$203.44, P95=$210.93
-- Backend: Numba (runtime: 0.81s)
 
