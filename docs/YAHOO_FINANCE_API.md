@@ -1,158 +1,157 @@
-# Yahoo Finance API 使用指南
+# Yahoo Finance API Usage Guide
 
-本项目使用 `yfinance` 库获取股票数据。yfinance 是 Yahoo Finance 的非官方 Python API。
+This project uses `yfinance` library to fetch stock data. yfinance is an unofficial Python API for Yahoo Finance.
 
-## 安装
+## Installation
 
 ```bash
 pip install yfinance
 ```
 
-已在 `requirements.txt` 中包含: `yfinance>=0.2.0`
+Already included in `requirements.txt`: `yfinance>=0.2.0`
 
-## 基本用法
+## Basic Usage
 
-### 1. 基本数据获取
+### 1. Basic Data Fetching
 
 ```python
 import yfinance as yf
 
-# 创建股票对象
-stock = yf.Ticker("NVDA")  # 使用股票代码
+# Create ticker object
+stock = yf.Ticker("NVDA")  # Use stock ticker symbol
 
-# 获取历史数据
-data = stock.history(period="1y")  # 获取过去1年数据
+# Get historical data
+data = stock.history(period="1y")  # Fetch past 1 year data
 print(data.head())
 ```
 
-### 2. 使用日期范围
+### 2. Using Date Range
 
 ```python
-# 指定开始和结束日期
+# Specify start and end dates
 data = stock.history(start="2010-01-01", end="2025-01-01")
 
-# 日期格式: "YYYY-MM-DD"
+# Date format: "YYYY-MM-DD"
 ```
 
-### 3. 时间周期参数
+### 3. Time Period Parameters
 
-**period** 选项:
-- `"1d"` - 过去1天
-- `"5d"` - 过去5天
-- `"1mo"` - 过去1个月
-- `"3mo"` - 过去3个月
-- `"6mo"` - 过去6个月
-- `"1y"` - 过去1年
-- `"2y"` - 过去2年
-- `"5y"` - 过去5年
-- `"10y"` - 过去10年
-- `"ytd"` - 今年至今
-- `"max"` - 全部历史数据
+**period** options:
+- `"1d"` - Past 1 day
+- `"5d"` - Past 5 days
+- `"1mo"` - Past 1 month
+- `"3mo"` - Past 3 months
+- `"6mo"` - Past 6 months
+- `"1y"` - Past 1 year
+- `"2y"` - Past 2 years
+- `"5y"` - Past 5 years
+- `"10y"` - Past 10 years
+- `"ytd"` - Year to date
+- `"max"` - Full history
 
-**interval** 选项:
-- `"1m"`, `"2m"`, `"5m"`, `"15m"`, `"30m"`, `"60m"` - 分钟数据
-- `"90m"` - 90分钟
-- `"1h"` - 小时数据
-- `"1d"`, `"5d"`, `"1wk"` - 日/周数据
-- `"1mo"`, `"3mo"` - 月数据
+**interval** options:
+- `"1m"`, `"2m"`, `"5m"`, `"15m"`, `"30m"`, `"60m"` - Minute data
+- `"90m"` - 90 minutes
+- `"1h"` - Hourly data
+- `"1d"`, `"5d"`, `"1wk"` - Daily/Weekly data
+- `"1mo"`, `"3mo"` - Monthly data
 
-### 4. 数据列说明
+### 4. Data Columns
 
-返回的 DataFrame 包含以下列:
-- `Open` - 开盘价
-- `High` - 最高价
-- `Low` - 最低价
-- `Close` - 收盘价
-- `Volume` - 成交量
-- `Dividends` - 分红
-- `Stock Splits` - 股票分割
+Returned DataFrame contains the following columns:
+- `Open` - Opening price
+- `High` - Highest price
+- `Low` - Lowest price
+- `Close` - Closing price
+- `Volume` - Trading volume
+- `Dividends` - Dividends
+- `Stock Splits` - Stock splits
 
-## 本项目的封装
+## Project Wrapper
 
-项目在 `src/data/fetch.py` 中封装了数据获取功能:
+The project wraps data fetching functionality in `src/data/fetch.py`:
 
 ```python
 from src.data.fetch import fetch_stock_data
 
-# 获取 NVDA 数据 (默认 2010-2025)
+# Fetch NVDA data (default: 2010-2025)
 data = fetch_stock_data("NVDA")
 
-# 自定义日期范围
+# Custom date range
 data = fetch_stock_data("AAPL", start="2020-01-01", end="2023-12-31")
 
-# 使用 period 参数
+# Use period parameter
 data = fetch_stock_data("MSFT", period="max")
 ```
 
-### 自动计算额外列
+### Automatic Additional Columns
 
-封装函数会自动计算:
-- `returns` - 简单收益率
-- `log_returns` - 对数收益率 (适用于蒙特卡洛)
-- `volatility` - 滚动波动率 (年化)
+The wrapper function automatically computes:
+- `returns` - Simple returns
+- `log_returns` - Log returns (suitable for Monte Carlo)
+- `volatility` - Rolling volatility (annualized)
 
-## 常见股票代码示例
+## Common Stock Ticker Examples
 
-- **美国科技股**: `NVDA`, `AAPL`, `MSFT`, `GOOGL`, `META`, `AMZN`, `TSLA`
-- **科技七巨头**: `NVDA`, `AAPL`, `MSFT`, `GOOGL`, `META`, `AMZN`, `TSLA`
-- **大盘指数**: `^GSPC` (S&P 500), `^DJI` (Dow Jones), `^IXIC` (NASDAQ)
+- **US Tech Stocks**: `NVDA`, `AAPL`, `MSFT`, `GOOGL`, `META`, `AMZN`, `TSLA`
+- **Magnificent 7**: `NVDA`, `AAPL`, `MSFT`, `GOOGL`, `META`, `AMZN`, `TSLA`
+- **Market Indices**: `^GSPC` (S&P 500), `^DJI` (Dow Jones), `^IXIC` (NASDAQ)
 
-## 错误处理
+## Error Handling
 
 ```python
 try:
     data = stock.history(start="2010-01-01", end="2025-01-01")
     if data.empty:
-        print("未获取到数据")
+        print("No data retrieved")
 except Exception as e:
-    print(f"错误: {e}")
+    print(f"Error: {e}")
 ```
 
-## 其他常用方法
+## Other Common Methods
 
 ```python
 stock = yf.Ticker("NVDA")
 
-# 获取基本信息
+# Get basic info
 info = stock.info
-print(f"公司名: {info.get('longName')}")
-print(f"市值: {info.get('marketCap')}")
-print(f"市盈率: {info.get('trailingPE')}")
+print(f"Company: {info.get('longName')}")
+print(f"Market Cap: {info.get('marketCap')}")
+print(f"P/E Ratio: {info.get('trailingPE')}")
 
-# 获取财务报表
+# Get financial statements
 financials = stock.financials
 balance_sheet = stock.balance_sheet
 cashflow = stock.cashflow
 
-# 获取新闻
+# Get news
 news = stock.news
 ```
 
-## 注意事项
+## Important Notes
 
-1. **免费限制**: yfinance 使用 Yahoo Finance 的免费 API，可能有访问频率限制
-2. **网络连接**: 需要稳定的网络连接
-3. **数据延迟**: 免费数据通常有 15-20 分钟的延迟
-4. **数据质量**: 建议验证关键数据点的准确性
-5. **分拆调整**: yfinance 会自动处理股票分拆和分红调整
+1. **Free Limitations**: yfinance uses Yahoo Finance's free API, which may have rate limits
+2. **Network Connection**: Stable internet connection required
+3. **Data Delay**: Free data typically has 15-20 minute delay
+4. **Data Quality**: Recommend verifying accuracy of critical data points
+5. **Split Adjustment**: yfinance automatically handles stock splits and dividend adjustments
 
-## 更多资源
+## Additional Resources
 
-- yfinance 官方文档: https://github.com/ranaroussi/yfinance
+- yfinance official docs: https://github.com/ranaroussi/yfinance
 - Yahoo Finance: https://finance.yahoo.com/
-- 股票代码查询: 在 Yahoo Finance 搜索公司名称
+- Stock ticker lookup: Search company name on Yahoo Finance
 
-## 示例: 获取多个股票
+## Example: Fetch Multiple Stocks
 
 ```python
 import yfinance as yf
 
-# 获取多个股票
+# Fetch multiple stocks
 tickers = ["NVDA", "AAPL", "MSFT"]
 data = yf.download(tickers, start="2020-01-01", end="2024-12-31")
 
-# data 是多级索引的 DataFrame
-# 第一级是股票代码，第二级是数据列
+# data is a multi-level indexed DataFrame
+# First level is ticker symbol, second level is data columns
 print(data["NVDA"]["Close"].head())
 ```
-
