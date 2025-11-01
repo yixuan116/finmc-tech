@@ -24,7 +24,7 @@ This project serves as the foundation for scaling to multi-asset (Magnificent 7)
 **Data Source**: yfinance (Yahoo Finance API)  
 **Machine Learning**: scikit-learn (RF, GBM, Ridge, Lasso)  
 **Simulation**: Monte Carlo (GBM), Uncertainty Quantification  
-**Parallelization**: joblib, multiprocessing  
+**Parallelization**: joblib, multiprocessing, numba  
 **Visualization**: Matplotlib, Seaborn  
 **Testing**: pytest, black, flake8, Jupyter
 
