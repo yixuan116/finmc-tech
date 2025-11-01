@@ -45,6 +45,7 @@ htmlcov/
 
 # Documentation
 docs/_build/
+!docs/*.md
 
 # Data (raw data files, not source code)
 /data$
