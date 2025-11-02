@@ -22,6 +22,21 @@ This project serves as the foundation for scaling to multi-asset (Magnificent 7)
 - **MC Prediction Errors**: -100% to +48% (severely underestimates growth)
 - **Best Year**: 2020 (59.6% sign accuracy, R² = 0.035)
 
+**Monte Carlo vs Actual Prices** (Year-End Predictions):
+
+| Year | Predicted (P50) | Actual | Error % | Coverage |
+|------|----------------|--------|---------|----------|
+| 2018 | $4.92 | $3.31 | +48.6% | P5-P95 contains actual ✅ |
+| 2019 | $3.33 | $5.86 | -43.2% | Out of range ❌ |
+| 2020 | $6.00 | $13.02 | -53.9% | Out of range ❌ |
+| 2021 | $13.06 | $29.36 | -55.5% | Out of range ❌ |
+| 2022 | $30.00 | $14.60 | +105.5% | Out of range ❌ |
+| 2023 | $14.27 | $49.50 | -71.2% | Out of range ❌ |
+| 2024 | $48.08 | $134.26 | -64.2% | Out of range ❌ |
+| 2025 | $138.14 | $202.49 | -31.8% | Out of range ❌ |
+
+**Insight**: MC consistently underestimates NVDA's exponential growth, with predictions often outside 90% confidence intervals—GBM fails to capture structural breaks.
+
 **Three Training Window Setups**:
 1. **Expanding-Long**: All historical data before test year (maximum context)
 2. **Sliding-5y**: 5-year rolling window (balanced recent vs historical)
