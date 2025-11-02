@@ -14,7 +14,7 @@ This project serves as the foundation for scaling to multi-asset (Magnificent 7)
 
 **Methodology**: Year-by-year evaluation using **Linear Regression** with 30-day rolling windows across three training setups, compared against **Monte Carlo** GBM simulations.
 
-![Year-by-Year Forecast Comparison](outputs/comparison_yearly.png)
+![Year-by-Year Forecast Comparison](docs/images/comparison_yearly.png)
 
 **Key Findings**:
 - **Average Sign Accuracy**: ~50% (barely better than random)
