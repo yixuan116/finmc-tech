@@ -24,18 +24,20 @@ This project serves as the foundation for scaling to multi-asset (Magnificent 7)
 
 **Monte Carlo vs Actual Prices** (Year-End Predictions):
 
-| Year | Predicted (P50) | Actual | Error % | Coverage |
-|------|----------------|--------|---------|----------|
-| 2018 | $4.92 | $3.31 | +48.6% | P5-P95 contains actual ✅ |
-| 2019 | $3.33 | $5.86 | -43.2% | Out of range ❌ |
-| 2020 | $6.00 | $13.02 | -53.9% | Out of range ❌ |
-| 2021 | $13.06 | $29.36 | -55.5% | Out of range ❌ |
-| 2022 | $30.00 | $14.60 | +105.5% | Out of range ❌ |
-| 2023 | $14.27 | $49.50 | -71.2% | Out of range ❌ |
-| 2024 | $48.08 | $134.26 | -64.2% | Out of range ❌ |
-| 2025 | $138.14 | $202.49 | -31.8% | Out of range ❌ |
+| Year | Actual Close ($) | Predicted (P50) | ±90% Band | % Error | Sign Pred | Actual Dir | Coverage |
+|------|------------------|-----------------|-----------|---------|-----------|------------|----------|
+| 2018 | $3.31 | $4.92 | [4.7, 5.1] | +48.6% | ↓ | ↓ | ❌ |
+| 2019 | $5.86 | $3.33 | [3.0, 3.6] | -43.2% | ↓ | ↑ | ❌ |
+| 2020 | $13.02 | $6.00 | [5.8, 6.2] | -53.9% | ↑ | ↑ | ✅ |
+| 2021 | $29.36 | $13.06 | [12.8, 13.3] | -55.5% | ↓ | ↑ | ❌ |
+| 2022 | $14.60 | $30.00 | [28.2, 31.9] | +105.5% | ↓ | ↓ | ❌ |
+| 2023 | $49.50 | $14.27 | [13.5, 15.1] | -71.2% | ↓ | ↑ | ❌ |
+| 2024 | $134.26 | $48.08 | [46.7, 49.5] | -64.2% | ↓ | ↑ | ❌ |
+| 2025 | $202.49 | $138.14 | [133.2, 143.5] | -31.8% | ↓ | ↑ | ❌ |
 
-**Insight**: MC consistently underestimates NVDA's exponential growth, with predictions often outside 90% confidence intervals—GBM fails to capture structural breaks.
+**Summary**: Average |% Error| = **59.2%**, Coverage Rate = **0%** (0/8 years), Direction Accuracy = **25%** (2/8).
+
+**Critical Insight**: MC consistently **underestimates NVDA's exponential growth**; 90% confidence intervals fail to cover actual prices—**GBM fails to capture structural breaks** in tech stock evolution. Models predict bearish trends while actual returns are strongly positive.
 
 **Three Training Window Setups**:
 1. **Expanding-Long**: All historical data before test year (maximum context)
