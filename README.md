@@ -14,18 +14,20 @@ This project serves as the foundation for scaling to multi-asset (Magnificent 7)
 
 ![ML vs Monte Carlo Results](docs/images/comparison_ml_vs_mc.png)
 
-- **Machine Learning Model**: 
-  - Linear Regression baseline with **30-day rolling window** features
+- **Machine Learning Model** (Log Returns Prediction):
+  - **Input**: **30-day rolling window** of log returns
+  - **Output**: **1-day ahead** log return prediction
   - Train period: **2010-01-04 to 2022-09-15** (80% of data)
   - Test period: **2022-09-16 to 2025-10-31** (20% of data, 785 predictions)
   - R² Score: -0.02 (negative indicates worse than naive baseline)
   - Insight: Simple models struggle with noisy returns; advanced features needed
 
-- **Monte Carlo Simulation**:
+- **Monte Carlo Simulation** (Price Forecasting):
+  - **Input**: **30-day rolling μ/σ** estimated from log returns (2025-09-30 to 2025-10-31)
+  - **Output**: **252 trading days ahead** (1-year) price distribution
   - Starting date: **2025-10-31** (last trading day in dataset)
   - Starting price: **$202.49**
-  - Forecast horizon: **252 trading days** (1 year ahead)
-  - 5,000 simulated paths using GBM with **30-day rolling μ/σ** (2025-09-30 to 2025-10-31)
+  - 5,000 simulated paths using Geometric Brownian Motion (GBM)
   - Terminal forecast (2026-10-31): **$185.36 - $220.18**
   - Key quantiles: P5=$195.90, P50=$203.44, P95=$210.93
   - HPC acceleration: Numba parallel backend (0.81s runtime)
