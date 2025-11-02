@@ -10,27 +10,32 @@ This project serves as the foundation for scaling to multi-asset (Magnificent 7)
 
 ## Results
 
-**Full picture prices distribution** (NVDA 2010-2025):
+**Rolling Time-Series Forecasting** (NVDA 2010-2025):
 
+### Baseline Performance
 ![ML vs Monte Carlo Results](docs/images/comparison_ml_vs_mc.png)
 
-- **Machine Learning Model** (Log Returns Prediction):
-  - **Input**: **30-day rolling window** of log returns
-  - **Output**: **1-day ahead** log return prediction
-  - Train period: **2010-01-04 to 2022-09-15** (80% of data)
-  - Test period: **2022-09-16 to 2025-10-31** (20% of data, 785 predictions)
-  - R² Score: -0.02 (negative indicates worse than naive baseline)
-  - Insight: Simple models struggle with noisy returns; advanced features needed
+- **Machine Learning**: Linear Regression with 30-day rolling window
+  - Input: 30-day log returns → Output: 1-day ahead return
+  - Single 80/20 split: R² = -0.02 (weak baseline)
 
-- **Monte Carlo Simulation** (Price Forecasting):
-  - **Input**: **30-day rolling μ/σ** estimated from log returns (2025-09-30 to 2025-10-31)
-  - **Output**: **252 trading days ahead** (1-year) price distribution
-  - Starting date: **2025-10-31** (last trading day in dataset)
-  - Starting price: **$202.49**
-  - 5,000 simulated paths using Geometric Brownian Motion (GBM)
-  - Terminal forecast (2026-10-31): **$185.36 - $220.18**
-  - Key quantiles: P5=$195.90, P50=$203.44, P95=$210.93
-  - HPC acceleration: Numba parallel backend (0.81s runtime)
+- **Monte Carlo**: Year-end 2025 forecast
+  - Input: 30-day rolling μ/σ (2025-09-30 to 2025-10-31)
+  - Output: 252-day ahead price distribution
+  - Terminal 2026-10-31: $185.36 - $220.18 (P5=$195.90, P50=$203.44, P95=$210.93)
+
+### Rolling Forecast Results (2018-2025)
+
+**Three Training Window Setups**:
+- **Expanding-Long**: All historical data before test year
+- **Sliding-5y**: 5-year rolling window before test year  
+- **Sliding-3y**: 3-year rolling window before test year
+
+**Outputs Generated**:
+- `outputs/results_forecast.csv`: Year×Setup metrics (R², MAE, sign_acc, IC)
+- `outputs/results_mc.csv`: Year×MC statistics (P5/P50/P95, VaR, CVaR, bandwidth)
+- `outputs/results_all.csv`: Merged comprehensive results
+- `outputs/comparison_yearly.png`: Sign accuracy & uncertainty trends
 
 ## Features
 
