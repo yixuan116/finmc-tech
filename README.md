@@ -10,32 +10,41 @@ This project serves as the foundation for scaling to multi-asset (Magnificent 7)
 
 ## Results
 
-**Rolling Time-Series Forecasting** (NVDA 2010-2025):
+### Comprehensive Rolling Forecast Analysis (2018-2025)
 
-### Baseline Performance
-![ML vs Monte Carlo Results](docs/images/comparison_ml_vs_mc.png)
+**Methodology**: Year-by-year evaluation using **Linear Regression** with 30-day rolling windows across three training setups, compared against **Monte Carlo** GBM simulations.
 
-- **Machine Learning**: Linear Regression with 30-day rolling window
-  - Input: 30-day log returns → Output: 1-day ahead return
-  - Single 80/20 split: R² = -0.02 (weak baseline)
+![Year-by-Year Forecast Comparison](outputs/comparison_yearly.png)
 
-- **Monte Carlo**: Year-end 2025 forecast
-  - Input: 30-day rolling μ/σ (2025-09-30 to 2025-10-31)
-  - Output: 252-day ahead price distribution
-  - Terminal 2026-10-31: $185.36 - $220.18 (P5=$195.90, P50=$203.44, P95=$210.93)
-
-### Rolling Forecast Results (2018-2025)
+**Key Findings**:
+- **Average Sign Accuracy**: ~50% (barely better than random)
+- **Average R²**: ~-0.03 (worse than naive baseline)
+- **MC Prediction Errors**: -100% to +48% (severely underestimates growth)
+- **Best Year**: 2020 (59.6% sign accuracy, R² = 0.035)
 
 **Three Training Window Setups**:
-- **Expanding-Long**: All historical data before test year
-- **Sliding-5y**: 5-year rolling window before test year  
-- **Sliding-3y**: 3-year rolling window before test year
+1. **Expanding-Long**: All historical data before test year (maximum context)
+2. **Sliding-5y**: 5-year rolling window (balanced recent vs historical)
+3. **Sliding-3y**: 3-year rolling window (most recent trends)
 
-**Outputs Generated**:
-- `outputs/results_forecast.csv`: Year×Setup metrics (R², MAE, sign_acc, IC)
-- `outputs/results_mc.csv`: Year×MC statistics (P5/P50/P95, VaR, CVaR, bandwidth)
+**Model Comparison**:
+- **ML (Linear Regression)**: Predicts next-day log returns from 30-day window
+  - Feature: Rolling 30-day log returns
+  - Output: 1-day ahead return prediction
+  - Metrics: R², MAE, Sign Accuracy, IC (information coefficient)
+
+- **Monte Carlo (GBM)**: Simulates 1-year price distribution
+  - Input: 30-day rolling μ/σ parameters from each year's first day
+  - Output: P5/P50/P95 quantiles, VaR, CVaR, bandwidth
+  - GBM equation: `S(t+dt) = S(t) × exp((μ-0.5σ²)dt + σ√dt×z)`
+
+**Output Files**:
+- `outputs/results_forecast.csv`: 24 year×setup combinations with ML metrics
+- `outputs/results_mc.csv`: 8 years of MC simulations with risk metrics
 - `outputs/results_all.csv`: Merged comprehensive results
-- `outputs/comparison_yearly.png`: Sign accuracy & uncertainty trends
+- `outputs/comparison_yearly.png`: 6-panel visualization (see above)
+
+**Conclusion**: Simple linear models fail to capture NVDA's growth dynamics; MC simulations consistently underestimate price appreciation, highlighting the need for advanced ML features and regime-aware models.
 
 ## Features
 
