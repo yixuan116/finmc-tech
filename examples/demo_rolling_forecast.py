@@ -194,8 +194,23 @@ print("\n" + "="*70)
 print("4. Generating visualizations")
 print("="*70)
 
-fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(16, 5))
+# Get actual year-end prices for comparison
+actual_prices = []
+for year in results_mc_df['year']:
+    year_df = df[df['year'] == year]
+    if len(year_df) > 0:
+        actual_prices.append(year_df['close'].iloc[-1])  # Last trading day of year
+    else:
+        actual_prices.append(np.nan)
 
+results_mc_df['actual_price'] = actual_prices
+results_mc_df['prediction_error'] = (results_mc_df['P50'] - results_mc_df['actual_price']) / results_mc_df['actual_price'] * 100
+
+# Create comprehensive visualization
+fig = plt.figure(figsize=(20, 12))
+
+# Plot 1: Sign accuracy by setup
+ax1 = plt.subplot(3, 2, 1)
 for setup in results_df['setup'].unique():
     subset = results_df[results_df['setup'] == setup]
     ax1.plot(subset['year'], subset['sign_acc'], marker='o', label=setup, linewidth=2, markersize=6)
@@ -207,12 +222,66 @@ ax1.legend()
 ax1.grid(alpha=0.3)
 ax1.set_ylim([0.4, 0.6])
 
+# Plot 2: Bandwidth (uncertainty)
+ax2 = plt.subplot(3, 2, 2)
 ax2.plot(results_mc_df['year'], results_mc_df['bandwidth'], marker='s', color='red', linewidth=2, markersize=8)
 ax2.fill_between(results_mc_df['year'], 0, results_mc_df['bandwidth'], alpha=0.2, color='red')
 ax2.set_xlabel('Year')
 ax2.set_ylabel('Bandwidth = (P95-P5)/P50')
 ax2.set_title('Market Uncertainty: Bandwidth Over Years')
 ax2.grid(alpha=0.3)
+
+# Plot 3: Actual vs Predicted (MC P50) Prices
+ax3 = plt.subplot(3, 2, 3)
+ax3.plot(results_mc_df['year'], results_mc_df['actual_price'], marker='o', label='Actual', linewidth=3, markersize=10, color='black')
+ax3.plot(results_mc_df['year'], results_mc_df['P50'], marker='s', label='MC Prediction (P50)', linewidth=2, markersize=8, color='blue')
+ax3.fill_between(results_mc_df['year'], results_mc_df['P5'], results_mc_df['P95'], alpha=0.2, color='blue', label='90% CI')
+ax3.set_xlabel('Year')
+ax3.set_ylabel('Price ($)')
+ax3.set_title('Actual vs Predicted Stock Prices')
+ax3.legend()
+ax3.grid(alpha=0.3)
+ax3.set_yscale('log')
+
+# Plot 4: Prediction Error (%)
+ax4 = plt.subplot(3, 2, 4)
+colors = ['green' if abs(x) < 20 else 'orange' if abs(x) < 50 else 'red' for x in results_mc_df['prediction_error']]
+ax4.bar(results_mc_df['year'], results_mc_df['prediction_error'], color=colors, alpha=0.7)
+ax4.axhline(0, color='black', linestyle='-', linewidth=1)
+ax4.set_xlabel('Year')
+ax4.set_ylabel('Prediction Error (%)')
+ax4.set_title('MC Forecast Accuracy: (P50 - Actual) / Actual × 100%')
+ax4.grid(alpha=0.3, axis='y')
+
+# Plot 5: R² by setup
+ax5 = plt.subplot(3, 2, 5)
+for setup in results_df['setup'].unique():
+    subset = results_df[results_df['setup'] == setup]
+    ax5.plot(subset['year'], subset['R²'], marker='o', label=setup, linewidth=2, markersize=6)
+ax5.axhline(0, color='gray', linestyle='--', alpha=0.5, label='Zero')
+ax5.set_xlabel('Year')
+ax5.set_ylabel('R² Score')
+ax5.set_title('ML Model Performance: R² Over Years')
+ax5.legend()
+ax5.grid(alpha=0.3)
+
+# Plot 6: Summary table
+ax6 = plt.subplot(3, 2, 6)
+ax6.axis('off')
+summary_text = "ML Model: Linear Regression with 30-day rolling windows\n\n"
+summary_text += "Training Setups:\n"
+summary_text += "  • Expanding-Long: All historical data before test year\n"
+summary_text += "  • Sliding-5y: 5-year rolling window\n"
+summary_text += "  • Sliding-3y: 3-year rolling window\n\n"
+summary_text += "Key Findings:\n"
+mean_sign_acc = results_df['sign_acc'].mean()
+mean_r2 = results_df['R²'].mean()
+max_error = results_mc_df['prediction_error'].abs().max()
+summary_text += f"  • Mean sign accuracy: {mean_sign_acc:.3f}\n"
+summary_text += f"  • Mean R²: {mean_r2:.4f}\n"
+summary_text += f"  • Max MC error: {max_error:.1f}%\n"
+summary_text += f"  • Best year: {results_df.loc[results_df['sign_acc'].idxmax(), 'year']}\n"
+ax6.text(0.1, 0.5, summary_text, fontsize=11, family='monospace', verticalalignment='center')
 
 plt.tight_layout()
 plt.savefig("outputs/comparison_yearly.png", dpi=150, bbox_inches='tight')
