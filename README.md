@@ -156,9 +156,13 @@ print(f"Expected Return: {results['expected_return']:.2%}")
 print(f"95% Confidence Interval: [${results['ci_lower']:.2f}, ${results['ci_upper']:.2f}]")
 ```
 
-Or run the quick start example:
+Or run the rolling forecast demo:
 
 ```bash
+# Run comprehensive rolling forecast analysis (2018-2025)
+python examples/demo_rolling_forecast.py
+
+# Quick start example
 python examples/quick_start.py
 ```
 
