@@ -188,7 +188,9 @@ data = fetch_stock_data("MSFT", period="max")
 magnificent_7 = ["NVDA", "AAPL", "MSFT", "GOOGL", "META", "AMZN", "TSLA"]
 ```
 
-**Note**: This project uses `yfinance` library, which fetches free data from Yahoo Finance. No API key required!
+**Note**: This project uses `yfinance` library, which fetches **free data from Yahoo Finance**. No API key required!
+
+**Data Convention**: All OHLC prices are **adjusted for stock splits and dividends** by default (`auto_adjust=True`), making historical prices comparable across time. This is the standard approach for financial modeling. Historical prices appear low (e.g., \$0.4 in 2010) due to NVDA's stock splits (4:1 in 2021, 10:1 in 2024) and represent prices in "current share units".
 
 ### Basic Monte Carlo Simulation
 
