@@ -457,8 +457,7 @@ This report analyzes revenue-based signals for **NVDA** using SEC XBRL data and 
 
 | Model | Test R² (Log Price) | Test RMSE (Log Price) | Test Price RMSE (USD) |
 |-------|---------------------|------------------------|----------------------|
-| Ridge Regression | -13.9167 | 3.9627 | $78.91 |
-| k-NN (k=5) | -11.8106 | 3.6723 | $78.84 |
+| k-NN (k=5) | -11.8106 | 3.6723 | **$78.84** |
 | RandomForest | -11.6402 | 3.6478 | $78.93 |
 
 ### Price RMSE Comparison
