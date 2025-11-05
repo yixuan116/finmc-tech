@@ -434,13 +434,13 @@ This report analyzes revenue-based signals for **NVDA** using SEC XBRL data and 
 
 | Model | Test R² | Test RMSE | Test MAE | Direction Accuracy |
 |-------|---------|-----------|----------|-------------------|
-| Ridge Regression | -2.5666 | 1.3910 | 1.1204 | 66.7% |
+| Ridge Regression | -2.5666 | 1.3910 | 1.1168 | 50.0% |
 | k-NN (k=5) | -1.2035 | 1.0933 | 0.8993 | 70.8% |
 | RandomForest | -1.1534 | **1.0809** | **0.8849** | **70.8%** |
 
 **Model Comparison:**
 - **RandomForest** achieves the lowest RMSE (1.0809) and MAE (0.8849), outperforming KNN by 0.0124 RMSE and 0.0144 MAE
-- Both RandomForest and KNN achieve 70.8% directional accuracy, significantly better than Ridge Regression (66.7%)
+- Both RandomForest and KNN achieve 70.8% directional accuracy, significantly better than Ridge Regression (50.0%)
 - RandomForest's superior performance is attributed to its ability to capture non-linear relationships and adapt across different market regimes through tree-based feature splitting
 
 ### Direct Price Head Performance
