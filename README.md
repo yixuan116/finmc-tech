@@ -120,14 +120,25 @@ This project serves as the foundation for scaling to multi-asset (Magnificent 7)
 
 ---
 
-**5. Return Head Predictions vs Actual (Test Set)**
+**5. Return Head Predictions vs Actual - RandomForest (Test Set)**
 ![RF Return: Pred vs Actual](outputs/figs/pred_vs_actual_return_rf.png)
 
-**Purpose**: Evaluates the out-of-sample performance of the return head model by comparing predicted vs actual future returns over time.
+**Purpose**: Evaluates the out-of-sample performance of the RandomForest return head model by comparing predicted vs actual future returns over time.
 
 **What it shows**: Time series plot of actual future 12-month returns (solid line) and RandomForest predictions (dashed line) for the test set (2019 onwards). This is the primary diagnostic for return prediction accuracy.
 
 **Key insight**: Visual assessment of prediction quality, including whether the model captures trends, volatility, and turning points. Large divergences indicate periods where the model struggles, potentially due to regime changes or model limitations.
+
+---
+
+**5b. Return Head Predictions vs Actual - KNN (Test Set)**
+![KNN Return: Pred vs Actual](outputs/figs/knn_pred_vs_actual.png)
+
+**Purpose**: Evaluates the out-of-sample performance of the KNN return head model by comparing predicted vs actual future returns over time.
+
+**What it shows**: Time series plot of actual future 12-month returns (blue line with circles) and KNN predictions (green line with triangles) for the test set. KNN predictions are smoother and less volatile than actual returns, showing the model's tendency to regress toward the mean.
+
+**Key insight**: KNN provides smoothed predictions that generally underestimate high actual returns and overestimate low or negative returns, failing to capture the full amplitude of market movements. This smoothing effect is characteristic of k-nearest neighbors models, which average over similar historical patterns.
 
 ---
 
@@ -434,13 +445,12 @@ This report analyzes revenue-based signals for **NVDA** using SEC XBRL data and 
 
 | Model | Test R² | Test RMSE | Test MAE | Direction Accuracy |
 |-------|---------|-----------|----------|-------------------|
-| Ridge Regression | -2.5666 | 1.3910 | 1.1168 | 50.0% |
 | k-NN (k=5) | -1.2035 | 1.0933 | 0.8993 | 70.8% |
 | RandomForest | -1.1534 | **1.0809** | **0.8849** | **70.8%** |
 
 **Model Comparison:**
 - **RandomForest** achieves the lowest RMSE (1.0809) and MAE (0.8849), outperforming KNN by 0.0124 RMSE and 0.0144 MAE
-- Both RandomForest and KNN achieve 70.8% directional accuracy, significantly better than Ridge Regression (50.0%)
+- Both RandomForest and KNN achieve 70.8% directional accuracy
 - RandomForest's superior performance is attributed to its ability to capture non-linear relationships and adapt across different market regimes through tree-based feature splitting
 
 ### Direct Price Head Performance
