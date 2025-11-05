@@ -63,6 +63,125 @@ This project serves as the foundation for scaling to multi-asset (Magnificent 7)
 
 **Conclusion**: Simple linear models fail to capture NVDA's growth dynamics; MC simulations consistently underestimate price appreciation, highlighting the need for advanced ML features and regime-aware models.
 
+---
+
+### Dual-Head ML Analysis: Revenue + Macro Features (2009-2024)
+
+**Methodology**: Dual-head machine learning pipeline that predicts both **12-month forward returns** (return head) and **12-month forward stock prices** (price head) using revenue fundamentals from SEC XBRL data plus macro features (VIX, 10Y treasury yield). Three baseline models (Ridge, KNN, RandomForest) are trained with temporal split (train before 2019, test from 2019).
+
+**Key Results**:
+- **Best Price Prediction Route**: Indirect (from return head) achieves **$39.22 RMSE** vs Direct route **$78.93 RMSE**
+- **Feature Importance**: Macro factors (`tnx_yield` = 0.3681) dominate revenue features in importance
+- **Sample Size**: 62 quarterly observations (2009-07-26 to 2024-10-27)
+
+#### Analysis Figures
+
+**1. Revenue YoY Growth vs Future 12M Return**
+![YoY vs Return](outputs/figs/yoy_vs_return.png)
+
+**Purpose**: Examines the relationship between revenue year-over-year growth and future stock returns.
+
+**What it shows**: Scatter plot of revenue YoY growth (x-axis) against future 12-month returns (y-axis), with a fitted regression line. This visualization helps assess whether revenue growth is predictive of future stock performance.
+
+**Key insight**: The slope and correlation coefficient reveal whether stronger revenue growth is associated with better future returns, providing evidence for the revenue-based prediction hypothesis.
+
+---
+
+**2. Revenue Acceleration vs Future 12M Return**
+![Acceleration vs Return](outputs/figs/accel_vs_return.png)
+
+**Purpose**: Analyzes how changes in revenue growth momentum (acceleration) relate to future returns.
+
+**What it shows**: Scatter plot of revenue acceleration (change in YoY growth rate) against future 12-month returns. Revenue acceleration captures the second derivative of revenue growth, which may signal turning points in business performance.
+
+**Key insight**: Positive acceleration indicates improving growth momentum, while negative acceleration suggests deceleration. This metric may be more sensitive to inflection points than absolute growth rates.
+
+---
+
+**3. Rolling Correlation: Revenue YoY vs Future Returns**
+![Rolling Correlation](outputs/figs/rolling_corr.png)
+
+**Purpose**: Tracks the time-varying strength of the relationship between revenue growth and future returns.
+
+**What it shows**: Time series of rolling 3-year correlation coefficients between revenue YoY growth and future 12-month returns. The correlation is computed over a sliding window to capture regime changes.
+
+**Key insight**: Reveals whether the predictive power of revenue signals is stable over time or varies across market regimes. A correlation that changes sign or magnitude suggests the relationship is context-dependent.
+
+---
+
+**4. RandomForest Feature Importance (Return Head)**
+![RF Feature Importance](outputs/figs/rf_feature_importance.png)
+
+**Purpose**: Identifies which features are most important for predicting future returns in the RandomForest model.
+
+**What it shows**: Horizontal bar chart of feature importances from the RandomForest return head model. Higher values indicate greater contribution to predictions.
+
+**Key insight**: Reveals that macro features (especially `tnx_yield` - 10-year treasury yield) dominate revenue features in importance, suggesting that interest rates and market volatility are more predictive than fundamental revenue signals for NVDA's returns. This finding highlights the importance of incorporating macro factors alongside company fundamentals.
+
+---
+
+**5. Return Head Predictions vs Actual (Test Set)**
+![RF Return: Pred vs Actual](outputs/figs/pred_vs_actual_return_rf.png)
+
+**Purpose**: Evaluates the out-of-sample performance of the return head model by comparing predicted vs actual future returns over time.
+
+**What it shows**: Time series plot of actual future 12-month returns (solid line) and RandomForest predictions (dashed line) for the test set (2019 onwards). This is the primary diagnostic for return prediction accuracy.
+
+**Key insight**: Visual assessment of prediction quality, including whether the model captures trends, volatility, and turning points. Large divergences indicate periods where the model struggles, potentially due to regime changes or model limitations.
+
+---
+
+**6. Indirect Price Predictions vs Actual (from Return Head)**
+![Price (Indirect from Return)](outputs/figs/pred_vs_actual_price_indirect.png)
+
+**Purpose**: Assesses price prediction accuracy using the indirect route: converting return predictions to price predictions via `price_hat = current_price × (1 + return_hat)`.
+
+**What it shows**: Time series comparing actual future 12-month stock prices with indirect price predictions derived from the return head model. This route leverages the return head's predictions to estimate absolute prices.
+
+**Key insight**: The indirect route achieves **$39.22 RMSE**, outperforming the direct price head. This suggests that predicting returns and then converting to prices is more effective than directly modeling price levels, possibly because returns are more stationary and easier to predict than absolute prices.
+
+---
+
+**7. Direct Price Predictions vs Actual (from Price Head)**
+![Price (Direct Head)](outputs/figs/pred_vs_actual_price_direct.png)
+
+**Purpose**: Evaluates price prediction accuracy using the direct route: predicting log(price) directly from features.
+
+**What it shows**: Time series comparing actual future 12-month stock prices with direct price predictions from the price head model. The model predicts log prices to handle non-stationarity, then converts back to price scale.
+
+**Key insight**: The direct route achieves **$78.93 RMSE**, significantly worse than the indirect route. This indicates that modeling prices directly, even in log space, is more challenging than modeling returns, likely due to the non-stationarity of price levels and the compounding of errors.
+
+---
+
+**8. Return Head Calibration Plot**
+![Calibration Return](outputs/figs/calibration_return.png)
+
+**Purpose**: Assesses whether the model's predictions are well-calibrated (i.e., whether predicted values systematically match actual values).
+
+**What it shows**: Scatter plot of actual vs predicted returns, with a red dashed y=x line representing perfect calibration. Points should cluster around the y=x line if the model is well-calibrated.
+
+**Key insight**: Systematic deviations from the y=x line indicate calibration issues:
+- Points above the line: model underestimates (predictions too low)
+- Points below the line: model overestimates (predictions too high)
+- Clustering indicates whether the model is biased or has high variance
+
+---
+
+**9. Return Head Residuals Over Time**
+![Residuals Return](outputs/figs/residuals_return.png)
+
+**Purpose**: Analyzes prediction errors (residuals) over time to detect patterns, biases, and heteroscedasticity.
+
+**What it shows**: Time series of residuals (actual - predicted) for the test set. The zero line represents perfect predictions. Residuals should be randomly distributed around zero with no systematic patterns.
+
+**Key insight**: Patterns in residuals reveal model weaknesses:
+- **Trends**: Systematic over/under-prediction during certain periods
+- **Clustering**: Volatility clustering suggests the model misses regime changes
+- **Outliers**: Large residuals indicate periods where the model fails (e.g., during market crashes or structural breaks)
+- **Heteroscedasticity**: Changing variance suggests the model's uncertainty varies over time
+
+---
+
 ## Features
 
 - **Data Pipeline**: Yahoo Finance API integration for historical stock data
@@ -332,112 +451,6 @@ This report analyzes revenue-based signals for **NVDA** using SEC XBRL data and 
 - **Indirect (from Return RF)**: $39.22
 - **Direct (from Price RF)**: $78.93
 - **Best Route**: Indirect
-
-### Figures
-
-#### 1. Revenue YoY Growth vs Future 12M Return
-![YoY vs Return](outputs/figs/yoy_vs_return.png)
-
-**Purpose**: Examines the relationship between revenue year-over-year growth and future stock returns.
-
-**What it shows**: Scatter plot of revenue YoY growth (x-axis) against future 12-month returns (y-axis), with a fitted regression line. This visualization helps assess whether revenue growth is predictive of future stock performance.
-
-**Key insight**: The slope and correlation coefficient reveal whether stronger revenue growth is associated with better future returns, providing evidence for the revenue-based prediction hypothesis.
-
----
-
-#### 2. Revenue Acceleration vs Future 12M Return
-![Acceleration vs Return](outputs/figs/accel_vs_return.png)
-
-**Purpose**: Analyzes how changes in revenue growth momentum (acceleration) relate to future returns.
-
-**What it shows**: Scatter plot of revenue acceleration (change in YoY growth rate) against future 12-month returns. Revenue acceleration captures the second derivative of revenue growth, which may signal turning points in business performance.
-
-**Key insight**: Positive acceleration indicates improving growth momentum, while negative acceleration suggests deceleration. This metric may be more sensitive to inflection points than absolute growth rates.
-
----
-
-#### 3. Rolling Correlation: Revenue YoY vs Future Returns
-![Rolling Correlation](outputs/figs/rolling_corr.png)
-
-**Purpose**: Tracks the time-varying strength of the relationship between revenue growth and future returns.
-
-**What it shows**: Time series of rolling 3-year correlation coefficients between revenue YoY growth and future 12-month returns. The correlation is computed over a sliding window to capture regime changes.
-
-**Key insight**: Reveals whether the predictive power of revenue signals is stable over time or varies across market regimes. A correlation that changes sign or magnitude suggests the relationship is context-dependent.
-
----
-
-#### 4. RandomForest Feature Importance (Return Head)
-![RF Feature Importance (Return Head)](outputs/figs/rf_feature_importance.png)
-
-**Purpose**: Identifies which features are most important for predicting future returns in the RandomForest model.
-
-**What it shows**: Horizontal bar chart of feature importances from the RandomForest return head model. Higher values indicate greater contribution to predictions.
-
-**Key insight**: Reveals that macro features (especially `tnx_yield` - 10-year treasury yield) dominate revenue features in importance, suggesting that interest rates and market volatility are more predictive than fundamental revenue signals for NVDA's returns. This finding highlights the importance of incorporating macro factors alongside company fundamentals.
-
----
-
-#### 5. Return Head Predictions vs Actual (Test Set)
-![RF Return: Pred vs Actual](outputs/figs/pred_vs_actual_return_rf.png)
-
-**Purpose**: Evaluates the out-of-sample performance of the return head model by comparing predicted vs actual future returns over time.
-
-**What it shows**: Time series plot of actual future 12-month returns (solid line) and RandomForest predictions (dashed line) for the test set (2019 onwards). This is the primary diagnostic for return prediction accuracy.
-
-**Key insight**: Visual assessment of prediction quality, including whether the model captures trends, volatility, and turning points. Large divergences indicate periods where the model struggles, potentially due to regime changes or model limitations.
-
----
-
-#### 6. Indirect Price Predictions vs Actual (from Return Head)
-![Price (Indirect from Return)](outputs/figs/pred_vs_actual_price_indirect.png)
-
-**Purpose**: Assesses price prediction accuracy using the indirect route: converting return predictions to price predictions via `price_hat = current_price × (1 + return_hat)`.
-
-**What it shows**: Time series comparing actual future 12-month stock prices with indirect price predictions derived from the return head model. This route leverages the return head's predictions to estimate absolute prices.
-
-**Key insight**: The indirect route achieves **$39.22 RMSE**, outperforming the direct price head. This suggests that predicting returns and then converting to prices is more effective than directly modeling price levels, possibly because returns are more stationary and easier to predict than absolute prices.
-
----
-
-#### 7. Direct Price Predictions vs Actual (from Price Head)
-![Price (Direct Head)](outputs/figs/pred_vs_actual_price_direct.png)
-
-**Purpose**: Evaluates price prediction accuracy using the direct route: predicting log(price) directly from features.
-
-**What it shows**: Time series comparing actual future 12-month stock prices with direct price predictions from the price head model. The model predicts log prices to handle non-stationarity, then converts back to price scale.
-
-**Key insight**: The direct route achieves **$78.93 RMSE**, significantly worse than the indirect route. This indicates that modeling prices directly, even in log space, is more challenging than modeling returns, likely due to the non-stationarity of price levels and the compounding of errors.
-
----
-
-#### 8. Return Head Calibration Plot
-![Calibration Return](outputs/figs/calibration_return.png)
-
-**Purpose**: Assesses whether the model's predictions are well-calibrated (i.e., whether predicted values systematically match actual values).
-
-**What it shows**: Scatter plot of actual vs predicted returns, with a red dashed y=x line representing perfect calibration. Points should cluster around the y=x line if the model is well-calibrated.
-
-**Key insight**: Systematic deviations from the y=x line indicate calibration issues:
-- Points above the line: model underestimates (predictions too low)
-- Points below the line: model overestimates (predictions too high)
-- Clustering indicates whether the model is biased or has high variance
-
----
-
-#### 9. Return Head Residuals Over Time
-![Residuals Return](outputs/figs/residuals_return.png)
-
-**Purpose**: Analyzes prediction errors (residuals) over time to detect patterns, biases, and heteroscedasticity.
-
-**What it shows**: Time series of residuals (actual - predicted) for the test set. The zero line represents perfect predictions. Residuals should be randomly distributed around zero with no systematic patterns.
-
-**Key insight**: Patterns in residuals reveal model weaknesses:
-- **Trends**: Systematic over/under-prediction during certain periods
-- **Clustering**: Volatility clustering suggests the model misses regime changes
-- **Outliers**: Large residuals indicate periods where the model fails (e.g., during market crashes or structural breaks)
-- **Heteroscedasticity**: Changing variance suggests the model's uncertainty varies over time
 
 ### Key Findings
 
