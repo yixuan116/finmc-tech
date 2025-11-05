@@ -453,6 +453,11 @@ This report analyzes revenue-based signals for **NVDA** using SEC XBRL data and 
 - Both RandomForest and KNN achieve 70.8% directional accuracy
 - RandomForest's superior performance is attributed to its ability to capture non-linear relationships and adapt across different market regimes through tree-based feature splitting
 
+**Data Quality vs Model Capability Analysis:**
+- **Data Quality**: Maximum feature-target correlation is 0.366 (tnx_yield), indicating moderate predictive signal. Baseline RMSE (predicting mean) is 0.7365, representing the inherent difficulty of the prediction task.
+- **Model Capability**: RF's 1.14% RMSE improvement over KNN (0.0124 reduction) reflects model capability differences, but the improvement is small relative to the baseline.
+- **Key Insight**: Both models significantly underperform the baseline (RMSE 1.08 vs 0.74), indicating that **data quality limitations dominate model performance**. The RF vs KNN difference (1.14%) represents the **model capability component**, which is modest compared to the data quality constraint.
+
 ### Direct Price Head Performance
 
 | Model | Test R² (Log Price) | Test RMSE (Log Price) | Test Price RMSE (USD) |
