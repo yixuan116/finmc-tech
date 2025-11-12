@@ -316,15 +316,16 @@ $$\hat{y} = \frac{1}{B} \sum_{b=1}^{B} T_b(\mathbf{x})$$
 
 where $T_b(\mathbf{x})$ is the prediction from the $b$-th tree, and $\mathbf{x}$ is the feature vector.
 
-**Feature Importance (Gini-based):**
-For each feature $j$, the importance is computed as the average decrease in Gini impurity across all trees:
+**Feature Importance (Variance-based for Regression):**
+For each feature $j$, the importance is computed as the average decrease in variance (MSE) across all trees:
 
-$$\text{Importance}_j = \frac{1}{B} \sum_{b=1}^{B} \sum_{t \in T_b} p(t) \cdot \Delta G_j(t)$$
+$$\text{Importance}_j = \frac{1}{B} \sum_{b=1}^{B} \sum_{t \in T_b} p(t) \cdot \Delta \text{Var}_j(t)$$
 
 where:
 - $p(t)$ is the proportion of samples reaching node $t$
-- $\Delta G_j(t)$ is the decrease in Gini impurity when feature $j$ is used to split node $t$
-- The Gini impurity at node $t$ is: $G(t) = 1 - \sum_{c=1}^{C} p_c(t)^2$, where $p_c(t)$ is the proportion of class $c$ samples at node $t$
+- $\Delta \text{Var}_j(t)$ is the decrease in variance when feature $j$ is used to split node $t$
+- The variance at node $t$ is: $\text{Var}(t) = \frac{1}{N_t} \sum_{i \in t} (y_i - \bar{y}_t)^2$, where $N_t$ is the number of samples at node $t$ and $\bar{y}_t$ is the mean target value at node $t$
+- For regression, this is equivalent to the mean decrease in impurity (MSE reduction)
 
 **Permutation Importance:**
 An alternative measure that evaluates the drop in model performance when feature $j$ is randomly shuffled:
