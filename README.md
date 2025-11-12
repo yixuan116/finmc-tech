@@ -243,13 +243,13 @@ This represents the **next-month return** we aim to predict.
 
 | Feature | Description | Formula |
 |---------|-------------|---------|
-| `rev_qoq` | Revenue quarter-over-quarter growth | $$\text{rev\_qoq}_t = \frac{\text{Revenue}_t - \text{Revenue}_{t-1}}{\text{Revenue}_{t-1}} = \frac{\text{Revenue}_t}{\text{Revenue}_{t-1}} - 1$$ |
-| `rev_yoy` | Revenue year-over-year growth | $$\text{rev\_yoy}_t = \frac{\text{Revenue}_t - \text{Revenue}_{t-4}}{\text{Revenue}_{t-4}} = \frac{\text{Revenue}_t}{\text{Revenue}_{t-4}} - 1$$<br>*For quarterly data, compares to same quarter previous year* |
-| `rev_accel` | Revenue acceleration (change in YoY growth rate) | $$\text{rev\_accel}_t = \text{rev\_yoy}_t - \text{rev\_yoy}_{t-1} = \Delta(\text{rev\_yoy})_t$$<br>*Measures the change in growth momentum* |
-| `vix_level` | VIX level (from firm data) | $$\text{vix\_level}_t = \text{VIX}_t$$<br>*Current VIX index value* |
-| `tnx_yield` | 10-Year Treasury Yield (from firm data) | $$\text{tnx\_yield}_t = \text{DGS10}_t$$<br>*Current 10-year Treasury yield* |
-| `vix_change_3m` | VIX 3-month change | $$\text{vix\_change\_3m}_t = \frac{\text{VIX}_t - \text{VIX}_{t-3}}{\text{VIX}_{t-3}} = \frac{\text{VIX}_t}{\text{VIX}_{t-3}} - 1$$<br>*3-month percentage change in VIX* |
-| `tnx_change_3m` | Treasury yield 3-month change | $$\text{tnx\_change\_3m}_t = \frac{\text{DGS10}_t - \text{DGS10}_{t-3}}{\text{DGS10}_{t-3}} = \frac{\text{DGS10}_t}{\text{DGS10}_{t-3}} - 1$$<br>*3-month percentage change in 10Y yield* |
+| `rev_qoq` | Revenue quarter-over-quarter growth | `rev_qoq_t = (Revenue_t / Revenue_{t-1}) - 1` |
+| `rev_yoy` | Revenue year-over-year growth | `rev_yoy_t = (Revenue_t / Revenue_{t-4}) - 1`<br>*For quarterly data, compares to same quarter previous year* |
+| `rev_accel` | Revenue acceleration (change in YoY growth rate) | `rev_accel_t = rev_yoy_t - rev_yoy_{t-1}`<br>*Measures the change in growth momentum* |
+| `vix_level` | VIX level (from firm data) | `vix_level_t = VIX_t`<br>*Current VIX index value* |
+| `tnx_yield` | 10-Year Treasury Yield (from firm data) | `tnx_yield_t = DGS10_t`<br>*Current 10-year Treasury yield* |
+| `vix_change_3m` | VIX 3-month change | `vix_change_3m_t = (VIX_t / VIX_{t-3}) - 1`<br>*3-month percentage change in VIX* |
+| `tnx_change_3m` | Treasury yield 3-month change | `tnx_change_3m_t = (DGS10_t / DGS10_{t-3}) - 1`<br>*3-month percentage change in 10Y yield* |
 
 #### Extended Features (Optional, controlled by config flags)
 
