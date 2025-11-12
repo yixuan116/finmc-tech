@@ -356,6 +356,8 @@ Suppose we have 10 months of data at a node (sampled from different time periods
 | 2020-01 | 0.20 | $49.30 | +0.15 (+15%) | **High Growth** (rev_yoy > 0.13) |
 | 2021-04 | 0.14 | $62.20 | +0.10 (+10%) | **High Growth** (rev_yoy > 0.13) |
 | 2023-07 | 0.16 | $134.50 | +0.12 (+12%) | **High Growth** (rev_yoy > 0.13) |
+| 2025-01 | 1.14 | $118.40 | +0.18 (+18%) | **High Growth** (rev_yoy > 0.13) |
+| 2025-07 | 0.62 | $176.74 | +0.15 (+15%) | **High Growth** (rev_yoy > 0.13) |
 | 2011-04 | 0.05 | $4.20 | -0.03 (-3%) | Low Growth (rev_yoy ≤ 0.13) |
 | 2013-01 | 0.08 | $6.80 | +0.02 (+2%) | Low Growth (rev_yoy ≤ 0.13) |
 | 2014-01 | 0.10 | $8.80 | +0.03 (+3%) | Low Growth (rev_yoy ≤ 0.13) |
@@ -364,6 +366,7 @@ Suppose we have 10 months of data at a node (sampled from different time periods
 | 2019-10 | -0.02 | $38.60 | -0.05 (-5%) | Low Growth (rev_yoy ≤ 0.13) |
 | 2022-10 | 0.08 | $108.30 | -0.05 (-5%) | Low Growth (rev_yoy ≤ 0.13) |
 | 2024-01 | 0.12 | $145.80 | +0.03 (+3%) | Low Growth (rev_yoy ≤ 0.13) |
+| 2025-04 | 0.69 | $108.72 | -0.08 (-8%) | Low Growth (rev_yoy > 0.13 but negative return) |
 
 **Before split (at root node):**
 - All 10 months mixed together
@@ -381,16 +384,17 @@ Suppose we have 10 months of data at a node (sampled from different time periods
 - Variance: $\text{Var}_L = 0.0012$
 - *Low variance: all returns are clustered around -0.8%*
 
-**Right child (High Growth: rev_yoy > 0.13):** 2012-07, 2016-10, 2020-01, 2021-04, 2023-07
-- Contains: Months with high revenue growth (rev_yoy: 0.14 to 0.20)
-- Stock prices: $5.20, $18.50, $49.30, $62.20, $134.50
-- Time span: 2012-2023 (covers early period, mid period, and recent period)
-- Mean: $\bar{y}_R = 0.1125$ (+11.25%)
-- Variance: $\text{Var}_R = 0.0008$
-- *Low variance: all returns are clustered around +11.25%*
+**Right child (High Growth: rev_yoy > 0.13):** 2012-07, 2016-10, 2020-01, 2021-04, 2023-07, 2025-01, 2025-07
+- Contains: Months with high revenue growth (rev_yoy: 0.14 to 1.14)
+- Stock prices: $5.20, $18.50, $49.30, $62.20, $134.50, $118.40, $176.74
+- Time span: 2012-2025 (covers early period, mid period, recent period, and latest 2025 data)
+- Mean: $\bar{y}_R = 0.1257$ (+12.57%)
+- Variance: $\text{Var}_R = 0.0009$
+- *Low variance: all returns are clustered around +12.57%*
+- *Note: 2025-01 shows exceptional growth (rev_yoy=1.14, +114% YoY) with +18% return, demonstrating the pattern continues into 2025*
 
 **Weighted variance after split:**
-$$\text{Var}_{\text{after}} = \frac{8}{13} \times 0.0012 + \frac{5}{13} \times 0.0008 = 0.00104$$
+$$\text{Var}_{\text{after}} = \frac{9}{16} \times 0.0012 + \frac{7}{16} \times 0.0009 = 0.00106$$
 
 **Variance reduction:**
 $$\Delta \text{Var} = 0.0068 - 0.00104 = 0.00576$$
