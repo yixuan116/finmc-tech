@@ -19,6 +19,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 from sklearn.ensemble import RandomForestRegressor
+from sklearn.inspection import permutation_importance
 
 # Filter warnings
 warnings.filterwarnings("ignore", category=FutureWarning)
@@ -75,6 +76,8 @@ def load_and_prepare_data(
     macro_path: Optional[str],
     firm_path: Optional[str],
     row_subsample: float = 1.0,
+    start_date: Optional[str] = None,
+    end_date: Optional[str] = None,
 ) -> Tuple[pd.DataFrame, pd.Series]:
     """
     Load prices, macro, and firm CSVs, merge, and prepare X/y.
@@ -176,18 +179,33 @@ def load_and_prepare_data(
         merged_df = merged_df.tail(n_keep)
         print(f"  ✓ Subsampled to last {n_keep} rows ({row_subsample*100:.0f}%)")
     
+    # Time window selection (if provided)
+    if start_date or end_date:
+        print(f"\n5. Applying time window filter...")
+        original_len = len(merged_df)
+        if start_date:
+            start_dt = pd.to_datetime(start_date)
+            merged_df = merged_df[merged_df.index >= start_dt]
+            print(f"  ✓ Filtered from {start_date} onwards")
+        if end_date:
+            end_dt = pd.to_datetime(end_date)
+            merged_df = merged_df[merged_df.index <= end_dt]
+            print(f"  ✓ Filtered up to {end_date}")
+        filtered_len = len(merged_df)
+        print(f"  ✓ Reduced from {original_len} to {filtered_len} rows")
+    
     # Assert minimum data requirement
     if len(merged_df) < 12:
         raise ValueError(
-            f"Insufficient data after merging: {len(merged_df)} rows. "
-            "Need at least 12 months. Check CSV paths and date alignment."
+            f"Insufficient data after merging/filtering: {len(merged_df)} rows. "
+            "Need at least 12 months. Check CSV paths, date alignment, and time window filters."
         )
     
     # Extract X and y
     X = merged_df[feature_cols].copy()
     y = merged_df["y"].copy()
     
-    print(f"\n5. Final dataset:")
+    print(f"\n6. Final dataset:")
     print(f"  ✓ Features: {len(feature_cols)}")
     print(f"  ✓ Samples: {len(X)}")
     print(f"  ✓ Date range: {X.index.min()} to {X.index.max()}")
@@ -311,6 +329,189 @@ def plot_feature_importance(
     print(f"  ✓ Saved plot to {output_path}")
 
 
+def compute_permutation_importance(
+    model: RandomForestRegressor,
+    X: pd.DataFrame,
+    y: pd.Series,
+    n_repeats: int = 10,
+    n_jobs: int = 4,
+    random_state: int = 42,
+) -> pd.DataFrame:
+    """
+    Compute permutation importance for trained model.
+    
+    Args:
+        model: Trained RandomForestRegressor
+        X: Feature DataFrame
+        y: Target Series
+        n_repeats: Number of times to permute each feature
+        n_jobs: Number of parallel jobs
+        random_state: Random seed
+    
+    Returns:
+        DataFrame with feature and permutation importance scores
+    """
+    print("\n" + "=" * 70)
+    print("Computing Permutation Importance")
+    print("=" * 70)
+    
+    print(f"\nParameters:")
+    print(f"  n_repeats: {n_repeats}")
+    print(f"  n_jobs: {n_jobs}")
+    print(f"  scoring: R²")
+    
+    print(f"\nComputing permutation importance on {len(X)} samples...")
+    perm_result = permutation_importance(
+        model,
+        X,
+        y,
+        n_repeats=n_repeats,
+        n_jobs=n_jobs,
+        random_state=random_state,
+        scoring="r2",
+    )
+    
+    # Create importance DataFrame
+    perm_importance_df = pd.DataFrame({
+        "feature": X.columns,
+        "importance_mean": perm_result.importances_mean,
+        "importance_std": perm_result.importances_std,
+    }).sort_values("importance_mean", ascending=False)
+    
+    print(f"\n✓ Permutation importance computed")
+    print(f"  Top feature: {perm_importance_df.iloc[0]['feature']} "
+          f"(mean={perm_importance_df.iloc[0]['importance_mean']:.4f})")
+    
+    return perm_importance_df
+
+
+def plot_permutation_importance(
+    perm_importance_df: pd.DataFrame,
+    output_path: Path,
+    top_n: int = 20,
+) -> None:
+    """
+    Plot permutation importance bar chart.
+    
+    Args:
+        perm_importance_df: DataFrame with feature, importance_mean, importance_std
+        output_path: Path to save plot
+        top_n: Number of top features to plot
+    """
+    print(f"\nPlotting top {top_n} permutation importance features...")
+    
+    top_features = perm_importance_df.head(top_n)
+    
+    fig, ax = plt.subplots(figsize=(12, 8))
+    
+    # Horizontal bar chart with error bars
+    y_pos = np.arange(len(top_features))
+    ax.barh(
+        y_pos,
+        top_features["importance_mean"],
+        xerr=top_features["importance_std"],
+        color="coral",
+        alpha=0.8,
+        capsize=3,
+    )
+    
+    # Labels
+    ax.set_yticks(y_pos)
+    ax.set_yticklabels(top_features["feature"], fontsize=10)
+    ax.set_xlabel("Permutation Importance Score", fontsize=12)
+    ax.set_title(
+        f"Permutation Feature Importance (Top {top_n}) — Monthly NVDA Returns",
+        fontsize=14,
+        fontweight="bold",
+    )
+    ax.grid(True, alpha=0.3, axis="x")
+    
+    # Invert y-axis to show highest importance at top
+    ax.invert_yaxis()
+    
+    plt.tight_layout()
+    
+    # Ensure output directory exists
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+    
+    # Save figure
+    plt.savefig(output_path, dpi=150, bbox_inches="tight")
+    plt.close()
+    
+    print(f"  ✓ Saved plot to {output_path}")
+
+
+def plot_importance_comparison(
+    tree_importance_df: pd.DataFrame,
+    perm_importance_df: pd.DataFrame,
+    output_path: Path,
+    top_n: int = 10,
+) -> None:
+    """
+    Plot side-by-side comparison of tree-based and permutation importance.
+    
+    Args:
+        tree_importance_df: DataFrame with feature and importance_score
+        perm_importance_df: DataFrame with feature, importance_mean, importance_std
+        output_path: Path to save plot
+        top_n: Number of top features to plot
+    """
+    print(f"\nPlotting comparison of top {top_n} features...")
+    
+    # Get top N features from tree importance
+    top_tree = tree_importance_df.head(top_n)
+    top_perm = perm_importance_df.head(top_n)
+    
+    # Create figure with two subplots
+    fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(16, 8))
+    
+    # Left plot: Tree-based importance
+    y_pos1 = np.arange(len(top_tree))
+    ax1.barh(y_pos1, top_tree["importance_score"], color="steelblue", alpha=0.8)
+    ax1.set_yticks(y_pos1)
+    ax1.set_yticklabels(top_tree["feature"], fontsize=10)
+    ax1.set_xlabel("Importance Score", fontsize=12)
+    ax1.set_title("Tree-based Importance (Gini)", fontsize=13, fontweight="bold")
+    ax1.grid(True, alpha=0.3, axis="x")
+    ax1.invert_yaxis()
+    
+    # Right plot: Permutation importance
+    y_pos2 = np.arange(len(top_perm))
+    ax2.barh(
+        y_pos2,
+        top_perm["importance_mean"],
+        xerr=top_perm["importance_std"],
+        color="coral",
+        alpha=0.8,
+        capsize=3,
+    )
+    ax2.set_yticks(y_pos2)
+    ax2.set_yticklabels(top_perm["feature"], fontsize=10)
+    ax2.set_xlabel("Permutation Importance Score", fontsize=12)
+    ax2.set_title("Permutation Importance", fontsize=13, fontweight="bold")
+    ax2.grid(True, alpha=0.3, axis="x")
+    ax2.invert_yaxis()
+    
+    # Overall title
+    fig.suptitle(
+        f"Feature Importance Comparison (Top {top_n}) — Monthly NVDA Returns",
+        fontsize=15,
+        fontweight="bold",
+        y=1.02,
+    )
+    
+    plt.tight_layout()
+    
+    # Ensure output directory exists
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+    
+    # Save figure
+    plt.savefig(output_path, dpi=150, bbox_inches="tight")
+    plt.close()
+    
+    print(f"  ✓ Saved comparison plot to {output_path}")
+
+
 def print_top_features(importance_df: pd.DataFrame, top_n: int = 10) -> None:
     """Print top N features to console."""
     print("\n" + "=" * 70)
@@ -324,11 +525,28 @@ def print_top_features(importance_df: pd.DataFrame, top_n: int = 10) -> None:
     print("=" * 70)
 
 
+def print_top_permutation_features(perm_importance_df: pd.DataFrame, top_n: int = 10) -> None:
+    """Print top N permutation importance features to console."""
+    print("\n" + "=" * 70)
+    print(f"Top {top_n} Features by Permutation Importance")
+    print("=" * 70)
+    
+    top_features = perm_importance_df.head(top_n)
+    for i, (_, row) in enumerate(top_features.iterrows(), 1):
+        mean_val = row['importance_mean']
+        std_val = row['importance_std']
+        print(f"{i:2d}. {row['feature']:30s}: {mean_val:7.4f} ± {std_val:.4f}")
+    
+    print("=" * 70)
+
+
 def update_readme(
     importance_df: pd.DataFrame,
     readme_path: Path,
     plot_path: Path,
     top_n: int = 10,
+    perm_importance_df: Optional[pd.DataFrame] = None,
+    perm_plot_path: Optional[Path] = None,
 ) -> None:
     """
     Update README.md with feature importance section.
@@ -338,6 +556,8 @@ def update_readme(
         readme_path: Path to README.md
         plot_path: Path to feature importance plot (relative to README)
         top_n: Number of top features to include in table
+        perm_importance_df: Optional DataFrame with permutation importance results
+        perm_plot_path: Optional path to permutation importance plot
     """
     print(f"\nUpdating README.md...")
     
@@ -359,6 +579,34 @@ def update_readme(
         table_rows.append(f"| {i} | `{row['feature']}` | {row['importance_score']:.4f} |")
     
     table_text = "\n".join(table_rows)
+    
+    # Prepare permutation importance subsection if provided
+    perm_subsection = ""
+    if perm_importance_df is not None and perm_plot_path is not None:
+        perm_top_features = perm_importance_df.head(top_n)
+        perm_table_rows = []
+        perm_table_rows.append("| Rank | Feature | Importance (Mean ± Std) |")
+        perm_table_rows.append("|------|---------|------------------------|")
+        
+        for i, (_, row) in enumerate(perm_top_features.iterrows(), 1):
+            mean_val = row['importance_mean']
+            std_val = row['importance_std']
+            perm_table_rows.append(f"| {i} | `{row['feature']}` | {mean_val:.4f} ± {std_val:.4f} |")
+        
+        perm_table_text = "\n".join(perm_table_rows)
+        
+        perm_subsection = f"""
+
+#### Permutation Importance Validation
+
+Permutation importance provides an alternative measure of feature importance by evaluating the drop in model performance when each feature is randomly shuffled. This method is less biased than tree-based importance and better captures true predictive power.
+
+**Top {top_n} Features (Permutation Importance):**
+
+{perm_table_text}
+
+![Permutation Feature Importance]({perm_plot_path})
+"""
     
     # Prepare section content
     section_content = f"""
@@ -383,7 +631,7 @@ Feature importance helps to:
 
 {table_text}
 
-![RF Feature Importance]({plot_path})
+![RF Feature Importance]({plot_path}){perm_subsection}
 """
     
     # Check if section markers exist
@@ -489,6 +737,23 @@ Examples:
         action="store_true",
         help="Auto-update README.md with feature importance results",
     )
+    parser.add_argument(
+        "--perm-importance",
+        action="store_true",
+        help="Compute permutation importance in addition to tree-based importance",
+    )
+    parser.add_argument(
+        "--start",
+        type=str,
+        default=None,
+        help="Start date for time window selection (YYYY-MM-DD format)",
+    )
+    parser.add_argument(
+        "--end",
+        type=str,
+        default=None,
+        help="End date for time window selection (YYYY-MM-DD format)",
+    )
     
     args = parser.parse_args()
     
@@ -505,6 +770,8 @@ Examples:
             macro_path=args.macro,
             firm_path=args.firm,
             row_subsample=args.row_subsample,
+            start_date=args.start,
+            end_date=args.end,
         )
         
         # Train RF and compute importance
@@ -528,11 +795,55 @@ Examples:
         # Print top features
         print_top_features(importance_df, top_n=10)
         
+        # Compute permutation importance if requested
+        perm_importance_df = None
+        perm_plot_path = None
+        if args.perm_importance:
+            perm_importance_df = compute_permutation_importance(
+                model,
+                X,
+                y,
+                n_repeats=10,
+                n_jobs=args.n_jobs,
+                random_state=42,
+            )
+            
+            # Save permutation importance CSV
+            perm_csv = results_dir / "rf_permutation_importance.csv"
+            perm_importance_df.to_csv(perm_csv, index=False)
+            print(f"\n✓ Saved permutation importance scores to {perm_csv}")
+            
+            # Plot permutation importance
+            perm_plot_path = plots_dir / "rf_permutation_importance.png"
+            plot_permutation_importance(perm_importance_df, perm_plot_path, top_n=args.top_n)
+            
+            # Plot comparison
+            comparison_plot_path = plots_dir / "rf_importance_comparison.png"
+            plot_importance_comparison(
+                importance_df,
+                perm_importance_df,
+                comparison_plot_path,
+                top_n=min(args.top_n, 10),
+            )
+            
+            # Print top permutation features
+            print_top_permutation_features(perm_importance_df, top_n=10)
+        
         # Update README if requested
         if args.save_readme:
             readme_path = Path("README.md")
             plot_rel_path = Path("plots") / "rf_feature_importance.png"
-            update_readme(importance_df, readme_path, plot_rel_path, top_n=10)
+            perm_plot_rel_path = None
+            if perm_plot_path:
+                perm_plot_rel_path = Path("plots") / "rf_permutation_importance.png"
+            update_readme(
+                importance_df,
+                readme_path,
+                plot_rel_path,
+                top_n=10,
+                perm_importance_df=perm_importance_df,
+                perm_plot_path=perm_plot_rel_path,
+            )
         
         print("\n" + "=" * 70)
         print("Analysis Complete!")

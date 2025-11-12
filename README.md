@@ -296,39 +296,50 @@ Feature importance helps to:
 3. Provide a **transparent feature ranking** for the project
 4. Build trust in the ML pipeline—by knowing "what the model is learning"
 
-**Model Performance:**
-- **R² Score**: 0.5485 (54.85% variance explained)
-- **MAE**: 0.1344 (13.44% average absolute error)
-- **RMSE**: 0.1746 (17.46% root mean squared error)
-- **Training Period**: 62 monthly observations (2009-07 to 2024-10)
-- **Model**: Random Forest Regressor (100 trees, max_depth=None, min_samples_leaf=3)
-
 **Top 10 Features:**
 
-| Rank | Feature | Importance | Interpretation |
-|------|---------|------------|----------------|
-| 1 | `rev_accel` | 0.1486 | Revenue acceleration (change in YoY growth) - strongest predictor |
-| 2 | `rev_yoy` | 0.1477 | Revenue year-over-year growth - fundamental driver |
-| 3 | `revenue` | 0.1415 | Absolute revenue level - scale indicator |
-| 4 | `tnx_yield` | 0.1347 | 10-Year Treasury yield - macro risk-free rate |
-| 5 | `tnx_change_3m` | 0.1280 | 3-month change in Treasury yield - rate momentum |
-| 6 | `rev_qoq` | 0.1149 | Revenue quarter-over-quarter growth - short-term momentum |
-| 7 | `vix_change_3m` | 0.0951 | 3-month change in VIX - volatility momentum |
-| 8 | `vix_level` | 0.0896 | VIX level - market volatility indicator |
+| Rank | Feature | Importance |
+|------|---------|------------|
+| 1 | `rev_accel` | 0.1486 |
+| 2 | `rev_yoy` | 0.1477 |
+| 3 | `revenue` | 0.1415 |
+| 4 | `tnx_yield` | 0.1347 |
+| 5 | `tnx_change_3m` | 0.1280 |
+| 6 | `rev_qoq` | 0.1149 |
+| 7 | `vix_change_3m` | 0.0951 |
+| 8 | `vix_level` | 0.0896 |
 
 ![RF Feature Importance](plots/rf_feature_importance.png)
 
-**Key Insights:**
+#### Permutation Importance Validation
 
-1. **Revenue Features Dominate**: The top 3 features are all revenue-related (`rev_accel`, `rev_yoy`, `revenue`), accounting for **43.8%** of total importance. This confirms that **fundamental revenue metrics are the strongest predictors** of NVDA monthly returns.
+Permutation importance provides an alternative measure of feature importance by evaluating the drop in model performance when each feature is randomly shuffled. This method is less biased than tree-based importance and better captures true predictive power.
 
-2. **Macro Factors Matter**: Treasury yield features (`tnx_yield`, `tnx_change_3m`) rank 4th and 5th, with **26.3%** combined importance. This suggests **interest rate environment significantly impacts tech stock returns**.
+**Top 10 Features (Permutation Importance):**
 
-3. **Volatility Signals**: VIX-related features (`vix_change_3m`, `vix_level`) account for **18.5%** importance, indicating that **market volatility dynamics** are predictive of returns.
+| Rank | Feature | Importance (Mean ± Std) |
+|------|---------|------------------------|
+| 1 | `rev_yoy` | 0.1233 ± 0.0222 |
+| 2 | `rev_accel` | 0.1187 ± 0.0214 |
+| 3 | `revenue` | 0.1185 ± 0.0133 |
+| 4 | `tnx_change_3m` | 0.1177 ± 0.0140 |
+| 5 | `tnx_yield` | 0.1113 ± 0.0195 |
+| 6 | `rev_qoq` | 0.0717 ± 0.0057 |
+| 7 | `vix_change_3m` | 0.0616 ± 0.0099 |
+| 8 | `vix_level` | 0.0612 ± 0.0102 |
 
-4. **Momentum vs. Level**: Both **change features** (acceleration, 3m changes) and **level features** (absolute revenue, VIX level) are important, suggesting the model captures both **trend momentum** and **absolute positioning**.
+![Permutation Feature Importance](plots/rf_permutation_importance.png)
 
-5. **Model Performance**: With R² = 0.5485, the model explains **~55% of variance** in monthly returns, which is strong for financial time series prediction. The MAE of 13.44% indicates reasonable prediction accuracy for monthly return forecasting.
+**Side-by-Side Comparison:**
+
+![Feature Importance Comparison](plots/rf_importance_comparison.png)
+
+**Key Observations:**
+- Both methods identify the same top features, but with slight ranking differences
+- `revenue` ranks higher in permutation importance, suggesting stronger true predictive power
+- `rev_accel` ranks higher in tree-based importance, possibly due to feature interactions
+- Permutation importance provides uncertainty estimates (error bars), showing `rev_accel` and `rev_yoy` have higher variance
+- The comparison validates that revenue-related features are consistently the most important predictors
 
 <!-- FEAT_IMPORT_END -->
 ## Data Pipeline & Alignment
