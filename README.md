@@ -409,7 +409,7 @@ To validate that feature importance is **stable across time** (not just a recent
 
 1. **Regime Robustness**: Features that are important across different market regimes (bull markets, bear markets, high volatility periods) are ranked higher
 2. **Not Time-Specific**: The importance scores reflect patterns that hold across the entire period, not just recent years
-3. **Statistical Significance**: With 62 observations, the importance rankings have sufficient statistical power
+3. **Statistical Significance**: With 66+ observations, the importance rankings have sufficient statistical power
 
 **Data Coverage:**
 - **Time Period**: 2009-07 to 2025-07 (16+ years)
