@@ -307,6 +307,35 @@ Random Forest is used for feature importance analysis because:
 4. It does **not assume linearity** or stationarity—important since macro-financial data often violate those assumptions
 5. Compared to deep networks (LSTM) or SVMs, Random Forest offers explainability and speed for feature screening
 
+**Mathematical Formulation:**
+
+**Random Forest Prediction:**
+A Random Forest is an ensemble of $B$ decision trees. The final prediction is the average of all tree predictions:
+
+$$\hat{y} = \frac{1}{B} \sum_{b=1}^{B} T_b(\mathbf{x})$$
+
+where $T_b(\mathbf{x})$ is the prediction from the $b$-th tree, and $\mathbf{x}$ is the feature vector.
+
+**Feature Importance (Gini-based):**
+For each feature $j$, the importance is computed as the average decrease in Gini impurity across all trees:
+
+$$\text{Importance}_j = \frac{1}{B} \sum_{b=1}^{B} \sum_{t \in T_b} p(t) \cdot \Delta G_j(t)$$
+
+where:
+- $p(t)$ is the proportion of samples reaching node $t$
+- $\Delta G_j(t)$ is the decrease in Gini impurity when feature $j$ is used to split node $t$
+- The Gini impurity at node $t$ is: $G(t) = 1 - \sum_{c=1}^{C} p_c(t)^2$, where $p_c(t)$ is the proportion of class $c$ samples at node $t$
+
+**Permutation Importance:**
+An alternative measure that evaluates the drop in model performance when feature $j$ is randomly shuffled:
+
+$$\text{PermImportance}_j = \frac{1}{R} \sum_{r=1}^{R} \left[ \text{Score}(\mathbf{X}, \mathbf{y}) - \text{Score}(\mathbf{X}^{(j,r)}, \mathbf{y}) \right]$$
+
+where:
+- $\mathbf{X}^{(j,r)}$ is the feature matrix with feature $j$ permuted in the $r$-th repetition
+- $\text{Score}$ is typically R² or MSE
+- $R$ is the number of permutation repetitions (default: 10)
+
 **Why Feature Importance before forecasting?**
 Feature importance helps to:
 1. Identify the **most predictive signals** (rev_yoy, VIX, FedFunds, etc.)
