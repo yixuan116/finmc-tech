@@ -1,0 +1,58 @@
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "finmc-tech"
+version = "0.1.0"
+description = "Macro-driven NVDA return simulation package"
+readme = "README.md"
+requires-python = ">=3.10"
+license = {text = "MIT"}
+authors = [
+    {name = "Your Name", email = "your.email@example.com"}
+]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Financial and Insurance Industry",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+]
+
+dependencies = [
+    "numpy>=1.24.0",
+    "pandas>=2.0.0",
+    "scipy>=1.11.0",
+    "yfinance>=0.2.0",
+    "pandas-datareader>=0.10.0",
+    "scikit-learn>=1.3.0",
+    "matplotlib>=3.7.0",
+    "seaborn>=0.12.0",
+    "joblib>=1.3.0",
+    "tqdm>=4.65.0",
+    "pydantic>=2.0.0",
+]
+
+[project.optional-dependencies]
+dl = [
+    "tensorflow>=2.13.0",
+    "keras>=2.13.0",
+]
+
+[project.scripts]
+finmc-tech = "finmc_tech.cli:main"
+
+[tool.setuptools]
+packages = ["finmc_tech"]
+
+[tool.black]
+line-length = 100
+target-version = ["py310"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = ["test_*.py"]
+
