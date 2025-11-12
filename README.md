@@ -906,7 +906,7 @@ This report analyzes revenue-based signals for **NVDA** using SEC XBRL data and 
 - **Direct (from Price RF)**: $78.93
 - **Best Route**: Indirect
 
-### Key Findings
+### Summary: Dual-Head Analysis Key Findings
 
 - **Sample Size**: 62 rows
 - **Date Range**: 2009-07-26 to 2024-10-27
