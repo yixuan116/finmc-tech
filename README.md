@@ -341,7 +341,46 @@ This formula measures **how much each feature helps reduce prediction error** ac
 
 4. **Averaged across all trees**: A feature that consistently helps reduce variance across many trees is more important
 
-**Key Insight:** It's not about "distance" or "correlation" directly—it's about **predictive power**: features that can better separate high-return months from low-return months (reduce variance in predictions) are ranked higher. For example, if `rev_yoy` can split the data into "high growth months" (predicting +5% returns) vs "low growth months" (predicting -2% returns), it has high importance because it reduces the variance of predictions within each group.
+**Key Insight:** It's not about "distance" or "correlation" directly—it's about **predictive power**: features that can better separate high-return months from low-return months (reduce variance in predictions) are ranked higher.
+
+**Concrete Example:**
+
+Suppose we have 10 months of data at a node:
+
+| Month | rev_yoy | Actual Return (y) |
+|-------|---------|-------------------|
+| 1 | 0.15 | +0.08 |
+| 2 | 0.18 | +0.12 |
+| 3 | 0.20 | +0.15 |
+| 4 | 0.05 | -0.03 |
+| 5 | 0.08 | +0.02 |
+| 6 | 0.12 | +0.05 |
+| 7 | -0.05 | -0.08 |
+| 8 | -0.02 | -0.05 |
+| 9 | 0.10 | +0.03 |
+| 10 | 0.14 | +0.10 |
+
+**Before split (at root node):**
+- Mean return: $\bar{y} = 0.039$ (3.9%)
+- Variance: $\text{Var} = \frac{1}{10} \sum_{i=1}^{10} (y_i - 0.039)^2 = 0.0068$
+
+**After split using `rev_yoy > 0.13` (threshold chosen to maximize variance reduction):**
+
+**Left child (rev_yoy ≤ 0.13):** Months 4, 5, 6, 7, 8, 9
+- Mean: $\bar{y}_L = -0.008$ (-0.8%)
+- Variance: $\text{Var}_L = 0.0012$
+
+**Right child (rev_yoy > 0.13):** Months 1, 2, 3, 10
+- Mean: $\bar{y}_R = 0.1125$ (+11.25%)
+- Variance: $\text{Var}_R = 0.0008$
+
+**Weighted variance after split:**
+$$\text{Var}_{\text{after}} = \frac{6}{10} \times 0.0012 + \frac{4}{10} \times 0.0008 = 0.00104$$
+
+**Variance reduction:**
+$$\Delta \text{Var} = 0.0068 - 0.00104 = 0.00576$$
+
+This large variance reduction (84% decrease) means `rev_yoy` is very effective at separating high-return months from low-return months. This $\Delta \text{Var}$ value contributes to `rev_yoy`'s importance score. When this pattern repeats across many nodes and trees, `rev_yoy` accumulates high importance.
 
 **Permutation Importance:**
 An alternative measure that evaluates the drop in model performance when feature $j$ is randomly shuffled:
