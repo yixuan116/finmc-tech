@@ -327,6 +327,22 @@ where:
 - The variance at node $t$ is: $\text{Var}(t) = \frac{1}{N_t} \sum_{i \in t} (y_i - \bar{y}_t)^2$, where $N_t$ is the number of samples at node $t$ and $\bar{y}_t$ is the mean target value at node $t$
 - For regression, this is equivalent to the mean decrease in impurity (MSE reduction)
 
+**Intuitive Explanation:**
+This formula measures **how much each feature helps reduce prediction error** across all trees:
+
+1. **At each node**, the algorithm tries all features and picks the one that **maximizes variance reduction** (i.e., splits the data so that samples in each child node have more similar target values)
+
+2. **Variance reduction** $\Delta \text{Var}_j(t)$ measures: 
+   - Before split: variance of all samples at node $t$
+   - After split: weighted average variance of left and right child nodes
+   - The difference = how much "cleaner" (less scattered) the predictions become
+
+3. **Weighted by sample proportion** $p(t)$: Features used at nodes with more samples contribute more to importance
+
+4. **Averaged across all trees**: A feature that consistently helps reduce variance across many trees is more important
+
+**Key Insight:** It's not about "distance" or "correlation" directly—it's about **predictive power**: features that can better separate high-return months from low-return months (reduce variance in predictions) are ranked higher. For example, if `rev_yoy` can split the data into "high growth months" (predicting +5% returns) vs "low growth months" (predicting -2% returns), it has high importance because it reduces the variance of predictions within each group.
+
 **Permutation Importance:**
 An alternative measure that evaluates the drop in model performance when feature $j$ is randomly shuffled:
 
