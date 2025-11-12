@@ -213,25 +213,43 @@ This project serves as the foundation for scaling to multi-asset (Magnificent 7)
 - **No log transformation needed**: Returns are already percentage changes and typically stationary
 - **Why returns instead of price**: Returns are more stationary and easier to predict than absolute price levels
 
+**Return Calculation Formula:**
+
+$$\text{Ret}_t = \frac{P_t - P_{t-1}}{P_{t-1}} = \frac{P_t}{P_{t-1}} - 1$$
+
+where $P_t$ is the adjusted close price at time $t$. The target variable is:
+
+$$y_t = \text{Ret}_{t+1} = \frac{P_{t+1} - P_t}{P_t}$$
+
+This represents the **next-month return** we aim to predict.
+
 ### Feature List
 
 #### Base Features (7 features)
 
 **Macro Features (5):**
-- `CPI` (CPIAUCSL) - Consumer Price Index
-- `VIX` (VIXCLS) - Volatility Index
-- `DGS10` - 10-Year Treasury Yield
-- `FEDFUNDS` - Federal Funds Rate
-- `GDP` (GDPC1) - Real GDP
+
+| Feature | Description | Source |
+|---------|-------------|--------|
+| `CPI` | Consumer Price Index (CPIAUCSL) | FRED API |
+| `VIX` | CBOE Volatility Index (VIXCLS) | FRED API |
+| `DGS10` | 10-Year Treasury Constant Maturity Rate | FRED API |
+| `FEDFUNDS` | Effective Federal Funds Rate | FRED API |
+| `GDP` | Real Gross Domestic Product (GDPC1) | FRED API |
+
+*Note: Macro features are forward-filled from quarterly/monthly frequency to match the data alignment frequency.*
 
 **Firm Features (7):**
-- `rev_qoq` - Revenue quarter-over-quarter growth
-- `rev_yoy` - Revenue year-over-year growth
-- `rev_accel` - Revenue acceleration (change in YoY growth rate)
-- `vix_level` - VIX level (from firm data)
-- `tnx_yield` - 10-Year Treasury Yield (from firm data)
-- `vix_change_3m` - VIX 3-month change
-- `tnx_change_3m` - Treasury yield 3-month change
+
+| Feature | Description | Formula |
+|---------|-------------|---------|
+| `rev_qoq` | Revenue quarter-over-quarter growth | $$\text{rev\_qoq}_t = \frac{\text{Revenue}_t - \text{Revenue}_{t-1}}{\text{Revenue}_{t-1}} = \frac{\text{Revenue}_t}{\text{Revenue}_{t-1}} - 1$$ |
+| `rev_yoy` | Revenue year-over-year growth | $$\text{rev\_yoy}_t = \frac{\text{Revenue}_t - \text{Revenue}_{t-4}}{\text{Revenue}_{t-4}} = \frac{\text{Revenue}_t}{\text{Revenue}_{t-4}} - 1$$<br>*For quarterly data, compares to same quarter previous year* |
+| `rev_accel` | Revenue acceleration (change in YoY growth rate) | $$\text{rev\_accel}_t = \text{rev\_yoy}_t - \text{rev\_yoy}_{t-1} = \Delta(\text{rev\_yoy})_t$$<br>*Measures the change in growth momentum* |
+| `vix_level` | VIX level (from firm data) | $$\text{vix\_level}_t = \text{VIX}_t$$<br>*Current VIX index value* |
+| `tnx_yield` | 10-Year Treasury Yield (from firm data) | $$\text{tnx\_yield}_t = \text{DGS10}_t$$<br>*Current 10-year Treasury yield* |
+| `vix_change_3m` | VIX 3-month change | $$\text{vix\_change\_3m}_t = \frac{\text{VIX}_t - \text{VIX}_{t-3}}{\text{VIX}_{t-3}} = \frac{\text{VIX}_t}{\text{VIX}_{t-3}} - 1$$<br>*3-month percentage change in VIX* |
+| `tnx_change_3m` | Treasury yield 3-month change | $$\text{tnx\_change\_3m}_t = \frac{\text{DGS10}_t - \text{DGS10}_{t-3}}{\text{DGS10}_{t-3}} = \frac{\text{DGS10}_t}{\text{DGS10}_{t-3}} - 1$$<br>*3-month percentage change in 10Y yield* |
 
 #### Extended Features (Optional, controlled by config flags)
 
