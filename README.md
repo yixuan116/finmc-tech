@@ -347,32 +347,38 @@ This formula measures **how much each feature helps reduce prediction error** ac
 
 Suppose we have 10 months of data at a node:
 
-| Month | rev_yoy | Actual Return (y) |
-|-------|---------|-------------------|
-| 1 | 0.15 | +0.08 |
-| 2 | 0.18 | +0.12 |
-| 3 | 0.20 | +0.15 |
-| 4 | 0.05 | -0.03 |
-| 5 | 0.08 | +0.02 |
-| 6 | 0.12 | +0.05 |
-| 7 | -0.05 | -0.08 |
-| 8 | -0.02 | -0.05 |
-| 9 | 0.10 | +0.03 |
-| 10 | 0.14 | +0.10 |
+| Month | rev_yoy | Actual Return (y) | Growth Category |
+|-------|---------|-------------------|-----------------|
+| 1 | 0.15 | +0.08 | **High Growth** (rev_yoy > 0.13) |
+| 2 | 0.18 | +0.12 | **High Growth** (rev_yoy > 0.13) |
+| 3 | 0.20 | +0.15 | **High Growth** (rev_yoy > 0.13) |
+| 4 | 0.05 | -0.03 | Low Growth (rev_yoy ≤ 0.13) |
+| 5 | 0.08 | +0.02 | Low Growth (rev_yoy ≤ 0.13) |
+| 6 | 0.12 | +0.05 | Low Growth (rev_yoy ≤ 0.13) |
+| 7 | -0.05 | -0.08 | Low Growth (rev_yoy ≤ 0.13) |
+| 8 | -0.02 | -0.05 | Low Growth (rev_yoy ≤ 0.13) |
+| 9 | 0.10 | +0.03 | Low Growth (rev_yoy ≤ 0.13) |
+| 10 | 0.14 | +0.10 | **High Growth** (rev_yoy > 0.13) |
 
 **Before split (at root node):**
+- All 10 months mixed together
 - Mean return: $\bar{y} = 0.039$ (3.9%)
 - Variance: $\text{Var} = \frac{1}{10} \sum_{i=1}^{10} (y_i - 0.039)^2 = 0.0068$
+- *High variance because high-return months (+8% to +15%) are mixed with low-return months (-8% to +5%)*
 
 **After split using `rev_yoy > 0.13` (threshold chosen to maximize variance reduction):**
 
-**Left child (rev_yoy ≤ 0.13):** Months 4, 5, 6, 7, 8, 9
+**Left child (Low Growth: rev_yoy ≤ 0.13):** Months 4, 5, 6, 7, 8, 9
+- Contains: Months with low/negative revenue growth (rev_yoy: -0.05 to 0.12)
 - Mean: $\bar{y}_L = -0.008$ (-0.8%)
 - Variance: $\text{Var}_L = 0.0012$
+- *Low variance: all returns are clustered around -0.8%*
 
-**Right child (rev_yoy > 0.13):** Months 1, 2, 3, 10
+**Right child (High Growth: rev_yoy > 0.13):** Months 1, 2, 3, 10
+- Contains: Months with high revenue growth (rev_yoy: 0.14 to 0.20)
 - Mean: $\bar{y}_R = 0.1125$ (+11.25%)
 - Variance: $\text{Var}_R = 0.0008$
+- *Low variance: all returns are clustered around +11.25%*
 
 **Weighted variance after split:**
 $$\text{Var}_{\text{after}} = \frac{6}{10} \times 0.0012 + \frac{4}{10} \times 0.0008 = 0.00104$$
