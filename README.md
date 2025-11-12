@@ -345,20 +345,22 @@ This formula measures **how much each feature helps reduce prediction error** ac
 
 **Concrete Example:**
 
-Suppose we have 10 months of data at a node:
+*Note: This is a conceptual example to illustrate how Random Forest calculates feature importance. The actual feature importance scores are computed across the entire dataset (2010-2024), not just these 10 months.*
+
+Suppose we have 10 months of data at a node (sampled from different time periods):
 
 | Year-Month | rev_yoy | Stock Price ($) | Actual Return (y) | Growth Category |
 |------------|---------|-----------------|-------------------|-----------------|
-| 2023-01 | 0.15 | $145.20 | +0.08 (+8%) | **High Growth** (rev_yoy > 0.13) |
-| 2023-04 | 0.18 | $162.50 | +0.12 (+12%) | **High Growth** (rev_yoy > 0.13) |
-| 2023-07 | 0.20 | $187.30 | +0.15 (+15%) | **High Growth** (rev_yoy > 0.13) |
-| 2023-10 | 0.05 | $181.20 | -0.03 (-3%) | Low Growth (rev_yoy ≤ 0.13) |
-| 2024-01 | 0.08 | $184.80 | +0.02 (+2%) | Low Growth (rev_yoy ≤ 0.13) |
-| 2024-04 | 0.12 | $194.10 | +0.05 (+5%) | Low Growth (rev_yoy ≤ 0.13) |
-| 2024-07 | -0.05 | $178.50 | -0.08 (-8%) | Low Growth (rev_yoy ≤ 0.13) |
-| 2024-10 | -0.02 | $169.60 | -0.05 (-5%) | Low Growth (rev_yoy ≤ 0.13) |
-| 2025-01 | 0.10 | $174.80 | +0.03 (+3%) | Low Growth (rev_yoy ≤ 0.13) |
-| 2025-04 | 0.14 | $192.20 | +0.10 (+10%) | **High Growth** (rev_yoy > 0.13) |
+| 2012-07 | 0.15 | $5.20 | +0.08 (+8%) | **High Growth** (rev_yoy > 0.13) |
+| 2016-10 | 0.18 | $18.50 | +0.12 (+12%) | **High Growth** (rev_yoy > 0.13) |
+| 2020-01 | 0.20 | $49.30 | +0.15 (+15%) | **High Growth** (rev_yoy > 0.13) |
+| 2011-04 | 0.05 | $4.20 | -0.03 (-3%) | Low Growth (rev_yoy ≤ 0.13) |
+| 2013-01 | 0.08 | $6.80 | +0.02 (+2%) | Low Growth (rev_yoy ≤ 0.13) |
+| 2015-04 | 0.12 | $12.10 | +0.05 (+5%) | Low Growth (rev_yoy ≤ 0.13) |
+| 2018-07 | -0.05 | $28.50 | -0.08 (-8%) | Low Growth (rev_yoy ≤ 0.13) |
+| 2019-10 | -0.02 | $38.60 | -0.05 (-5%) | Low Growth (rev_yoy ≤ 0.13) |
+| 2014-01 | 0.10 | $8.80 | +0.03 (+3%) | Low Growth (rev_yoy ≤ 0.13) |
+| 2021-04 | 0.14 | $62.20 | +0.10 (+10%) | **High Growth** (rev_yoy > 0.13) |
 
 **Before split (at root node):**
 - All 10 months mixed together
@@ -368,16 +370,16 @@ Suppose we have 10 months of data at a node:
 
 **After split using `rev_yoy > 0.13` (threshold chosen to maximize variance reduction):**
 
-**Left child (Low Growth: rev_yoy ≤ 0.13):** 2023-10, 2024-01, 2024-04, 2024-07, 2024-10, 2025-01
+**Left child (Low Growth: rev_yoy ≤ 0.13):** 2011-04, 2013-01, 2014-01, 2015-04, 2018-07, 2019-10
 - Contains: Months with low/negative revenue growth (rev_yoy: -0.05 to 0.12)
-- Stock prices: $181.20, $184.80, $194.10, $178.50, $169.60, $174.80
+- Stock prices: $4.20, $6.80, $8.80, $12.10, $28.50, $38.60
 - Mean: $\bar{y}_L = -0.008$ (-0.8%)
 - Variance: $\text{Var}_L = 0.0012$
 - *Low variance: all returns are clustered around -0.8%*
 
-**Right child (High Growth: rev_yoy > 0.13):** 2023-01, 2023-04, 2023-07, 2025-04
+**Right child (High Growth: rev_yoy > 0.13):** 2012-07, 2016-10, 2020-01, 2021-04
 - Contains: Months with high revenue growth (rev_yoy: 0.14 to 0.20)
-- Stock prices: $145.20, $162.50, $187.30, $192.20
+- Stock prices: $5.20, $18.50, $49.30, $62.20
 - Mean: $\bar{y}_R = 0.1125$ (+11.25%)
 - Variance: $\text{Var}_R = 0.0008$
 - *Low variance: all returns are clustered around +11.25%*
@@ -388,7 +390,9 @@ $$\text{Var}_{\text{after}} = \frac{6}{10} \times 0.0012 + \frac{4}{10} \times 0
 **Variance reduction:**
 $$\Delta \text{Var} = 0.0068 - 0.00104 = 0.00576$$
 
-This large variance reduction (84% decrease) means `rev_yoy` is very effective at separating high-return months from low-return months. This $\Delta \text{Var}$ value contributes to `rev_yoy`'s importance score. When this pattern repeats across many nodes and trees, `rev_yoy` accumulates high importance.
+This large variance reduction (84% decrease) means `rev_yoy` is very effective at separating high-return months from low-return months. This $\Delta \text{Var}$ value contributes to `rev_yoy`'s importance score. When this pattern repeats across many nodes and trees throughout the entire dataset (2010-2024), `rev_yoy` accumulates high importance.
+
+**Important Note:** The feature importance scores shown in our results (e.g., `rev_yoy` = 0.1477) are computed across **all available data** (2009-2024, 62 monthly observations), not just this 10-month example. The pattern shown here—where high revenue growth months tend to have higher returns—is consistent across the full time period, which is why `rev_yoy` ranks as the 2nd most important feature overall.
 
 **Permutation Importance:**
 An alternative measure that evaluates the drop in model performance when feature $j$ is randomly shuffled:
