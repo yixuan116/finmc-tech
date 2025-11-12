@@ -405,20 +405,21 @@ This large variance reduction (80% decrease: from 0.0068 to 0.00135) means `rev_
 
 **Temporal Stability of Feature Importance:**
 
-To validate that feature importance is **stable across time** (not just a recent phenomenon), the analysis uses the **full dataset spanning 2009-2024** (15+ years, 62 monthly observations). This long time horizon ensures that:
+To validate that feature importance is **stable across time** (not just a recent phenomenon), the analysis uses the **full dataset spanning 2009-2025** (16+ years, 66+ monthly observations). This long time horizon ensures that:
 
 1. **Regime Robustness**: Features that are important across different market regimes (bull markets, bear markets, high volatility periods) are ranked higher
 2. **Not Time-Specific**: The importance scores reflect patterns that hold across the entire period, not just recent years
 3. **Statistical Significance**: With 62 observations, the importance rankings have sufficient statistical power
 
 **Data Coverage:**
-- **Time Period**: 2009-07 to 2024-10 (15+ years)
-- **Total Observations**: 62 monthly data points
+- **Time Period**: 2009-07 to 2025-07 (16+ years)
+- **Total Observations**: 66+ monthly data points
 - **Market Regimes Covered**: 
   - Post-financial crisis recovery (2009-2012)
   - Bull market expansion (2013-2019)
   - COVID-19 volatility (2020-2021)
   - Recent tech sector dynamics (2022-2024)
+  - Latest AI boom period (2025)
 
 The fact that `rev_yoy` consistently ranks in the top 3 across this entire period suggests it is a **persistent, regime-independent predictor** of NVDA returns, not just a temporary correlation.
 
