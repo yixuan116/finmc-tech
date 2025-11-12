@@ -399,9 +399,9 @@ $$\text{Var}_{\text{after}} = \frac{8}{16} \times 0.0012 + \frac{8}{16} \times 0
 **Variance reduction:**
 $$\Delta \text{Var} = 0.0068 - 0.00135 = 0.00545$$
 
-This large variance reduction (84% decrease) means `rev_yoy` is very effective at separating high-return months from low-return months. This $\Delta \text{Var}$ value contributes to `rev_yoy`'s importance score. When this pattern repeats across many nodes and trees throughout the entire dataset (2010-2024), `rev_yoy` accumulates high importance.
+This large variance reduction (80% decrease: from 0.0068 to 0.00135) means `rev_yoy` is very effective at separating high-return months from low-return months. This $\Delta \text{Var}$ value contributes to `rev_yoy`'s importance score. When this pattern repeats across many nodes and trees throughout the entire dataset (2009-2025), `rev_yoy` accumulates high importance.
 
-**Important Note:** The feature importance scores shown in our results (e.g., `rev_yoy` = 0.1477) are computed across **all available data** (2009-2024, 62 monthly observations), not just this 10-month example. The pattern shown here—where high revenue growth months tend to have higher returns—is consistent across the full time period, which is why `rev_yoy` ranks as the 2nd most important feature overall.
+**Important Note:** The feature importance scores shown in our results (e.g., `rev_yoy` = 0.1477) are computed across **all available data** (2009-2025, 66+ monthly observations), not just this 16-month example. The pattern shown here—where high revenue growth months tend to have higher returns—is consistent across the full time period (2011-2025), which is why `rev_yoy` ranks as the 2nd most important feature overall. The inclusion of 2025 data (including the exceptional 2025-01 with +114% YoY growth) demonstrates that this predictive relationship continues to hold in the most recent period.
 
 **Temporal Stability of Feature Importance:**
 
