@@ -919,3 +919,46 @@ This report analyzes revenue-based signals for **NVDA** using SEC XBRL data and 
 - **Best Price Route**: Indirect (RMSE = $39.22)
 
 <!-- AUTO-REPORT:END -->
+
+
+<!-- ROLLING_IMPORTANCE_START -->
+### Dynamic Feature Importance Over Time
+
+**Question:** Is feature importance static or does it change over time? Do different features become more important in different market regimes?
+
+**Method:** We use **rolling window analysis** to train Random Forest models on overlapping time windows (e.g., 24-month windows, stepping forward 6 months at a time). For each window, we compute feature importance and rank features. This reveals how feature importance **shifts** over time.
+
+**Key Findings:**
+
+1. **Overall Stability**: While `rev_yoy` (revenue YoY growth) is consistently among the top features across most windows, its **rank does shift** depending on the market regime.
+
+2. **Dynamic Features**: Some features show high variability in their importance rankings:
+   - **Most Dynamic Features** (highest rank variability):
+
+   - `vix_level_lag1`: Rank std = 3.25, Range = [1, 7]
+   - `tnx_yield_lag1`: Rank std = 2.54, Range = [0, 5]
+   - `revenue_lag1`: Rank std = 2.50, Range = [1, 6]
+   - `rev_yoy_lag1`: Rank std = 2.14, Range = [1, 5]
+   - `vix_change_3m_lag1`: Rank std = 1.86, Range = [1, 5]
+
+3. **Regime-Dependent Importance**: During certain periods (e.g., high volatility, market crashes, or AI boom), macro factors (VIX, DGS10) may temporarily outrank firm fundamentals (`rev_yoy`, `rev_qoq`).
+
+**Visualization:**
+
+![Rolling Feature Importance](plots/rolling_feature_importance.png)
+
+*Top panel*: Feature importance scores over time. *Bottom panel*: Feature ranks over time (lower = more important).
+
+![Feature Rank Heatmap](plots/rolling_feature_importance_heatmap.png)
+
+*Heatmap*: Darker green = lower rank (more important). This visualization makes it easy to spot when features shift in importance.
+
+**Interpretation:**
+
+- **Stable Features** (low rank std): Features like `rev_yoy` that maintain consistent importance across time windows are **regime-independent predictors**.
+- **Dynamic Features** (high rank std): Features that show large rank shifts may be **regime-specific predictors** that are important during certain market conditions but less so in others.
+- **Temporal Patterns**: If a feature's importance increases during specific periods (e.g., VIX during 2020 COVID crash), it suggests **context-dependent predictive power**.
+
+**Conclusion:** Feature importance is **partially dynamic**. While core fundamentals (revenue growth) remain important, their relative importance can shift when market conditions change. This supports the use of **ensemble methods** (like Random Forest) that can adapt to different regimes, and suggests that **time-varying models** or **regime-switching models** might further improve predictions.
+
+<!-- ROLLING_IMPORTANCE_END -->
