@@ -278,6 +278,59 @@ This project serves as the foundation for scaling to multi-asset (Magnificent 7)
 
 **Note**: By default, all extended feature flags are `True` in the configuration, so the full feature set is used.
 
+<!-- FEAT_IMPORT_START -->
+### Feature Importance Analysis (Light)
+
+**Why Random Forest?**
+Random Forest is used for feature importance analysis because:
+1. It captures **nonlinear relationships** and **interactions** between macro and firm-level features
+2. It is **ensemble-based** and robust to outliers, noise, and overfitting
+3. It provides **direct, interpretable importance scores** through mean decrease in impurity
+4. It does **not assume linearity** or stationarity—important since macro-financial data often violate those assumptions
+5. Compared to deep networks (LSTM) or SVMs, Random Forest offers explainability and speed for feature screening
+
+**Why Feature Importance before forecasting?**
+Feature importance helps to:
+1. Identify the **most predictive signals** (rev_yoy, VIX, FedFunds, etc.)
+2. Remove redundant or noisy features before training LSTM (faster convergence, better generalization)
+3. Provide a **transparent feature ranking** for the project
+4. Build trust in the ML pipeline—by knowing "what the model is learning"
+
+**Model Performance:**
+- **R² Score**: 0.5485 (54.85% variance explained)
+- **MAE**: 0.1344 (13.44% average absolute error)
+- **RMSE**: 0.1746 (17.46% root mean squared error)
+- **Training Period**: 62 monthly observations (2009-07 to 2024-10)
+- **Model**: Random Forest Regressor (100 trees, max_depth=None, min_samples_leaf=3)
+
+**Top 10 Features:**
+
+| Rank | Feature | Importance | Interpretation |
+|------|---------|------------|----------------|
+| 1 | `rev_accel` | 0.1486 | Revenue acceleration (change in YoY growth) - strongest predictor |
+| 2 | `rev_yoy` | 0.1477 | Revenue year-over-year growth - fundamental driver |
+| 3 | `revenue` | 0.1415 | Absolute revenue level - scale indicator |
+| 4 | `tnx_yield` | 0.1347 | 10-Year Treasury yield - macro risk-free rate |
+| 5 | `tnx_change_3m` | 0.1280 | 3-month change in Treasury yield - rate momentum |
+| 6 | `rev_qoq` | 0.1149 | Revenue quarter-over-quarter growth - short-term momentum |
+| 7 | `vix_change_3m` | 0.0951 | 3-month change in VIX - volatility momentum |
+| 8 | `vix_level` | 0.0896 | VIX level - market volatility indicator |
+
+![RF Feature Importance](plots/rf_feature_importance.png)
+
+**Key Insights:**
+
+1. **Revenue Features Dominate**: The top 3 features are all revenue-related (`rev_accel`, `rev_yoy`, `revenue`), accounting for **43.8%** of total importance. This confirms that **fundamental revenue metrics are the strongest predictors** of NVDA monthly returns.
+
+2. **Macro Factors Matter**: Treasury yield features (`tnx_yield`, `tnx_change_3m`) rank 4th and 5th, with **26.3%** combined importance. This suggests **interest rate environment significantly impacts tech stock returns**.
+
+3. **Volatility Signals**: VIX-related features (`vix_change_3m`, `vix_level`) account for **18.5%** importance, indicating that **market volatility dynamics** are predictive of returns.
+
+4. **Momentum vs. Level**: Both **change features** (acceleration, 3m changes) and **level features** (absolute revenue, VIX level) are important, suggesting the model captures both **trend momentum** and **absolute positioning**.
+
+5. **Model Performance**: With R² = 0.5485, the model explains **~55% of variance** in monthly returns, which is strong for financial time series prediction. The MAE of 13.44% indicates reasonable prediction accuracy for monthly return forecasting.
+
+<!-- FEAT_IMPORT_END -->
 ## Data Pipeline & Alignment
 
 ### Why Data Alignment is Critical
