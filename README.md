@@ -202,6 +202,161 @@ This project serves as the foundation for scaling to multi-asset (Magnificent 7)
 - **ML Integration**: Feature engineering and predictive modeling pipeline
 - **Visualization**: Results analysis and forecasting plots
 
+## Prediction Target & Features
+
+### Prediction Target
+
+**Target Variable**: Monthly stock returns (not stock price)
+
+- **Definition**: `y = df['Ret'].shift(-1)` - Next month's return
+- **Format**: Percentage return (e.g., 0.05 = 5% return)
+- **No log transformation needed**: Returns are already percentage changes and typically stationary
+- **Why returns instead of price**: Returns are more stationary and easier to predict than absolute price levels
+
+### Feature List
+
+#### Base Features (7 features)
+
+**Macro Features (5):**
+- `CPI` (CPIAUCSL) - Consumer Price Index
+- `VIX` (VIXCLS) - Volatility Index
+- `DGS10` - 10-Year Treasury Yield
+- `FEDFUNDS` - Federal Funds Rate
+- `GDP` (GDPC1) - Real GDP
+
+**Firm Features (7):**
+- `rev_qoq` - Revenue quarter-over-quarter growth
+- `rev_yoy` - Revenue year-over-year growth
+- `rev_accel` - Revenue acceleration (change in YoY growth rate)
+- `vix_level` - VIX level (from firm data)
+- `tnx_yield` - 10-Year Treasury Yield (from firm data)
+- `vix_change_3m` - VIX 3-month change
+- `tnx_change_3m` - Treasury yield 3-month change
+
+#### Extended Features (Optional, controlled by config flags)
+
+**A. Price Momentum Features (7)** - `INCLUDE_PRICE_FEATURES=True`:
+- `price_returns_1m/3m/6m/12m` - Price returns over different horizons
+- `price_momentum` - Price momentum indicator
+- `price_volatility` - Price volatility measure
+- `price_to_ma_4q` - Price relative to 4-quarter moving average
+
+**B. Technical Indicators (6)** - `INCLUDE_TECHNICAL_FEATURES=True`:
+- `rsi_14` - RSI (Relative Strength Index)
+- `macd`, `macd_signal` - MACD indicator and signal
+- `bb_position` - Bollinger Bands position
+- `stoch_k` - Stochastic oscillator
+- `atr` - Average True Range
+
+**C. Market Macro Features (2)** - `INCLUDE_MARKET_FEATURES=True`:
+- `sp500_level` - S&P 500 index level
+- `sp500_returns` - S&P 500 returns
+
+**D. Time Features (4)** - `INCLUDE_TIME_FEATURES=True`:
+- `quarter` - Quarter (1-4)
+- `month` - Month (1-12)
+- `year` - Year
+- `days_since_start` - Days since start date
+
+**E. Interaction Features (4)** - `INCLUDE_INTERACTION_FEATURES=True`:
+- `rev_yoy_x_vix` - Revenue YoY × VIX
+- `rev_qoq_x_sp500` - Revenue QoQ × SP500
+- `price_momentum_x_volatility` - Price momentum × volatility
+- `vix_x_tnx` - VIX × Treasury yield
+
+#### Lag Features
+
+- All features (except `Ret`) have 1-period lag versions with `_L1` suffix
+- Example: `CPI_L1`, `VIX_L1`, `rev_qoq_L1`
+- Each original feature becomes 2 features: current value + lagged value
+
+#### Total Feature Count
+
+- **Base features**: 7 × 2 (with lags) = 14 features
+- **Extended features**: Up to 23 × 2 (with lags) = 46 features
+- **Total**: Up to 60 features (if all extended features are enabled)
+
+**Note**: By default, all extended feature flags are `True` in the configuration, so the full feature set is used.
+
+## Data Pipeline & Alignment
+
+### Why Data Alignment is Critical
+
+The data pipeline combines multiple data sources with different frequencies:
+- **Revenue data**: Quarterly (from SEC XBRL API)
+- **Stock prices**: Daily (from yfinance)
+- **Macro indicators** (VIX, TNX, SP500): Daily (from yfinance)
+
+To enable time series analysis and lag features, all data must be aligned to a common time index (quarterly).
+
+### What Alignment Does
+
+The `align_data()` function (in `finmc_tech/data/align.py`) performs the following:
+
+1. **Base Time Unit**: Uses quarterly frequency (from revenue data) as the base time unit
+2. **Aggregation**: For each quarterly record, finds the closest trading day for:
+   - Stock prices: Uses the price on the quarter-end date (or next trading day)
+   - Macro indicators: Finds the closest trading day to the quarter-end date
+3. **Feature Creation**: Creates extended features (price momentum, technical indicators, etc.) on the aligned quarterly data
+4. **Result**: All features are on the same quarterly time index, enabling lag operations
+
+### Example: Before and After Alignment
+
+**Before alignment:**
+- Revenue: Q1 2024, Q2 2024, Q3 2024 (quarterly, ~4 records per year)
+- VIX: 2024-01-02, 2024-01-03, ..., 2024-12-31 (daily, ~252 records per year)
+- Stock prices: 2024-01-02, 2024-01-03, ..., 2024-12-31 (daily, ~252 records per year)
+
+**After alignment:**
+- All data: Q1 2024, Q2 2024, Q3 2024 (quarterly, ~4 records per year)
+- Each quarter record contains: revenue, price, VIX, TNX, SP500, and all derived features
+- All features are on the same time index
+
+### Why This Enables Lag Analysis
+
+Once data is aligned to quarterly frequency, you can safely perform lag operations:
+
+```python
+# Quarterly-over-quarterly growth (lag 1 quarter)
+rev_qoq = revenue.pct_change(1)
+
+# Year-over-year growth (lag 4 quarters)
+rev_yoy = revenue.pct_change(4)
+
+# Price momentum (lag 1 quarter)
+price_momentum = price / price.shift(1) - 1
+
+# VIX change (lag 1 quarter)
+vix_change = vix.diff(1)
+```
+
+**Without alignment**, these operations would be meaningless because:
+- Revenue and prices would be on different time scales
+- `shift(1)` on revenue would shift by 1 quarter, but on prices would shift by 1 day
+- `pct_change(4)` on revenue would compare to 4 quarters ago, but on prices would compare to 4 days ago
+
+### Implementation Details
+
+The alignment process:
+1. Takes quarterly firm data (revenue, prices) with `px_date` column
+2. Takes daily macro data with `Date` column
+3. For each quarterly record:
+   - Finds the closest trading day in macro data to the quarter's `px_date`
+   - Merges macro features (vix_level, tnx_yield, etc.) into the quarterly record
+4. Creates extended features (price momentum, technical indicators, time features, interaction features)
+5. Returns a DataFrame where all features are aligned to quarterly frequency
+
+### Data File Priority
+
+The pipeline checks for existing data files in this order (to avoid redundant API calls):
+
+1. **Cache files**: `data_cache/{ticker}_firm_*.csv`
+2. **Processed files**: `data/processed/{TICKER}_revenue_features.csv`
+3. **Raw revenue files**: `data/raw/{TICKER}_revenue.csv`
+4. **If not found**: Fetches from SEC API (revenue) and yfinance (prices)
+
+This ensures efficient data loading and avoids unnecessary API calls.
+
 # Appendix
 
 ## Technology Stack
@@ -254,23 +409,95 @@ finmc-tech/
 
 ## Installation
 
+### Quick Setup
+
+```bash
+pip install -r requirements.txt
+```
+
+### Detailed Setup
+
 ```bash
 # Clone the repository
 git clone https://github.com/yixuan116/finmc-tech.git
 cd finmc-tech
 
-# Create virtual environment
+# Create virtual environment (optional)
 python -m venv venv
 source venv/bin/activate  # On Windows: venv\Scripts\activate
 
 # Install dependencies
 pip install -r requirements.txt
 
-# Install package in development mode
+# Install package in development mode (optional)
 pip install -e .
 ```
 
 ## Quick Start
+
+### Using CLI (Recommended)
+
+**Training RandomForest Model:**
+
+```bash
+python -m finmc_tech.cli train-rf
+```
+
+This will:
+- Fetch macro and firm data
+- Align data to monthly frequency
+- Build features with lag variables
+- Train RandomForest model
+- Save model and feature importance plot to `results/`
+
+**Running Monte Carlo Simulation:**
+
+```bash
+python -m finmc_tech.cli simulate --shock stress --h 24 --n 200
+```
+
+This will:
+- Load trained model (or train if not exists)
+- Generate macro paths with stress shocks
+- Run Monte Carlo simulation over 24 months
+- Save predictions and summary statistics to `results/`
+
+**Generating Plots:**
+
+```bash
+python -m finmc_tech.cli plots --which all
+```
+
+This will generate:
+- Predictions vs actual plot
+- Simulation distribution plot
+- Rolling correlation plot
+
+**Running Tests:**
+
+```bash
+make test
+# or
+python tests/smoke_test.py
+```
+
+### Using Python API (Legacy)
+
+```bash
+# Clone the repository
+git clone https://github.com/yixuan116/finmc-tech.git
+cd finmc-tech
+
+# Create virtual environment (optional)
+python -m venv venv
+source venv/bin/activate  # On Windows: venv\Scripts\activate
+
+# Install dependencies
+pip install -r requirements.txt
+
+# Install package in development mode (optional)
+pip install -e .
+```
 
 ```python
 from src.data.fetch import fetch_stock_data
@@ -297,6 +524,8 @@ python examples/demo_rolling_forecast.py
 # Quick start example
 python examples/quick_start.py
 ```
+
+### Using Jupyter Notebooks
 
 ## Usage Examples
 
@@ -394,11 +623,9 @@ This is a research prototype. Contributions, suggestions, and feedback are welco
 - [ ] Performance benchmarking suite
 
 
-## Running the Jupyter Notebook
-
 The main demo is in `notebooks/demo_nvda.ipynb`.
 
-### Quick Start
+**Quick Start:**
 
 ```bash
 jupyter notebook notebooks/demo_nvda.ipynb
@@ -406,7 +633,7 @@ jupyter notebook notebooks/demo_nvda.ipynb
 
 Then click **"Run All"** to execute all cells.
 
-### What It Does
+**What It Does:**
 
 The notebook builds a complete **ML → Monte Carlo** pipeline in 5 steps:
 
@@ -416,7 +643,7 @@ The notebook builds a complete **ML → Monte Carlo** pipeline in 5 steps:
 4. **Visualizations**: Shows path samples and price distributions
 5. **Sanity Checks**: Prints summary statistics
 
-### Understanding Results
+**Understanding Results:**
 
 **ML Predictions**:
 - R² Score: prediction accuracy (0-1, higher is better)
