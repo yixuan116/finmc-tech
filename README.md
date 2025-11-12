@@ -347,18 +347,18 @@ This formula measures **how much each feature helps reduce prediction error** ac
 
 Suppose we have 10 months of data at a node:
 
-| Month | rev_yoy | Actual Return (y) | Growth Category |
-|-------|---------|-------------------|-----------------|
-| 1 | 0.15 | +0.08 | **High Growth** (rev_yoy > 0.13) |
-| 2 | 0.18 | +0.12 | **High Growth** (rev_yoy > 0.13) |
-| 3 | 0.20 | +0.15 | **High Growth** (rev_yoy > 0.13) |
-| 4 | 0.05 | -0.03 | Low Growth (rev_yoy ≤ 0.13) |
-| 5 | 0.08 | +0.02 | Low Growth (rev_yoy ≤ 0.13) |
-| 6 | 0.12 | +0.05 | Low Growth (rev_yoy ≤ 0.13) |
-| 7 | -0.05 | -0.08 | Low Growth (rev_yoy ≤ 0.13) |
-| 8 | -0.02 | -0.05 | Low Growth (rev_yoy ≤ 0.13) |
-| 9 | 0.10 | +0.03 | Low Growth (rev_yoy ≤ 0.13) |
-| 10 | 0.14 | +0.10 | **High Growth** (rev_yoy > 0.13) |
+| Year-Month | rev_yoy | Stock Price ($) | Actual Return (y) | Growth Category |
+|------------|---------|-----------------|-------------------|-----------------|
+| 2023-01 | 0.15 | $145.20 | +0.08 (+8%) | **High Growth** (rev_yoy > 0.13) |
+| 2023-04 | 0.18 | $162.50 | +0.12 (+12%) | **High Growth** (rev_yoy > 0.13) |
+| 2023-07 | 0.20 | $187.30 | +0.15 (+15%) | **High Growth** (rev_yoy > 0.13) |
+| 2023-10 | 0.05 | $181.20 | -0.03 (-3%) | Low Growth (rev_yoy ≤ 0.13) |
+| 2024-01 | 0.08 | $184.80 | +0.02 (+2%) | Low Growth (rev_yoy ≤ 0.13) |
+| 2024-04 | 0.12 | $194.10 | +0.05 (+5%) | Low Growth (rev_yoy ≤ 0.13) |
+| 2024-07 | -0.05 | $178.50 | -0.08 (-8%) | Low Growth (rev_yoy ≤ 0.13) |
+| 2024-10 | -0.02 | $169.60 | -0.05 (-5%) | Low Growth (rev_yoy ≤ 0.13) |
+| 2025-01 | 0.10 | $174.80 | +0.03 (+3%) | Low Growth (rev_yoy ≤ 0.13) |
+| 2025-04 | 0.14 | $192.20 | +0.10 (+10%) | **High Growth** (rev_yoy > 0.13) |
 
 **Before split (at root node):**
 - All 10 months mixed together
@@ -368,14 +368,16 @@ Suppose we have 10 months of data at a node:
 
 **After split using `rev_yoy > 0.13` (threshold chosen to maximize variance reduction):**
 
-**Left child (Low Growth: rev_yoy ≤ 0.13):** Months 4, 5, 6, 7, 8, 9
+**Left child (Low Growth: rev_yoy ≤ 0.13):** 2023-10, 2024-01, 2024-04, 2024-07, 2024-10, 2025-01
 - Contains: Months with low/negative revenue growth (rev_yoy: -0.05 to 0.12)
+- Stock prices: $181.20, $184.80, $194.10, $178.50, $169.60, $174.80
 - Mean: $\bar{y}_L = -0.008$ (-0.8%)
 - Variance: $\text{Var}_L = 0.0012$
 - *Low variance: all returns are clustered around -0.8%*
 
-**Right child (High Growth: rev_yoy > 0.13):** Months 1, 2, 3, 10
+**Right child (High Growth: rev_yoy > 0.13):** 2023-01, 2023-04, 2023-07, 2025-04
 - Contains: Months with high revenue growth (rev_yoy: 0.14 to 0.20)
+- Stock prices: $145.20, $162.50, $187.30, $192.20
 - Mean: $\bar{y}_R = 0.1125$ (+11.25%)
 - Variance: $\text{Var}_R = 0.0008$
 - *Low variance: all returns are clustered around +11.25%*
