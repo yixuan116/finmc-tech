@@ -330,7 +330,7 @@ The model must demonstrate it can generalize from historical + transition regime
 Gaming GPU Era            AI Pre-Acceleration      AI Supercycle
 ├─ Gaming dominant       ├─ A100 deployment       ├─ H100/H200
 ├─ DC small but growing  ├─ Early LLM training    ├─ GenAI adoption
-├─ Crypto/PC cycles      ├─ Cloud AI capex ↑     ├─ DC dominant
+├─ Crypto/PC cycles      ├─ Cloud AI capex ↑      ├─ DC dominant
 └─ Predictable supply    └─ DC rapidly expanding  └─ Supply bottlenecks
 ```
 
