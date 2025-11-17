@@ -341,11 +341,10 @@ Gaming GPU Era            AI Pre-Acceleration      AI Supercycle
 5. **Neural Network**: Multi-layer perceptron with hidden layers (64, 32), 300 max iterations
 
 **Training Procedure**:
-- **Time-based Split** (not random):
-  - Train: < 2021-01-01 (52 samples)
-  - Validation: 2021-01-01 to 2022-12-31 (8 samples)
-  - Test: ≥ 2023-01-01 (11 samples)
-  - **Rationale**: Time-series data requires temporal ordering to prevent data leakage. Random splits would allow future information to leak into past predictions, making results unrealistic. This split mimics real-world forecasting where models are trained on historical data and evaluated on future unseen periods.
+- **Time-based Split** (see [Industry-Driven Time Window Selection](#industry-driven-time-window-selection) above for rationale):
+  - Train: < 2021-01-01 (52 samples) — GPU-Centric Cycle (2010-2020)
+  - Validation: 2021-01-01 to 2022-12-31 (8 samples) — AI Pre-Acceleration (2021-2022)
+  - Test: ≥ 2023-01-01 (11 samples) — AI Supercycle (2023-Present)
 - **Feature Scaling**: StandardScaler fitted on training set only, applied to val/test
 - **Evaluation Metrics**: MAE, RMSE, R², MAPE (all computed on test set)
 
