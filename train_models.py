@@ -173,6 +173,13 @@ def load_dataset(
     existing_drop = [col for col in drop_cols if col in X.columns]
     if existing_drop:
         X = X.drop(columns=existing_drop)
+    
+    # CRITICAL: Drop data leakage features (future information)
+    # These features contain information from the target variable
+    leakage_features = [col for col in X.columns if 'future_12m' in col.lower() and col != target_name]
+    if leakage_features:
+        print(f"⚠ Excluding data leakage features: {leakage_features}")
+        X = X.drop(columns=leakage_features)
 
     return X, y, df.index
 

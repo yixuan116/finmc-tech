@@ -129,11 +129,16 @@ def create_importance_heatmap(
     print("Loading data...")
     df = pd.read_csv(data_path, index_col='px_date', parse_dates=True)
     
-    # Get feature columns (exclude target and metadata)
+    # Get feature columns (exclude target, metadata, and data leakage features)
     target_col = 'future_12m_return'
     metadata_cols = ['period_end', 'fy', 'fp', 'form', 'tag_used', 'ticker']
+    # CRITICAL: Exclude data leakage features (future information)
+    leakage_features = ['future_12m_price', 'future_12m_logprice']
     feature_cols = [col for col in df.columns 
-                   if col not in [target_col] + metadata_cols]
+                   if col not in [target_col] + metadata_cols + leakage_features]
+    
+    if any(col in df.columns for col in leakage_features):
+        print(f"⚠ Excluding data leakage features: {[f for f in leakage_features if f in df.columns]}")
     
     # Load scaler first to get correct feature order
     models_path = Path(models_dir)
