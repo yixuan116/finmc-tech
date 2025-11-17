@@ -209,6 +209,7 @@ This project serves as the foundation for scaling to multi-asset (Magnificent 7)
 ### Feature Engineering
 
 **Feature Matrix**: 71 rows × 63 columns (71 data points covering 70 unique quarters)
+
 **Total Feature Count**: 12 (firm) + 4 (macro) + 40 (interactions) + 4 (time) + 3 (metadata) = **63 features** used in model training
 
 
@@ -345,6 +346,70 @@ Gaming GPU Era            AI Pre-Acceleration      AI Supercycle
 3. **Random Forest**: 500 trees, unlimited depth (`RandomForestRegressor`)
 4. **XGBoost**: Gradient boosting with 500 estimators, learning rate 0.05, max depth 5
 5. **Neural Network**: Multi-layer perceptron with hidden layers (64, 32), 300 max iterations
+
+---
+
+## Model Selection Rationale
+
+The five models used in Step 2 span the full complexity spectrum and are chosen to cover linear structure, regularized structure, nonlinear interactions, boosted hierarchical effects, and smooth neural nonlinearities.  
+This provides a complete baseline for financial return prediction prior to HPC-based optimization in later phases.
+
+### **Model Comparison Table**
+
+| Model | Type | What It Captures | Why It Matters for NVDA Returns |
+|-------|------|------------------|---------------------------------|
+| **Linear Regression** | Linear baseline | Additive, proportional relationships | Tests whether fundamental signals (e.g., revenue, inventory cycles) have direct linear impact. |
+| **Ridge Regression** | Regularized linear | Multi-collinearity, shrinkage stability | Interaction features (macro × firm) are correlated; Ridge verifies if signals survive regularization. |
+| **Random Forest** | Nonlinear trees | Threshold effects, discrete state shifts | Captures "effect only matters under low VIX", "momentum only works in stable macro". High interpretability. |
+| **XGBoost** | Gradient-boosted trees | Hierarchical nonlinearities, complex interactions | Industry-standard model for tabular financial data; strongest performer for macro × micro signals. |
+| **Neural Network (MLP)** | Smooth nonlinear approximator | Differentiable curves, soft thresholds | Provides non-tree nonlinear structure; useful contrast to tree-based models. Not expected to dominate, but completes the spectrum. |
+
+---
+
+## Why Not LSTM (or Other Sequence Models) in Step 2?
+
+LSTM and sequence-based deep learning models are **not** included in Step 2 for three structural reasons tied specifically to the nature of NVDA prediction and the project's multi-phase design:
+
+### **1. NVDA's feature set is tabular, not sequential**
+
+The dataset is composed of engineered macro, micro, and interaction features (e.g., revenue_yoy, VIX level, macro × firm Kronecker terms).  
+These are **cross-sectional tabular characteristics per month**, not long temporal sequences.
+
+LSTM excels when the input is a *continuous sequence*:  
+X[t-12], X[t-11], ..., X[t]
+
+But our model uses:  
+X_features[t] (macro, firm, interactions) → return[t+1]
+
+There is no long sequence per sample.
+
+### **2. Tree-based models outperform LSTM on low-frequency financial data**
+
+Empirical asset pricing literature (Gu, Kelly, Xiu 2020; Chen et al. 2021) shows:
+
+- For **monthly data**, tree models (RF/XGB) dominate  
+- LSTM lacks an advantage unless data is high-frequency (tick, minute, day)
+- Tabular interactions (macro × firm) are better modeled by trees
+
+LSTM adds complexity without improving baseline predictive power.
+
+### **3. LSTM is intentionally reserved for Step 6–8 (Deep Forecasting & HPC)**
+
+The project structure allocates deep learning to later stages:
+
+- **Step 6:** LSTM/GRU for multi-step sequential forecasting  
+- **Step 7:** Scenario engine + LSTM-based dynamic response modeling  
+- **Step 8:** HPC/GPU-accelerated training of LSTM/Transformer variants  
+
+Including LSTM in Step 2 would slow the baseline and introduce heavy training cost without improving the benchmark.
+
+---
+
+**Summary:**  
+Tree models + linear benchmarks provide the strongest, cleanest, and most interpretable baseline for monthly NVDA return forecasting.  
+Sequence models (LSTM/GRU) come later when the project transitions from tabular single-step prediction → deep sequential forecasting under HPC.
+
+---
 
 **Training Procedure**:
 - **Time-based Split**: See [Industry-Driven Time Window Selection](#industry-driven-time-window-selection) above for detailed rationale and time boundaries
