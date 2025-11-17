@@ -143,10 +143,15 @@ def create_importance_heatmap(
     # Load scaler first to get correct feature order
     models_path = Path(models_dir)
     scaler = joblib.load(models_path / "feature_scaler.pkl")
-    scaler_features = scaler.feature_names_in_ if hasattr(scaler, 'feature_names_in_') else feature_cols
+    # Get ORIGINAL scaler features (may include leakage features from old training)
+    scaler_features_original = scaler.feature_names_in_ if hasattr(scaler, 'feature_names_in_') else feature_cols
     
-    # Use only features that are in scaler
-    feature_cols = [f for f in feature_cols if f in scaler_features]
+    # CRITICAL: Filter out data leakage features for actual model training
+    # But keep original scaler_features for scaler.transform() which requires all features
+    scaler_features_for_training = [f for f in scaler_features_original if f not in leakage_features]
+    
+    # Use only legitimate features that are in scaler (after filtering leakage)
+    feature_cols = [f for f in feature_cols if f in scaler_features_for_training]
     
     # Prepare X and y
     X = df[feature_cols].copy()
@@ -157,7 +162,7 @@ def create_importance_heatmap(
     X = X[mask]
     y = y[mask]
     
-    print(f"After cleaning: {len(X)} samples, {len(feature_cols)} features")
+    print(f"After cleaning: {len(X)} samples, {len(feature_cols)} legitimate features")
     
     # Time-based split (same as training)
     train_mask = X.index < '2021-01-01'
@@ -172,24 +177,29 @@ def create_importance_heatmap(
     y_val = y[val_mask]
     y_test = y[test_mask]
     
-    # Align feature columns with scaler
-    X_train_aligned = X_train.reindex(columns=scaler_features, fill_value=0)
-    X_test_aligned = X_test.reindex(columns=scaler_features, fill_value=0)
+    # CRITICAL: Align with ORIGINAL scaler features (scaler.transform() needs all 63 features)
+    # Add leakage features as zeros for scaler compatibility, then drop them after scaling
+    X_train_aligned = X_train.reindex(columns=scaler_features_original, fill_value=0)
+    X_test_aligned = X_test.reindex(columns=scaler_features_original, fill_value=0)
     
-    # Scale data
+    # Scale data (scaler expects all original features including leakage)
     X_train_scaled = pd.DataFrame(
         scaler.transform(X_train_aligned),
         index=X_train_aligned.index,
-        columns=scaler_features
+        columns=scaler_features_original
     )
     X_test_scaled = pd.DataFrame(
         scaler.transform(X_test_aligned),
         index=X_test_aligned.index,
-        columns=scaler_features
+        columns=scaler_features_original
     )
     
-    # Update feature_cols to match scaler
-    feature_cols = list(scaler_features)
+    # CRITICAL: Remove data leakage features AFTER scaling (prevent data leakage)
+    X_train_scaled = X_train_scaled.drop(columns=leakage_features, errors='ignore')
+    X_test_scaled = X_test_scaled.drop(columns=leakage_features, errors='ignore')
+    
+    # Final feature list for model training (excludes leakage)
+    feature_cols = [f for f in scaler_features_original if f not in leakage_features]
     
     print(f"Data loaded: {len(X_train_scaled)} train, {len(X_test_scaled)} test samples")
     print(f"Features: {len(feature_cols)}")
