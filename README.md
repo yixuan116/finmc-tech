@@ -438,31 +438,6 @@ Sequence models (LSTM/GRU) come later when the project transitions from tabular 
 
 **Champion Model**: **Random Forest** (highest test R² = -0.37)
 
-**Results Interpretation**:
-
-1. **Linear Models (Linear, Ridge) — Poor Performance**:
-   - **MAE ~26-31%**: Predictions are off by ~26-31 percentage points on average
-   - **R² < -2000**: Extremely negative R² indicates these models perform far worse than simply predicting the mean return
-   - **MAPE > 4000%**: Massive relative errors suggest linear models cannot capture the complex, non-linear relationships in NVDA returns
-   - **Root Cause**: Linear models assume additive relationships, but NVDA's returns are driven by complex interactions between macro conditions, firm fundamentals, and market sentiment that cannot be captured by linear combinations
-
-2. **Random Forest (Champion) — Best Performance**:
-   - **MAE = 0.59%**: Average prediction error of 0.59 percentage points—significantly better than linear models
-   - **RMSE = 0.88%**: Root mean squared error indicates most predictions are within ~1% of actual returns
-   - **R² = -0.37**: While still negative, this is the best among all models. Negative R² suggests the model struggles with the test period (2023-2025 AI supercycle), but RF captures more signal than alternatives
-   - **MAPE = 43%**: Relative error of 43% is reasonable for financial return prediction, where even small absolute errors can translate to large relative errors when actual returns are small
-   - **Why RF Wins**: Tree-based structure captures threshold effects, non-linear interactions, and discrete regime shifts (e.g., "momentum only matters when VIX < 20")
-
-3. **XGBoost — Strong but Overfitting**:
-   - **MAE = 0.78%**: Slightly worse than RF, but still excellent compared to linear models
-   - **R² = -0.92**: Worse than RF, suggesting XGBoost may be overfitting to training patterns that don't generalize to the AI supercycle test period
-   - **MAPE = 65%**: Higher relative error than RF, indicating less stable predictions
-
-4. **Neural Network (MLP) — Underperforming**:
-   - **MAE = 6.45%**: Much worse than tree models, suggesting the network architecture or training procedure needs optimization
-   - **R² = -96.43**: Very poor generalization, likely due to insufficient data for deep learning (only ~71 quarterly samples) or suboptimal hyperparameters
-   - **MAPE = 1229%**: Extremely high relative error indicates the model is making predictions far from actual values
-
 **Key Findings**:
 - **Tree-based models (RF, XGB) dominate**: Non-linear tree structures are essential for capturing complex feature interactions
 - **Random Forest is the champion**: Best balance of accuracy (lowest MAE/RMSE) and stability (best R²) on the test set
