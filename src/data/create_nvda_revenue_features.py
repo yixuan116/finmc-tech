@@ -401,6 +401,10 @@ def main():
     # Create revenue features
     df = create_revenue_features(df)
     
+    # Create extended features (price, technical, macro, time, interactions)
+    from src.data.create_extended_features import create_all_extended_features
+    df = create_all_extended_features(df, ticker="NVDA")
+    
     # Create forward return target
     df = create_forward_return_target(df, trading_days=252)
     

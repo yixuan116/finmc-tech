@@ -491,8 +491,13 @@ def train_return_models(df: pd.DataFrame, ticker: str, split_date: pd.Timestamp)
     print(f"\nTraining return head models for {ticker}...")
     
     # Prepare data
+    # Only check features that exist in the dataframe
+    available_features = [col for col in FEATURE_COLS if col in df.columns]
+    if len(available_features) == 0:
+        raise ValueError(f"No features from FEATURE_COLS found in dataframe")
+    
     df_clean = df[
-        df[FEATURE_COLS].notna().all(axis=1) &
+        df[available_features].notna().all(axis=1) &
         df["future_12m_return"].notna()
     ].copy()
     
@@ -560,7 +565,7 @@ def train_return_models(df: pd.DataFrame, ticker: str, split_date: pd.Timestamp)
         
         # Store feature importance for RF
         if name == "rf":
-            feature_importance = dict(zip(FEATURE_COLS, model.feature_importances_.tolist()))
+            feature_importance = dict(zip(available_features, model.feature_importances_.tolist()))
             results[name]["feature_importance"] = feature_importance
     
     return results
@@ -575,8 +580,13 @@ def train_price_models(df: pd.DataFrame, ticker: str, split_date: pd.Timestamp) 
     print(f"\nTraining price head models for {ticker}...")
     
     # Prepare data
+    # Only check features that exist in the dataframe
+    available_features = [col for col in FEATURE_COLS if col in df.columns]
+    if len(available_features) == 0:
+        raise ValueError(f"No features from FEATURE_COLS found in dataframe")
+    
     df_clean = df[
-        df[FEATURE_COLS].notna().all(axis=1) &
+        df[available_features].notna().all(axis=1) &
         df["future_12m_logprice"].notna() &
         df["future_12m_price"].notna() &
         df["adj_close"].notna()
@@ -596,10 +606,13 @@ def train_price_models(df: pd.DataFrame, ticker: str, split_date: pd.Timestamp) 
         raise ValueError("Insufficient data in train or test set")
     
     # Features and target (log price)
-    X_train = train_df[FEATURE_COLS].values
+    # Use same available features as return head
+    available_features = [col for col in FEATURE_COLS if col in df_clean.columns]
+    
+    X_train = train_df[available_features].values
     y_train_log = train_df["future_12m_logprice"].values
     y_train_price = train_df["future_12m_price"].values
-    X_test = test_df[FEATURE_COLS].values
+    X_test = test_df[available_features].values
     y_test_log = test_df["future_12m_logprice"].values
     y_test_price = test_df["future_12m_price"].values
     

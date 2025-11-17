@@ -472,6 +472,11 @@ Sequence models (LSTM/GRU) come later when the project transitions from tabular 
 ![SHAP Summary - XGBoost](results/shap/shap_xgb_summary.png)
 *SHAP Summary Plot for XGBoost: Similar feature importance patterns to RF, with some differences in feature ranking and interaction effects.*
 
+**Feature Importance Heatmap** (Cross-Model Comparison):
+
+![Feature Importance Heatmap](results/feature_importance_heatmap.png)
+*Feature Importance Across Models (Similar to Gu-Kelly-Xiu 2020 Figure 5): Heatmap showing normalized feature importance across Linear, Ridge, RF, XGB, and NN models. Darker blue indicates higher importance. Top 50 features selected by average importance across all models.*
+
 **Outputs Generated**:
 - `results/performance_step2.csv`: Model comparison metrics
 - `results/predictions_test.csv`: Actual vs predicted returns for all models

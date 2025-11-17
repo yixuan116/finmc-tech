@@ -19,7 +19,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 from sklearn.ensemble import RandomForestRegressor
-from sklearn.model_selection import train_test_split
+#from sklearn.model_selection import train_test_split
 
 # Add project root to path
 sys.path.insert(0, str(Path(__file__).parent))
@@ -97,18 +97,18 @@ def load_features_data(features_path: str) -> pd.DataFrame:
 
 def compute_feature_importance(
     df: pd.DataFrame,
-    n_estimators: int = 500,
+    n_estimators: int = 100,
+    n_jobs: int = 1,
     random_state: int = 42,
-    train_test_split_ratio: float = 0.2,
 ) -> Tuple[RandomForestRegressor, pd.DataFrame, dict]:
     """
     Compute feature importance using Random Forest.
     
     Args:
         df: DataFrame with Ret and feature columns
-        n_estimators: Number of trees in Random Forest
+        n_estimators: Number of trees in Random Forest (default: 100 for faster training)
+        n_jobs: Number of parallel jobs (default: 1 to avoid macOS mutex lock issues)
         random_state: Random seed
-        train_test_split_ratio: Test set ratio
     
     Returns:
         Fitted model, importance DataFrame, and metrics dict
@@ -118,8 +118,8 @@ def compute_feature_importance(
     logger.info("Feature Importance Analysis")
     logger.info("=" * 70)
     
-    # Lazy import
-    build_Xy, _ = _import_build_features()
+    # Lazy import (single call to avoid duplicate imports)
+    build_Xy, train_test_split_time = _import_build_features()
     
     # Build X and y
     logger.info("\nBuilding features and target...")
@@ -128,12 +128,10 @@ def compute_feature_importance(
     logger.info(f"  Features: {len(feature_names)}")
     logger.info(f"  Samples: {len(X)}")
     
-    # Lazy import
-    _, train_test_split_time = _import_build_features()
     cfg = _get_cfg()
     
     # Train/test split (chronological)
-    logger.info(f"\nSplitting data (train/test = {1-train_test_split_ratio:.0%}/{train_test_split_ratio:.0%})...")
+    logger.info(f"\nSplitting data chronologically (train_end={cfg.TRAIN_END})...")
     X_train, X_test, y_train, y_test, train_idx, test_idx = train_test_split_time(
         X, y, cfg.TRAIN_END
     )
@@ -142,22 +140,18 @@ def compute_feature_importance(
     logger.info(f"  Test: {len(X_test)} samples")
     
     # Lazy import
-    fit_rf, evaluate_rf = _import_rf_model()
+    _, evaluate_rf = _import_rf_model()
     
-    # Train Random Forest
-    logger.info(f"\nTraining Random Forest (n_estimators={n_estimators})...")
-    model = fit_rf(X_train, y_train, random_state=random_state)
-    
-    # Override n_estimators if needed
-    if model.n_estimators != n_estimators:
-        model = RandomForestRegressor(
-            n_estimators=n_estimators,
-            max_depth=None,
-            min_samples_leaf=3,
-            n_jobs=-1,
-            random_state=random_state,
-        )
-        model.fit(X_train, y_train)
+    # Train Random Forest (single fit, no duplicate training)
+    logger.info(f"\nTraining Random Forest (n_estimators={n_estimators}, n_jobs={n_jobs})...")
+    model = RandomForestRegressor(
+        n_estimators=n_estimators,
+        max_depth=None,
+        min_samples_leaf=3,
+        n_jobs=n_jobs,
+        random_state=random_state,
+    )
+    model.fit(X_train, y_train)
     
     # Get feature importance
     importances = model.feature_importances_
@@ -337,7 +331,7 @@ def main():
         "--features",
         type=str,
         default=None,
-        help="Path to features CSV. If None, uses pipeline to generate features.",
+        help="Path to features CSV (required). If not provided, script will exit with error.",
     )
     parser.add_argument(
         "--top-n",
@@ -365,8 +359,14 @@ def main():
     parser.add_argument(
         "--n-estimators",
         type=int,
-        default=500,
-        help="Number of trees in Random Forest (default: 500)",
+        default=100,
+        help="Number of trees in Random Forest (default: 100 for faster training)",
+    )
+    parser.add_argument(
+        "--n-jobs",
+        type=int,
+        default=1,
+        help="Number of parallel jobs for Random Forest (default: 1 to avoid macOS mutex lock issues, use -1 for all cores)",
     )
     
     args = parser.parse_args()
@@ -383,40 +383,20 @@ def main():
     logger.info("Feature Importance Analysis")
     logger.info("=" * 70)
     
-    # Load or generate features
-    if args.features and Path(args.features).exists():
-        df = load_features_data(args.features)
-    else:
-        # Generate features using pipeline
-        logger.info("No features file provided, generating from pipeline...")
-        from finmc_tech.sim.run_simulation import pipeline
-        
-        # Run pipeline to get aligned data
-        results = pipeline(config=cfg, H=1, n_paths=1, shock="base")
-        
-        # Load the aligned data (we need to reconstruct it)
-        # For now, use a simpler approach: load from macro and firm data
-        from finmc_tech.data.fetch_macro import fetch_macro
-        from finmc_tech.data.fetch_firm import fetch_firm_data
-        from finmc_tech.data.align import align_macro_firm
-        
-        macro_df = fetch_macro(cfg.START_DATE, cfg.END_DATE, cfg.cache_dir)
-        firm_df = fetch_firm_data(cfg.TICKER, cfg.START_DATE, cfg.END_DATE, cfg.cache_dir)
-        df = align_macro_firm(macro_df, firm_df)
-        
-        # Ensure Ret column exists
-        if "Ret" not in df.columns:
-            if "adj_close" in df.columns:
-                df["Ret"] = df["adj_close"].pct_change()
-            elif "Close" in df.columns:
-                df["Ret"] = df["Close"].pct_change()
-            else:
-                raise ValueError("Cannot find price column to create 'Ret'")
+    # Load features (required - no auto-generation to avoid slow pipeline)
+    if not args.features or not Path(args.features).exists():
+        logger.error(f"Features file not found: {args.features}")
+        logger.error("Please provide a valid --features path. Example:")
+        logger.error("  python feature_importance_rf.py --features data/processed/NVDA_revenue_features.csv")
+        sys.exit(1)
+    
+    df = load_features_data(args.features)
     
     # Compute feature importance
     model, importance_df, metrics = compute_feature_importance(
         df,
         n_estimators=args.n_estimators,
+        n_jobs=args.n_jobs,
         random_state=cfg.RANDOM_STATE,
     )
     
