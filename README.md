@@ -209,6 +209,8 @@ This project serves as the foundation for scaling to multi-asset (Magnificent 7)
 ### Feature Engineering
 
 **Feature Matrix**: 71 rows × 63 columns (71 data points covering 70 unique quarters)
+**Total Feature Count**: 12 (firm) + 4 (macro) + 40 (interactions) + 4 (time) + 3 (metadata) = **63 features** used in model training
+
 
 **Note on Duplicate**: 2010Q3 has 2 records because two different fiscal year reports (FY2010 and FY2011) both ended in that quarter. This is a data alignment artifact from SEC XBRL filings where fiscal year boundaries don't align perfectly with calendar quarters. **We keep both records** because they represent different fiscal periods with potentially different revenue calculations and business contexts, even though they fall in the same calendar quarter.
 
@@ -237,7 +239,6 @@ The feature engineering pipeline follows Gu-Kelly-Xiu (2020) RFS methodology, co
 4. **Time Features (4 features)**:
    - `quarter`, `month`, `year`, `days_since_start`
 
-**Total Feature Count**: 12 (firm) + 4 (macro) + 40 (interactions) + 4 (time) + 3 (metadata) = **63 features** used in model training
 
 ---
 
@@ -313,7 +314,7 @@ The model must demonstrate it can generalize from historical + transition regime
 
 ---
 
-## **Industry Regime Timeline (ASCII)**
+## **Industry Regime Timeline**
 
 ```
 2010-2020 (Train)         2021-2022 (Val)          2023-Present (Test)
