@@ -475,7 +475,7 @@ Sequence models (LSTM/GRU) come later when the project transitions from tabular 
 **Feature Importance Heatmap** (Cross-Model Comparison):
 
 ![Feature Importance Heatmap](results/feature_importance_heatmap.png)
-*Feature Importance Across Models (Similar to Gu-Kelly-Xiu 2020 Figure 5): Heatmap showing normalized feature importance across Linear, Ridge, RF, XGB, and NN models. Darker blue indicates higher importance. Top 50 features selected by average importance across all models.*
+*Feature Importance Across Models (Similar to Gu-Kelly-Xiu 2020 Figure 5): Heatmap showing normalized feature importance across Linear, Ridge, RF, XGB, and NN models (63 features × 5 models). Darker blue indicates higher importance. Visualization shows top 50 features by average importance; full data (all 63 features) available in `feature_importance_heatmap.csv`.*
 
 **Outputs Generated**:
 - `results/performance_step2.csv`: Model comparison metrics
