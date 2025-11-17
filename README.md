@@ -438,19 +438,72 @@ Sequence models (LSTM/GRU) come later when the project transitions from tabular 
 
 **Champion Model**: **Random Forest** (highest test R² = -0.37)
 
+**Results Interpretation**:
+
+1. **Linear Models (Linear, Ridge) — Poor Performance**:
+   - **MAE ~26-31%**: Predictions are off by ~26-31 percentage points on average
+   - **R² < -2000**: Extremely negative R² indicates these models perform far worse than simply predicting the mean return
+   - **MAPE > 4000%**: Massive relative errors suggest linear models cannot capture the complex, non-linear relationships in NVDA returns
+   - **Root Cause**: Linear models assume additive relationships, but NVDA's returns are driven by complex interactions between macro conditions, firm fundamentals, and market sentiment that cannot be captured by linear combinations
+
+2. **Random Forest (Champion) — Best Performance**:
+   - **MAE = 0.59%**: Average prediction error of 0.59 percentage points—significantly better than linear models
+   - **RMSE = 0.88%**: Root mean squared error indicates most predictions are within ~1% of actual returns
+   - **R² = -0.37**: While still negative, this is the best among all models. Negative R² suggests the model struggles with the test period (2023-2025 AI supercycle), but RF captures more signal than alternatives
+   - **MAPE = 43%**: Relative error of 43% is reasonable for financial return prediction, where even small absolute errors can translate to large relative errors when actual returns are small
+   - **Why RF Wins**: Tree-based structure captures threshold effects, non-linear interactions, and discrete regime shifts (e.g., "momentum only matters when VIX < 20")
+
+3. **XGBoost — Strong but Overfitting**:
+   - **MAE = 0.78%**: Slightly worse than RF, but still excellent compared to linear models
+   - **R² = -0.92**: Worse than RF, suggesting XGBoost may be overfitting to training patterns that don't generalize to the AI supercycle test period
+   - **MAPE = 65%**: Higher relative error than RF, indicating less stable predictions
+
+4. **Neural Network (MLP) — Underperforming**:
+   - **MAE = 6.45%**: Much worse than tree models, suggesting the network architecture or training procedure needs optimization
+   - **R² = -96.43**: Very poor generalization, likely due to insufficient data for deep learning (only ~71 quarterly samples) or suboptimal hyperparameters
+   - **MAPE = 1229%**: Extremely high relative error indicates the model is making predictions far from actual values
+
 **Key Findings**:
-- Tree-based models (RF, XGB) significantly outperform linear models
-- Random Forest achieves best balance of accuracy and stability
-- All models show negative R², indicating difficulty in predicting quarterly returns
-- Non-linear interactions (captured by RF/XGB) are essential for this task
+- **Tree-based models (RF, XGB) dominate**: Non-linear tree structures are essential for capturing complex feature interactions
+- **Random Forest is the champion**: Best balance of accuracy (lowest MAE/RMSE) and stability (best R²) on the test set
+- **Linear models fail completely**: Cannot capture non-linear relationships between macro, micro, and interaction features
+- **Neural networks underperform**: Likely due to limited data size (~71 quarters) and need for more sophisticated architecture/hyperparameter tuning
+- **All models show negative R²**: This indicates the test period (2023-2025 AI supercycle) represents a structural break that is difficult to predict from historical patterns alone
+
+**Visualizations**:
+
+**Prediction vs Actual Plots** (Test Set):
+
+![Linear Regression Predictions](results/pred_vs_actual_linear.png)
+*Linear Regression: Shows poor fit with large prediction errors*
+
+![Ridge Regression Predictions](results/pred_vs_actual_ridge.png)
+*Ridge Regression: Similar to Linear, fails to capture non-linear patterns*
+
+![Random Forest Predictions](results/pred_vs_actual_rf.png)
+*Random Forest (Champion): Best alignment between predictions and actual returns*
+
+![XGBoost Predictions](results/pred_vs_actual_xgb.png)
+*XGBoost: Strong performance but slightly more volatile than RF*
+
+![Neural Network Predictions](results/pred_vs_actual_nn.png)
+*Neural Network (MLP): Underperforms, likely due to limited data and architecture constraints*
+
+**SHAP Feature Importance** (Tree Models):
+
+![SHAP Summary - Random Forest](results/shap/shap_rf_summary.png)
+*SHAP Summary Plot for Random Forest: Shows feature contributions to predictions. Features pushing predictions higher appear in red (positive impact), while features pushing predictions lower appear in blue (negative impact).*
+
+![SHAP Summary - XGBoost](results/shap/shap_xgb_summary.png)
+*SHAP Summary Plot for XGBoost: Similar feature importance patterns to RF, with some differences in feature ranking and interaction effects.*
 
 **Outputs Generated**:
 - `results/performance_step2.csv`: Model comparison metrics
 - `results/predictions_test.csv`: Actual vs predicted returns for all models
-- `results/pred_vs_actual_<model>.png`: Visualization plots for each model
+- `results/pred_vs_actual_<model>.png`: Visualization plots for each model (6 plots total)
 - `models/champion_model.pkl`: Saved Random Forest model
 - `models/feature_scaler.pkl`: Saved StandardScaler for feature preprocessing
-- `results/shap/`: SHAP analysis for RF and XGB (feature importance, summary plots)
+- `results/shap/`: SHAP analysis for RF and XGB (feature importance, summary plots, values)
 
 ---
 
