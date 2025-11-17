@@ -306,22 +306,22 @@ def create_interaction_features(
     
     if not use_kronecker:
         # Simple mode: backward compatible with fixed interactions
-        # Revenue × VIX
-        if "rev_yoy" in df.columns and "vix_level" in df.columns:
-            df["rev_yoy_x_vix"] = df["rev_yoy"] * df["vix_level"]
-        
-        # Revenue × SP500
-        if "rev_qoq" in df.columns and "sp500_returns" in df.columns:
-            df["rev_qoq_x_sp500"] = df["rev_qoq"] * df["sp500_returns"]
-        
-        # Price momentum × volatility
-        if "price_momentum" in df.columns and "price_volatility" in df.columns:
-            df["price_momentum_x_volatility"] = df["price_momentum"] * df["price_volatility"]
-        
-        # VIX × Treasury yield
-        if "vix_level" in df.columns and "tnx_yield" in df.columns:
-            df["vix_x_tnx"] = df["vix_level"] * df["tnx_yield"]
-        
+    # Revenue × VIX
+    if "rev_yoy" in df.columns and "vix_level" in df.columns:
+        df["rev_yoy_x_vix"] = df["rev_yoy"] * df["vix_level"]
+    
+    # Revenue × SP500
+    if "rev_qoq" in df.columns and "sp500_returns" in df.columns:
+        df["rev_qoq_x_sp500"] = df["rev_qoq"] * df["sp500_returns"]
+    
+    # Price momentum × volatility
+    if "price_momentum" in df.columns and "price_volatility" in df.columns:
+        df["price_momentum_x_volatility"] = df["price_momentum"] * df["price_volatility"]
+    
+    # VIX × Treasury yield
+    if "vix_level" in df.columns and "tnx_yield" in df.columns:
+        df["vix_x_tnx"] = df["vix_level"] * df["tnx_yield"]
+    
         print("  Created simple interaction features (backward compatible)")
         return df
     
