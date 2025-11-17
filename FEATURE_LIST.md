@@ -13,15 +13,17 @@
 4. `rev_accel` - Revenue acceleration (second derivative)
 
 ### 2. Price Features (9 features)
-1. `adj_close` - Adjusted closing price
-2. `price_returns_1m` - 1-month price returns
-3. `price_returns_3m` - 3-month price returns
-4. `price_returns_6m` - 6-month price returns
-5. `price_returns_12m` - 12-month price returns
-6. `price_momentum` - Price momentum indicator
-7. `price_volatility` - Price volatility measure
-8. `price_ma_4q` - 4-quarter moving average of price
-9. `price_to_ma_4q` - Price to 4-quarter moving average ratio
+**Note**: All price features use **historical data only** (no future information). Data is quarterly, so "1m/3m/6m/12m" refer to 1/1/2/4 quarters respectively.
+
+1. `adj_close` - Adjusted closing price (current quarter)
+2. `price_returns_1m` - Historical 1-quarter return (`pct_change(1)`) - **Past data only** ✅
+3. `price_returns_3m` - Historical 1-quarter return (same as 1m for quarterly data) - **Past data only** ✅
+4. `price_returns_6m` - Historical 2-quarter return (`pct_change(2)`) - **Past data only** ✅
+5. `price_returns_12m` - Historical 4-quarter (1-year) return (`pct_change(4)`) - **Past data only** ✅
+6. `price_momentum` - Current quarter vs previous quarter (`adj_close / adj_close.shift(1) - 1`) - **Past data only** ✅
+7. `price_volatility` - Rolling volatility of returns (4-quarter window) - **Past data only** ✅
+8. `price_ma_4q` - 4-quarter moving average (`rolling(window=4).mean()`) - **Past 4 quarters only** ✅
+9. `price_to_ma_4q` - Current price to 4-quarter MA ratio - **Past data only** ✅
 
 ### 3. Macro Features (4 features)
 1. `vix_level` - VIX index level (market volatility)
@@ -88,21 +90,45 @@ Kronecker product interactions between macro and micro features:
 
 ## Top 10 Features by Average Importance
 
-1. `tnx_yield` - 0.7926 (Treasury yield - most important)
-2. `days_since_start` - 0.6519 (Time trend)
-3. `price_ma_4q` - 0.5774 (4-quarter moving average)
-4. `year` - 0.5037 (Year effect)
-5. `ix_tnx_change_3m__price_returns_6m` - 0.3631 (Treasury change × 6m returns)
-6. `adj_close` - 0.3104 (Adjusted closing price)
-7. `price_to_ma_4q` - 0.2936 (Price to MA ratio)
-8. `month` - 0.2843 (Month effect)
-9. `ix_vix_change_3m__rev_qoq` - 0.2834 (VIX change × Revenue QoQ)
-10. `ix_vix_level__price_returns_12m` - 0.2803 (VIX level × 12m returns)
+1. `tnx_yield` - 0.7926 (10-year Treasury yield - macro feature, **no data leakage** ✅)
+2. `days_since_start` - 0.6519 (Days since data start - time trend, **no data leakage** ✅)
+3. `price_ma_4q` - 0.5774 (4-quarter moving average of past prices - **historical only** ✅)
+   - **Definition**: `adj_close.rolling(window=4).mean()` 
+   - **Calculation**: Average of current quarter + previous 3 quarters
+   - **Not data leakage**: Only uses past 4 quarters of historical prices
+4. `year` - 0.5037 (Year - time feature, **no data leakage** ✅)
+5. `ix_tnx_change_3m__price_returns_6m` - 0.3631 (Treasury 3m change × Price 6m returns)
+   - `price_returns_6m` = `pct_change(2)` = past 2 quarters return - **historical only** ✅
+6. `adj_close` - 0.3104 (Current adjusted closing price - **no data leakage** ✅)
+7. `price_to_ma_4q` - 0.2936 (Current price / 4-quarter MA - **historical only** ✅)
+8. `month` - 0.2843 (Month - time feature, **no data leakage** ✅)
+9. `ix_vix_change_3m__rev_qoq` - 0.2834 (VIX 3m change × Revenue QoQ - **historical only** ✅)
+10. `ix_vix_level__price_returns_12m` - 0.2803 (VIX level × Price 12m returns)
+    - `price_returns_12m` = `pct_change(4)` = past 4 quarters return - **historical only** ✅
+
+## Data Leakage Verification
+
+**All 61 features are legitimate** - verified no data leakage:
+
+- ✅ **Price features** (`price_returns_*`, `price_ma_4q`, etc.): All use `pct_change()` or `rolling()` with historical data only
+- ✅ **Financial features** (`revenue`, `rev_yoy`, etc.): Historical quarterly financial data
+- ✅ **Macro features** (`vix_level`, `tnx_yield`, etc.): Historical macro indicators
+- ✅ **Time features** (`year`, `month`, `days_since_start`): Time-based features
+- ✅ **Interaction features**: Products of historical macro × historical micro features
+
+**Excluded (data leakage)**:
+- ❌ `future_12m_price` - Contains future price information
+- ❌ `future_12m_logprice` - Contains future price information
+
+**Key Distinction**:
+- `price_ma_4q` = **Past 4 quarters** moving average (✅ legitimate)
+- `future_12m_price` = **Future 12 months** price (❌ data leakage)
 
 ## Notes
 
-- All features are legitimate (no data leakage)
-- Interaction features follow Gu-Kelly-Xiu (2020) methodology
-- Features are normalized before model training
+- All features use **historical data only** (no future information)
+- Data frequency: **Quarterly** (not daily)
+- Interaction features follow Gu-Kelly-Xiu (2020) methodology (Kronecker product)
+- Features are normalized before model training using StandardScaler
 - Importance scores are averaged across 5 models (Linear, Ridge, RF, XGB, NN)
 
