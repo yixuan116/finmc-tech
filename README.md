@@ -249,6 +249,8 @@ NVIDIA's business model has evolved through **three distinct industry regimes**,
 
 ### **1. 2010–2020 — GPU-Centric Cycle (Training Window)**  
 
+**Time Split**: < 2021-01-01 (52 samples)
+
 **Industry Regime:** Gaming GPU → Early Cloud GPU → Pre-AI Compute  
 
 Key characteristics:
@@ -271,6 +273,8 @@ This period provides a long, stable sample for learning *general relationships* 
 
 ### **2. 2021–2022 — AI Pre-Acceleration / Transition Period (Validation Window)**  
 
+**Time Split**: 2021-01-01 to 2022-12-31 (8 samples)
+
 **Industry Regime:** A100 ramp, early hyperscaler AI infrastructure build-out  
 
 Key characteristics:
@@ -292,6 +296,8 @@ A validation window must represent the *upcoming* structure without seeing the *
 ---
 
 ### **3. 2023–Present — AI Supercycle (Test Window)**  
+
+**Time Split**: ≥ 2023-01-01 (11 samples)
 
 **Industry Regime:** H100 deployment, GenAI adoption, hyperscaler AI capex explosion  
 
@@ -341,10 +347,7 @@ Gaming GPU Era            AI Pre-Acceleration      AI Supercycle
 5. **Neural Network**: Multi-layer perceptron with hidden layers (64, 32), 300 max iterations
 
 **Training Procedure**:
-- **Time-based Split** (see [Industry-Driven Time Window Selection](#industry-driven-time-window-selection) above for rationale):
-  - Train: < 2021-01-01 (52 samples) — GPU-Centric Cycle (2010-2020)
-  - Validation: 2021-01-01 to 2022-12-31 (8 samples) — AI Pre-Acceleration (2021-2022)
-  - Test: ≥ 2023-01-01 (11 samples) — AI Supercycle (2023-Present)
+- **Time-based Split**: See [Industry-Driven Time Window Selection](#industry-driven-time-window-selection) above for detailed rationale and time boundaries
 - **Feature Scaling**: StandardScaler fitted on training set only, applied to val/test
 - **Evaluation Metrics**: MAE, RMSE, R², MAPE (all computed on test set)
 
