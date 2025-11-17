@@ -1435,6 +1435,23 @@ Kronecker product interactions between macro and micro features:
 - `price_ma_4q` = **Past 4 quarters** moving average (✅ legitimate)
 - `future_12m_price` = **Future 12 months** price (❌ data leakage)
 
+### Notes on Potential Proxy Features (Not Leakage)
+
+None of the Top 10 features contain forward-looking information.
+
+However, two variables (`days_since_start` and `year`) act as **time-based proxies** for structural drift in NVIDIA's business model and the transition from the GPU cycle to the AI supercycle. These are *not* data leakage, but must be interpreted as capturing broad regime effects rather than fundamental drivers.
+
+This distinction is crucial:
+
+- **No future values are used**: All features use only data available at time `t` or earlier
+- **No target-dependent variables are included**: Features do not contain information from the target variable
+- **All features are strictly historical**: Every feature is computed from historical data (time `t` and earlier)
+
+**Interpretation of Time Features**:
+- `days_since_start`: Captures long-term trends and structural shifts over the 15+ year period
+- `year`: Captures year-specific regime effects (e.g., 2023-2025 AI supercycle vs. 2010-2020 GPU cycle)
+- These features help the model distinguish between different business regimes, but do not use future information
+
 ### Feature Engineering Notes
 
 - All features use **historical data only** (no future information)
