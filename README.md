@@ -193,6 +193,188 @@ This project serves as the foundation for scaling to multi-asset (Magnificent 7)
 
 ---
 
+## Current Progress: Data & Methodology & Models & Results
+
+### Data Summary
+
+**Dataset**: NVDA Quarterly Features (2008-2025)
+- **Sample Size**: 71 rows (70 unique quarters, 1 duplicate in 2010Q3 due to overlapping fiscal year reports)
+- **Time Period**: 2008-Q1 to 2025-Q3
+- **Data Frequency**: Quarterly (average 91 days between observations)
+- **Data Sources**:
+  - Firm fundamentals: SEC XBRL (quarterly revenue, margins, etc.)
+  - Macro variables: FRED API (CPI, VIX, 10Y yield, Fed Funds, GDP)
+  - Price data: Yahoo Finance (adjusted close, returns)
+
+### Feature Engineering
+
+**Feature Matrix**: 71 rows × 63 columns (71 data points covering 70 unique quarters)
+
+**Note on Duplicate**: 2010Q3 has 2 records because two different fiscal year reports (FY2010 and FY2011) both ended in that quarter. This is a data alignment artifact from SEC XBRL filings where fiscal year boundaries don't align perfectly with calendar quarters. **We keep both records** because they represent different fiscal periods with potentially different revenue calculations and business contexts, even though they fall in the same calendar quarter.
+
+The feature engineering pipeline follows Gu-Kelly-Xiu (2020) RFS methodology, constructing a comprehensive feature space through:
+
+1. **Firm Features (12 features)**:
+   - Revenue metrics: `revenue`, `rev_qoq`, `rev_yoy`, `rev_accel`
+   - Price momentum: `price_returns_1m/3m/6m/12m`, `price_momentum`, `price_volatility`, `price_to_ma_4q`
+   - Additional: `adj_close` (base price level)
+
+2. **Macro Features (4 features)**:
+   - `vix_level`: VIX index level
+   - `tnx_yield`: 10-year Treasury yield
+   - `vix_change_3m`: 3-month VIX change
+   - `tnx_change_3m`: 3-month Treasury yield change
+
+3. **Interaction Features (40 features)**:
+   - **Kronecker Product Structure**: All macro × micro interactions
+   - Format: `ix_<macro>__<micro>` (e.g., `ix_vix_level__rev_yoy`)
+   - **Economic Rationale**: State-dependent effects—firm characteristic impact depends on macro environment
+   - **Mathematical Structure**: `z_i,t = x_t ⊗ c_i,t` where:
+     - `x_t`: Macro state variables (4 features)
+     - `c_i,t`: Firm characteristics (10 micro features)
+     - `⊗`: Kronecker product → 4 × 10 = 40 interaction terms
+
+4. **Time Features (4 features)**:
+   - `quarter`, `month`, `year`, `days_since_start`
+
+**Total Feature Count**: 12 (firm) + 4 (macro) + 40 (interactions) + 4 (time) + 3 (metadata) = **63 features** used in model training
+
+---
+
+## Industry-Driven Time Window Selection
+
+NVIDIA's business model has evolved through **three distinct industry regimes**, each defined by changes in GPU demand, hyperscaler spending, semiconductor supply chains, and AI adoption curves. Because the economic structure underlying the stock changed, the model must respect these regime boundaries instead of using naive or uniformly sampled time splits.
+
+### **1. 2010–2020 — GPU-Centric Cycle (Training Window)**  
+
+**Industry Regime:** Gaming GPU → Early Cloud GPU → Pre-AI Compute  
+
+Key characteristics:
+
+- Gaming revenue dominated NVDA's mix  
+
+- Data Center was small but growing  
+
+- Crypto and PC cycles created periodic volatility  
+
+- Capex intensity only loosely linked to AI demand  
+
+- Inventory cycles were predictable and supply-driven  
+
+**Why used for training:**  
+
+This period provides a long, stable sample for learning *general relationships* between fundamentals, macro conditions, and returns before the structural AI shift.
+
+---
+
+### **2. 2021–2022 — AI Pre-Acceleration / Transition Period (Validation Window)**  
+
+**Industry Regime:** A100 ramp, early hyperscaler AI infrastructure build-out  
+
+Key characteristics:
+
+- A100 deployed at scale across AWS, Google, Meta, Microsoft  
+
+- Early LLM training demand (GPT-3, PaLM 1 era)  
+
+- Cloud AI capex begins accelerating but not exponential  
+
+- Gaming weak but Data Center rapidly expanding  
+
+**Why used for validation:**  
+
+A validation window must represent the *upcoming* structure without seeing the *future extreme* regime.  
+
+2021–2022 is the unique "transition zone" between the legacy GPU world and the full AI supercycle.
+
+---
+
+### **3. 2023–Present — AI Supercycle (Test Window)**  
+
+**Industry Regime:** H100 deployment, GenAI adoption, hyperscaler AI capex explosion  
+
+Key characteristics:
+
+- Data Center becomes NVDA's dominant revenue engine  
+
+- H100/H200 shortages define the supply chain  
+
+- Gross margin jumps structurally  
+
+- AI servers and networking create a new ecosystem  
+
+- Semiconductor bottlenecks (CoWoS, HBM) reshape industry capacity  
+
+**Why used for testing:**  
+
+This period represents a **new economic regime**.  
+
+The model must demonstrate it can generalize from historical + transition regimes to an unprecedented AI-driven cycle.
+
+---
+
+## **Industry Regime Timeline (ASCII)**
+
+```
+2010-2020 (Train)         2021-2022 (Val)          2023-Present (Test)
+─────────────────         ───────────────          ───────────────────
+Gaming GPU Era            AI Pre-Acceleration      AI Supercycle
+├─ Gaming dominant       ├─ A100 deployment       ├─ H100/H200
+├─ DC small but growing  ├─ Early LLM training    ├─ GenAI adoption
+├─ Crypto/PC cycles      ├─ Cloud AI capex ↑     ├─ DC dominant
+└─ Predictable supply    └─ DC rapidly expanding  └─ Supply bottlenecks
+```
+
+---
+
+### Methodology: Multi-Model Comparison Pipeline
+
+**Step 2: Model Training & Evaluation**
+
+**Models Trained** (5 models):
+1. **Linear Regression**: Baseline linear model
+2. **Ridge Regression**: L2-regularized linear model with cross-validation (`alphas=[0.1, 1.0, 10.0, 50.0]`)
+3. **Random Forest**: 500 trees, unlimited depth (`RandomForestRegressor`)
+4. **XGBoost**: Gradient boosting with 500 estimators, learning rate 0.05, max depth 5
+5. **Neural Network**: Multi-layer perceptron with hidden layers (64, 32), 300 max iterations
+
+**Training Procedure**:
+- **Time-based Split** (not random):
+  - Train: < 2021-01-01 (52 samples)
+  - Validation: 2021-01-01 to 2022-12-31 (8 samples)
+  - Test: ≥ 2023-01-01 (11 samples)
+  - **Rationale**: Time-series data requires temporal ordering to prevent data leakage. Random splits would allow future information to leak into past predictions, making results unrealistic. This split mimics real-world forecasting where models are trained on historical data and evaluated on future unseen periods.
+- **Feature Scaling**: StandardScaler fitted on training set only, applied to val/test
+- **Evaluation Metrics**: MAE, RMSE, R², MAPE (all computed on test set)
+
+**Model Performance** (Test Set):
+
+| Model | MAE | RMSE | R² | MAPE |
+|-------|-----|------|-----|------|
+| Linear | 25.76 | 34.73 | -2103.98 | 4614.55 |
+| Ridge | 30.62 | 36.02 | -2262.62 | 6174.07 |
+| **RF** | **0.59** | **0.88** | **-0.37** | **43.38** |
+| XGB | 0.78 | 1.05 | -0.92 | 64.96 |
+| NN | 6.45 | 7.47 | -96.43 | 1229.25 |
+
+**Champion Model**: **Random Forest** (highest test R² = -0.37)
+
+**Key Findings**:
+- Tree-based models (RF, XGB) significantly outperform linear models
+- Random Forest achieves best balance of accuracy and stability
+- All models show negative R², indicating difficulty in predicting quarterly returns
+- Non-linear interactions (captured by RF/XGB) are essential for this task
+
+**Outputs Generated**:
+- `results/performance_step2.csv`: Model comparison metrics
+- `results/predictions_test.csv`: Actual vs predicted returns for all models
+- `results/pred_vs_actual_<model>.png`: Visualization plots for each model
+- `models/champion_model.pkl`: Saved Random Forest model
+- `models/feature_scaler.pkl`: Saved StandardScaler for feature preprocessing
+- `results/shap/`: SHAP analysis for RF and XGB (feature importance, summary plots)
+
+---
+
 ## Features
 
 - **Data Pipeline**: Yahoo Finance API integration for historical stock data
