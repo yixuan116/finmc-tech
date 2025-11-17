@@ -331,9 +331,244 @@ def create_importance_heatmap(
     importance_df_top.to_csv(csv_top_file)
     print(f"✓ Top features importance saved to: {csv_top_file}")
     
+    # Create big single heatmap (primary visualization)
+    plot_feature_importance_heatmap_big(
+        importance_df=importance_df,
+        output_dir=output_dir,
+        figsize=(8, max(12, len(importance_df) * 0.15)),
+    )
+    
+    # Create facet-style heatmap (optional, secondary visualization)
+    importance_df_ordered = create_facet_heatmap(
+        importance_df=importance_df,
+        output_dir=output_dir,
+        figsize=(10, 20),
+    )
+    
     plt.close()
     
     return importance_df, importance_df_top
+
+
+def plot_feature_importance_heatmap_big(
+    importance_df: pd.DataFrame,
+    output_dir: str = "results",
+    figsize: tuple = (8, 16),
+) -> None:
+    """
+    Create a single large heatmap: rows = features, columns = models.
+    
+    This is the primary visualization for feature importance comparison.
+    Each model column is normalized to [0, 1] independently for readability.
+    No cross-model averaging or weighting is applied.
+    
+    Args:
+        importance_df: DataFrame with features as rows, models as columns
+        output_dir: Directory to save output
+        figsize: Figure size (width, height)
+    """
+    print("\nCreating big single heatmap (primary visualization)...")
+    
+    # Ensure all features have values for all models (fill missing with 0)
+    importance_df = importance_df.fillna(0)
+    
+    # Normalize each model column independently to [0, 1]
+    # This ensures readability while preserving each model's own importance distribution
+    importance_df_normalized = importance_df.copy()
+    for col in importance_df_normalized.columns:
+        col_max = importance_df_normalized[col].max()
+        if col_max > 0:
+            importance_df_normalized[col] = importance_df_normalized[col] / col_max
+        else:
+            importance_df_normalized[col] = 0
+    
+    # Sort features by average importance across models (for better visualization)
+    avg_importance = importance_df_normalized.mean(axis=1).sort_values(ascending=False)
+    feature_order = avg_importance.index.tolist()
+    importance_df_sorted = importance_df_normalized.loc[feature_order]
+    
+    # Get dimensions
+    n_features = len(importance_df_sorted)
+    n_models = len(importance_df_sorted.columns)
+    model_names = importance_df_sorted.columns.tolist()
+    
+    print(f"  Features: {n_features}, Models: {n_models}")
+    print(f"  Models: {', '.join(model_names)}")
+    print(f"  Each model column normalized independently to [0, 1]")
+    
+    # Create the big heatmap
+    fig, ax = plt.subplots(figsize=figsize)
+    
+    # Use seaborn heatmap with better styling
+    sns.heatmap(
+        importance_df_sorted,
+        cmap='Blues',
+        ax=ax,
+        annot=False,  # Don't annotate cells (too many features)
+        fmt='.2f',
+        cbar_kws={'label': 'Normalized Feature Importance (per model)'},
+        linewidths=0.3,
+        linecolor='gray',
+        xticklabels=True,
+        yticklabels=True,
+        vmin=0,
+        vmax=1,
+    )
+    
+    # Set labels and title
+    ax.set_title(
+        'Feature Importance Across Models\n(Each Model Normalized Independently to [0, 1])',
+        fontsize=14,
+        fontweight='bold',
+        pad=20,
+    )
+    ax.set_xlabel('Model', fontsize=12, fontweight='bold')
+    ax.set_ylabel('Feature', fontsize=12, fontweight='bold')
+    
+    # Rotate feature names for better readability
+    ax.set_xticks(range(n_models))
+    ax.set_xticklabels(model_names, rotation=0, fontsize=10, fontweight='bold')
+    
+    # Set y-axis labels (feature names)
+    ax.set_yticks(range(n_features))
+    ax.set_yticklabels(feature_order, rotation=0, fontsize=7)
+    
+    # Adjust layout
+    plt.tight_layout()
+    
+    # Save figure
+    output_path = Path(output_dir)
+    output_path.mkdir(parents=True, exist_ok=True)
+    output_file = output_path / "feature_importance_heatmap_big.png"
+    plt.savefig(output_file, dpi=300, bbox_inches='tight')
+    print(f"\n✓ Big heatmap saved to: {output_file}")
+    print(f"  Dimensions: {n_features} features × {n_models} models")
+    
+    plt.close()
+    
+    return importance_df_sorted
+
+
+def create_facet_heatmap(
+    importance_df: pd.DataFrame,
+    output_dir: str = "results",
+    figsize: tuple = (10, 20),
+) -> None:
+    """
+    Create a facet-style heatmap with one panel per model.
+    
+    This provides a fair, transparent, side-by-side comparison of all models
+    without any cross-model averaging or normalization.
+    
+    Args:
+        importance_df: DataFrame with features as rows, models as columns
+        output_dir: Directory to save output
+        figsize: Figure size (width, height)
+    """
+    print("\nCreating facet-style heatmap (one panel per model)...")
+    
+    # Ensure all features have values for all models (fill missing with 0)
+    importance_df = importance_df.fillna(0)
+    
+    # Determine global feature order (sort by max importance across any model)
+    max_importance_per_feature = importance_df.max(axis=1)
+    feature_order = max_importance_per_feature.sort_values(ascending=False).index.tolist()
+    
+    # Reindex DataFrame to use global feature order
+    importance_df_ordered = importance_df.loc[feature_order]
+    
+    # Get model names (columns)
+    model_names = importance_df_ordered.columns.tolist()
+    n_models = len(model_names)
+    n_features = len(importance_df_ordered)
+    
+    print(f"  Features: {n_features}, Models: {n_models}")
+    print(f"  Feature order: sorted by max importance across all models")
+    
+    # Determine global color scale (use max across all models for fair comparison)
+    global_max = importance_df_ordered.max().max()
+    global_min = importance_df_ordered.min().min()
+    
+    # Create facet plot: n_models rows × 1 column
+    fig, axes = plt.subplots(n_models, 1, figsize=figsize, sharey=True)
+    
+    # Handle case where n_models = 1 (single subplot)
+    if n_models == 1:
+        axes = [axes]
+    
+    # Plot each model in its own panel
+    for idx, (model_name, ax) in enumerate(zip(model_names, axes)):
+        # Extract importance values for this model (single column)
+        model_importance = importance_df_ordered[model_name].values
+        
+        # Reshape to 2D for heatmap (features × 1 model)
+        # We'll create a 2D array with shape (n_features, 1)
+        heatmap_data = model_importance.reshape(-1, 1)
+        
+        # Create heatmap for this model using seaborn for better appearance
+        sns.heatmap(
+            heatmap_data,
+            cmap='Blues',
+            ax=ax,
+            cbar=False,  # We'll add a shared colorbar later
+            vmin=global_min,
+            vmax=global_max,
+            linewidths=0.5,
+            linecolor='gray',
+            xticklabels=False,
+            yticklabels=False,
+        )
+        
+        # Set labels and title
+        ax.set_title(f'{model_name}', fontsize=12, fontweight='bold', pad=10)
+        ax.set_xlabel('', fontsize=10)
+        
+        # Set y-axis: show feature names (only for first subplot or all if not too many)
+        if idx == 0 or n_features <= 30:
+            ax.set_yticks(np.arange(n_features) + 0.5)
+            ax.set_yticklabels(feature_order, fontsize=6, rotation=0)
+        else:
+            ax.set_yticks([])
+        
+        # Set x-axis: single tick for model name
+        ax.set_xticks([0.5])
+        ax.set_xticklabels([model_name], fontsize=10)
+    
+    # Add shared colorbar on the right
+    fig.subplots_adjust(right=0.85)
+    cbar_ax = fig.add_axes([0.87, 0.15, 0.02, 0.7])
+    
+    # Create a mappable for colorbar using the data range
+    from matplotlib.colors import Normalize
+    from matplotlib.cm import ScalarMappable
+    sm = ScalarMappable(cmap=plt.cm.Blues, norm=Normalize(vmin=global_min, vmax=global_max))
+    sm.set_array([])
+    cbar = fig.colorbar(sm, cax=cbar_ax)
+    cbar.set_label('Normalized Feature Importance', fontsize=10, rotation=270, labelpad=20)
+    
+    # Overall title
+    fig.suptitle(
+        'Feature Importance: Facet Comparison Across Models\n(No Cross-Model Averaging)',
+        fontsize=14,
+        fontweight='bold',
+        y=0.995,
+    )
+    
+    # Adjust layout
+    plt.tight_layout(rect=[0, 0, 0.85, 0.98])
+    
+    # Save figure
+    output_path = Path(output_dir)
+    output_path.mkdir(parents=True, exist_ok=True)
+    output_file = output_path / "feature_importance_facet.png"
+    plt.savefig(output_file, dpi=300, bbox_inches='tight')
+    print(f"\n✓ Facet heatmap saved to: {output_file}")
+    print(f"  Dimensions: {n_features} features × {n_models} models")
+    print(f"  Models: {', '.join(model_names)}")
+    
+    plt.close()
+    
+    return importance_df_ordered
 
 
 if __name__ == "__main__":

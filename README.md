@@ -248,6 +248,19 @@ The feature engineering pipeline follows Gu-Kelly-Xiu (2020) RFS methodology, co
 Time-series forecasting requires strict temporal ordering to prevent data leakage—models must only use past information to predict future outcomes. 
 NVIDIA's business model has evolved through **three distinct industry regimes**, each defined by changes in GPU demand, hyperscaler spending, semiconductor supply chains, and AI adoption curves. Because the economic structure underlying the stock changed, the model must respect these regime boundaries instead of using naive or uniformly sampled time splits.
 
+## **Industry Regime Timeline**
+
+```
+2010-2020 (Train)         2021-2022 (Val)          2023-Present (Test)
+─────────────────         ───────────────          ───────────────────
+Gaming GPU Era            AI Pre-Acceleration      AI Supercycle
+├─ Gaming dominant       ├─ A100 deployment       ├─ H100/H200
+├─ DC small but growing  ├─ Early LLM training    ├─ GenAI adoption
+├─ Crypto/PC cycles      ├─ Cloud AI capex ↑      ├─ DC dominant
+└─ Predictable supply    └─ DC rapidly expanding  └─ Supply bottlenecks
+```
+
+
 ### **1. 2010–2020 — GPU-Centric Cycle (Training Window)**  
 
 **Time Split**: < 2021-01-01 (52 samples)
@@ -320,21 +333,6 @@ This period represents a **new economic regime**.
 
 The model must demonstrate it can generalize from historical + transition regimes to an unprecedented AI-driven cycle.
 
----
-
-## **Industry Regime Timeline**
-
-```
-2010-2020 (Train)         2021-2022 (Val)          2023-Present (Test)
-─────────────────         ───────────────          ───────────────────
-Gaming GPU Era            AI Pre-Acceleration      AI Supercycle
-├─ Gaming dominant       ├─ A100 deployment       ├─ H100/H200
-├─ DC small but growing  ├─ Early LLM training    ├─ GenAI adoption
-├─ Crypto/PC cycles      ├─ Cloud AI capex ↑      ├─ DC dominant
-└─ Predictable supply    └─ DC rapidly expanding  └─ Supply bottlenecks
-```
-
----
 
 ### Methodology: Multi-Model Comparison Pipeline
 
