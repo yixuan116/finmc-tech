@@ -469,19 +469,24 @@ Sequence models (LSTM/GRU) come later when the project transitions from tabular 
 ![Feature Importance Heatmap](results/feature_importance_heatmap.png)
 *Feature Importance Across Models (Similar to Gu-Kelly-Xiu 2020 Figure 5): Heatmap showing normalized feature importance across Linear, Ridge, RF, XGB, and NN models (63 features × 5 models). Darker blue indicates higher importance. Visualization shows top 50 features by average importance; full data (all 63 features) available in `feature_importance_heatmap.csv`.*
 
-**⚠️ Data Leakage Issue Identified**: The current model and heatmap **incorrectly include** data leakage features (`future_12m_price` and `future_12m_logprice`), which represent future information that would not be available at prediction time. These features are calculated as `adj_close * (1 + future_12m_return)` and contain information from the target variable, allowing the model to "cheat."
+**⚠️ Data Leakage Prevention**: The code **automatically excludes** data leakage features that contain future information. Two features are excluded:
 
-**Status**: 
-- ❌ **Current models** (saved in `models/`) were trained with data leakage features included
-- ❌ **Current heatmap** shows importance of leakage features (they appear as top features)
-- ✅ **Code has been fixed** in `train_models.py` and `create_feature_importance_heatmap.py` to exclude these features
+1. **`future_12m_price`**: Future 12-month stock price (calculated as `adj_close * (1 + future_12m_return)`)
+2. **`future_12m_logprice`**: Log of future 12-month price (calculated as `log(future_12m_price)`)
 
-**Action Required**: 
-- **Re-train models** using the updated code to exclude `future_12m_price` and `future_12m_logprice`
-- **Re-generate heatmap** to show legitimate feature importance (should have 61 features instead of 63)
-- The updated code will automatically exclude any features containing `future_12m` (except the target `future_12m_return`)
+These features are excluded because they contain information from the target variable (`future_12m_return`) and would not be available at prediction time.
 
-**Legitimate Top Features** (after excluding leakage): `tnx_yield` (Treasury yield), `adj_close` (current adjusted price), and interaction terms (e.g., `ix_tnx_change_3m__price_returns_6m`) are valid features for real-world predictions.
+**Current Status**: 
+- ✅ **Code automatically excludes** data leakage features in `train_models.py` and `create_feature_importance_heatmap.py`
+- ⚠️ **Previously saved models** (in `models/`) were trained with leakage features included—these should be re-trained
+- ⚠️ **Current heatmap** shows 63 features (includes leakage)—should be re-generated with 61 legitimate features
+
+**Feature Count**:
+- Total features in dataset: 63
+- Data leakage features excluded: 2 (`future_12m_price`, `future_12m_logprice`)
+- **Legitimate features for modeling: 61**
+
+**Legitimate Top Features** (after excluding leakage): `tnx_yield` (Treasury yield), `adj_close` (current adjusted price), `revenue`, `rev_yoy`, and interaction terms (e.g., `ix_tnx_change_3m__price_returns_6m`) are valid features for real-world predictions.
 
 **Outputs Generated**:
 - `results/performance_step2.csv`: Model comparison metrics
