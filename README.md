@@ -464,14 +464,6 @@ Sequence models (LSTM/GRU) come later when the project transitions from tabular 
 ![Neural Network Predictions](results/pred_vs_actual_nn.png)
 *Neural Network (MLP): Underperforms, likely due to limited data and architecture constraints*
 
-**SHAP Feature Importance** (Tree Models):
-
-![SHAP Summary - Random Forest](results/shap/shap_rf_summary.png)
-*SHAP Summary Plot for Random Forest: Shows feature contributions to predictions. Features pushing predictions higher appear in red (positive impact), while features pushing predictions lower appear in blue (negative impact).*
-
-![SHAP Summary - XGBoost](results/shap/shap_xgb_summary.png)
-*SHAP Summary Plot for XGBoost: Similar feature importance patterns to RF, with some differences in feature ranking and interaction effects.*
-
 **Feature Importance Heatmap** (Cross-Model Comparison):
 
 ![Feature Importance Heatmap](results/feature_importance_heatmap.png)
