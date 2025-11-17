@@ -244,7 +244,8 @@ The feature engineering pipeline follows Gu-Kelly-Xiu (2020) RFS methodology, co
 
 ## Industry-Driven Time Window Selection
 
-Time-series forecasting requires strict temporal ordering to prevent data leakage—models must only use past information to predict future outcomes. NVIDIA's business model has evolved through **three distinct industry regimes**, each defined by changes in GPU demand, hyperscaler spending, semiconductor supply chains, and AI adoption curves. Because the economic structure underlying the stock changed, the model must respect these regime boundaries instead of using naive or uniformly sampled time splits.
+Time-series forecasting requires strict temporal ordering to prevent data leakage—models must only use past information to predict future outcomes. 
+NVIDIA's business model has evolved through **three distinct industry regimes**, each defined by changes in GPU demand, hyperscaler spending, semiconductor supply chains, and AI adoption curves. Because the economic structure underlying the stock changed, the model must respect these regime boundaries instead of using naive or uniformly sampled time splits.
 
 ### **1. 2010–2020 — GPU-Centric Cycle (Training Window)**  
 
