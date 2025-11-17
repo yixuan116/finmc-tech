@@ -414,7 +414,17 @@ Sequence models (LSTM/GRU) come later when the project transitions from tabular 
 **Training Procedure**:
 - **Time-based Split**: See [Industry-Driven Time Window Selection](#industry-driven-time-window-selection) above for detailed rationale and time boundaries
 - **Feature Scaling**: StandardScaler fitted on training set only, applied to val/test
+  - **What it does**: Transforms features to have zero mean and unit variance: `z = (x - μ) / σ`
+  - **Why it matters**: Different features have vastly different scales (e.g., revenue in billions vs. VIX around 20). Scaling ensures:
+    - Distance-based models (KNN, Neural Networks) aren't dominated by large-scale features
+    - Gradient-based optimizers (NN, XGBoost) converge faster and more stably
+    - Regularization (Ridge) applies evenly across features
+  - **Critical**: Scaler is fitted on training data only to prevent data leakage—test set statistics must remain unknown during training
 - **Evaluation Metrics**: MAE, RMSE, R², MAPE (all computed on test set)
+  - **MAE (Mean Absolute Error)**: Average absolute prediction error. Interpretable in original units (e.g., 0.59 = 0.59% return error on average). Robust to outliers.
+  - **RMSE (Root Mean Squared Error)**: Square root of average squared errors. Penalizes large errors more heavily than MAE. Units: same as target (return %).
+  - **R² (Coefficient of Determination)**: Proportion of variance explained. R² = 1.0 means perfect predictions; R² = 0 means model performs as well as predicting the mean; R² < 0 means worse than naive baseline. Standard metric for regression model comparison.
+  - **MAPE (Mean Absolute Percentage Error)**: Average absolute error as percentage of actual values. Useful for understanding relative prediction accuracy (e.g., 43% MAPE means predictions are off by 43% on average relative to actual returns).
 
 **Model Performance** (Test Set):
 
