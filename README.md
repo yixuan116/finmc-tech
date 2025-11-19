@@ -463,6 +463,101 @@ Sequence models (LSTM/GRU) come later when the project transitions from tabular 
 - **Both companies show severe overfitting** with XGB and NN when evaluated on training set
 - **Linear models perform worse on AMD** (R² = 0.5389) than NVDA (R² = 0.6747), suggesting AMD has more non-linear relationships
 
+---
+
+### NVDA vs AMD Feature Importance Comparison
+
+**Methodology**: We extract Top-20 most important features from each of the 5 models (Linear, Ridge, RF, XGB, NN) for both companies, then build a union heatmap showing all unique features that appear in any model's top-20. This reveals which features drive predictions for each company.
+
+**Visualizations**:
+
+![NVDA Union Heatmap](results/nvda_union_heatmap.png)
+*NVDA Top-K Union Feature Importance Heatmap: Shows all unique features appearing in any model's top-20, normalized per model (0-1 scale). Rows = models, Columns = features. Darker colors indicate higher importance.*
+
+![AMD Union Heatmap](results/amd_union_heatmap.png)
+*AMD Top-K Union Feature Importance Heatmap: Shows all unique features appearing in any model's top-20, normalized per model (0-1 scale). Rows = models, Columns = features. Darker colors indicate higher importance.*
+
+**Key Findings**:
+
+#### 1. **Common Features Are Rare (Only 8 features)**
+- **Only 8 features** appear in top-20 for both companies
+- **Common features are primarily**:
+  - **Time features**: `year`, `month`, `days_since_start` (3 features)
+  - **Price/Technical features**: `adj_close`, `price_to_ma_4q`, `price_volatility`, `price_ma_4q`, `price_returns_6m` (5 features)
+- **Interpretation**: Both companies share basic time trends and price momentum patterns, but diverge significantly in what drives their returns beyond these fundamentals.
+
+#### 2. **NVDA: Revenue-Driven + Interest Rate Sensitive (39 NVDA-only features)**
+- **Top NVDA-only features**:
+  - `tnx_yield` (Treasury yield) - **Importance: 1.57**
+  - `ix_tnx_yield__price_returns_12m` (TNX × Price returns) - **Importance: 1.54**
+  - `ix_tnx_yield__rev_qoq` (TNX × Revenue QoQ) - **Importance: 1.25**
+- **Feature composition**:
+  - **16 revenue features**: `rev_qoq`, `rev_yoy`, `rev_accel`, and their interactions
+  - **21 TNX (interest rate) interactions**: TNX × revenue, TNX × price features
+  - **2 macro features**: `tnx_yield`, `tnx_change_3m`
+- **Interpretation**: 
+  - NVDA's returns are **fundamentally driven** by revenue growth and acceleration
+  - **Highly sensitive to interest rate environment** (TNX) - rate changes affect how revenue translates to returns
+  - Revenue data quality is high (complete SEC XBRL data)
+
+#### 3. **AMD: Market-Driven + Technical Indicators (23 AMD-only features)**
+- **Top AMD-only features**:
+  - `ix_sp500_returns__price_volatility` (SP500 × Price volatility) - **Importance: 55.43**
+  - `ix_sp500_returns__price_returns_6m` (SP500 × Price returns) - **Importance: 19.82**
+  - `sp500_returns` (SP500 returns) - **Importance: 17.81**
+- **Feature composition**:
+  - **10 SP500 interactions**: SP500 × price features dominate
+  - **6 technical indicators**: `atr`, `bb_position`, and other price-based technical features
+  - **Limited revenue features**: Only 4 revenue features (most are NaN due to missing data)
+- **Interpretation**:
+  - AMD's returns are **market-driven** - strongly correlated with SP500 performance
+  - **More dependent on technical indicators** when revenue data is unavailable
+  - Revenue data quality is poor (limited SEC XBRL data)
+
+#### 4. **Feature Type Distribution**
+
+| Feature Type | Common | NVDA-Only | AMD-Only |
+|--------------|--------|-----------|----------|
+| **Price/Technical** | 5 | 0 | 6 |
+| **Time** | 3 | 0 | 1 |
+| **Interaction** | 0 | 21 | 10 |
+| **Revenue** | 0 | 16 | 0 |
+| **Macro** | 0 | 2 | 2 |
+
+#### 5. **Core Insights & Business Logic**
+
+**NVDA's Prediction Drivers**:
+1. **Revenue fundamentals matter most**: 16 revenue features capture business performance
+2. **Interest rate sensitivity**: TNX interactions show how rate changes affect revenue-to-return translation
+3. **Fundamental analysis works**: Revenue growth, acceleration, and their macro interactions predict returns
+
+**AMD's Prediction Drivers**:
+1. **Market beta is high**: SP500 interactions dominate (10 features, highest importance)
+2. **Technical analysis compensates**: When revenue data is missing, technical indicators fill the gap
+3. **Market-driven returns**: Returns are more correlated with overall market performance than company-specific fundamentals
+
+**Shared Patterns**:
+- Both companies rely on **time trends** (`year`, `days_since_start`) - capturing long-term structural shifts
+- Both use **price momentum** (`price_to_ma_4q`, `price_volatility`) - technical patterns matter
+- **Non-linear interactions are critical** - simple linear models fail for both
+
+#### 6. **Practical Implications**
+
+**For NVDA**:
+- **Focus on revenue signals**: Revenue growth, acceleration, and QoQ changes are primary predictors
+- **Monitor interest rates**: TNX changes affect how revenue translates to stock returns
+- **Fundamental analysis is effective**: Revenue-based models can work well
+
+**For AMD**:
+- **Market timing matters**: SP500 performance is a strong predictor
+- **Technical indicators help**: When fundamentals are unavailable, technical analysis provides signals
+- **Beta management**: AMD's returns are more market-dependent, requiring different risk management
+
+**For Both**:
+- **Time trends capture regime shifts**: Both companies show structural changes over time (AI supercycle, market evolution)
+- **Non-linear models are essential**: Tree-based models (RF, XGB) capture interactions that linear models miss
+- **Feature engineering matters**: Interaction features (macro × micro) are critical for both companies
+
 **Key Findings**:
 - **Tree-based models (RF, XGB) dominate**: Non-linear tree structures are essential for capturing complex feature interactions
 - **Random Forest is the champion**: Best balance of accuracy (lowest MAE/RMSE) and stability (best R²) on the test set
