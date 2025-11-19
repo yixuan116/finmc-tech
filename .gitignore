@@ -55,15 +55,17 @@ docs/_build/
 *.hdf5
 
 # Results
+# But allow figure images for README (must be before results/ rule)
+!outputs/figs/*.png
+!results/pred_vs_actual_*.png
+!results/shap/*.png
+!results/*union_heatmap.png
+!results/feature_importance_heatmap*.png
 results/
 *.png
 *.jpg
 *.pdf
 outputs/
-# But allow figure images for README
-!outputs/figs/*.png
-!results/pred_vs_actual_*.png
-!results/shap/*.png
 
 # OS
 .DS_Store
