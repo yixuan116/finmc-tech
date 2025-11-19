@@ -424,7 +424,7 @@ Sequence models (LSTM/GRU) come later when the project transitions from tabular 
   - **R² (Coefficient of Determination)**: Proportion of variance explained. R² = 1.0 means perfect predictions; R² = 0 means model performs as well as predicting the mean; R² < 0 means worse than naive baseline. Standard metric for regression model comparison.
   - **MAPE (Mean Absolute Percentage Error)**: Average absolute error as percentage of actual values. Useful for understanding relative prediction accuracy (e.g., 43% MAPE means predictions are off by 43% on average relative to actual returns).
 
-**Model Performance** (Test Set):
+**Model Performance** (Test Set - NVDA):
 
 | Model | MAE | RMSE | R² | MAPE |
 |-------|-----|------|-----|------|
@@ -434,7 +434,34 @@ Sequence models (LSTM/GRU) come later when the project transitions from tabular 
 | XGB | 0.78 | 1.05 | -0.92 | 64.96 |
 | NN | 6.45 | 7.47 | -96.43 | 1229.25 |
 
-**Champion Model**: **Random Forest** (highest test R² = -0.37)
+**Champion Model (NVDA)**: **Random Forest** (highest test R² = -0.37)
+
+---
+
+### NVDA vs AMD Model Performance Comparison (Training Set)
+
+**Note**: AMD analysis uses training set evaluation (no test split yet). NVDA training set results are shown for fair comparison.
+
+| Model | NVDA MAE | NVDA RMSE | NVDA R² | NVDA MAPE | AMD MAE | AMD RMSE | AMD R² | AMD MAPE |
+|-------|----------|-----------|---------|-----------|---------|----------|--------|----------|
+| **Linear** | 0.3492 | 0.4341 | 0.6747 | 794.77% | 0.4585 | 0.6389 | 0.5389 | 226.91% |
+| **Ridge** | 0.4832 | 0.6165 | 0.3439 | 789.00% | 0.5887 | 0.8113 | 0.2565 | 263.95% |
+| **RF** | **0.1973** | **0.2540** | **0.8886** | **323.93%** | **0.1846** | **0.2567** | **0.9256** | **72.44%** |
+| **XGB** | 0.0003 | 0.0004 | 1.0000 ⚠️ | 0.22% | 0.0004 | 0.0005 | 1.0000 ⚠️ | 0.21% |
+| **NN** | 0.0391 | 0.0878 | 0.9867 ⚠️ | 19.41% | 0.0252 | 0.0510 | 0.9971 ⚠️ | 9.13% |
+
+**⚠️ Warning**: XGB and NN show severe overfitting (R² ≈ 1.0) on training set. RF is the most reasonable model for both companies.
+
+**Best Model**:
+- **NVDA**: RF (R² = 0.8886 on training set, R² = -0.37 on test set)
+- **AMD**: RF (R² = 0.9256 on training set)
+
+**Key Observations**:
+- **RF is the champion for both companies**: Best balance of accuracy and generalization potential
+- **AMD RF performs slightly better** than NVDA RF on training set (0.9256 vs 0.8886)
+- **AMD has better sample/feature ratio**: 184/42 = 4.38 vs NVDA 71/71 = 1.00, reducing overfitting risk
+- **Both companies show severe overfitting** with XGB and NN when evaluated on training set
+- **Linear models perform worse on AMD** (R² = 0.5389) than NVDA (R² = 0.6747), suggesting AMD has more non-linear relationships
 
 **Key Findings**:
 - **Tree-based models (RF, XGB) dominate**: Non-linear tree structures are essential for capturing complex feature interactions
