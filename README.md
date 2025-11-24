@@ -751,6 +751,190 @@ This three-horizon architecture is an empirical consequence of Step 5, not an ar
 
 ---
 
+## Step 6 — Translating Drivers into Economic Narrative
+
+After Step 5 identifies the dominant machine learning drivers (TNX, VIX, price momentum, rate–volatility interactions), Step 6 converts these statistical signals into real economic meaning.
+
+This is the step where ML stops being numbers and becomes business intelligence, valuation insight, and strategic forecast.
+
+It answers three questions investors, CFOs, and strategists truly care about:
+
+1. **Why do these factors matter economically?**
+2. **What do they tell us about NVIDIA's valuation and cyclicality?**
+3. **How do macro and fundamentals link into a unified explanation?**
+
+---
+
+### 6.1 Why MACRO Dominates SHORT Horizon (12M)
+
+The 12-month forecast horizon captures market behavior, not business fundamentals.
+
+Machine learning finds that the strongest 12M signals are:
+
+| Rank | Driver | Meaning |
+|------|--------|---------|
+| 1 | `ix_vix_change_3m__price_returns_6m` | Volatility regime × momentum |
+| 2 | `ix_vix_change_3m__revenue` | Volatility shaping how revenue is priced |
+| 3 | `days_since_start` | Structural regime drift (pre-AI → AI supercycle) |
+| 4 | `adj_close` | Valuation anchor / returns-to-mean pressure |
+| 5 | `ix_vix_level__rev_yoy` | VIX × revenue growth |
+
+**Narrative (核心解释)**:
+
+→ In short horizons, the market prices NVDA based on macro regime first, business fundamentals second.
+
+**Because**:
+
+- **NVDA is a long-duration growth stock**
+- **AI CAPEX returns happen years in the future**
+- **Therefore its valuation is extremely sensitive to discount rate (TNX)**
+- **And to risk appetite (VIX)**
+- **Revenue does not move quarter-to-quarter enough to dominate 12M returns**
+
+This matches institutional investor behavior: growth megacap = macro-beta amplified by positioning, flows, volatility regimes.
+
+---
+
+### 6.2 PDP / SHAP Interpretation (with Economic Meaning)
+
+#### (1) Partial Dependence Plot: VIX × Price Momentum
+
+![PDP/ICE: VIX Change × 6M Return](results/step5/pdp_ix_vix_change_3m__price_returns_6m.png)
+
+**What ML sees**:
+
+- When VIX is high (market fear), momentum becomes unreliable.
+- When VIX is low (risk-on regime), momentum is rewarded.
+
+**Economic interpretation**:
+
+Momentum is not a standalone factor for NVDA — it is regime-dependent, exactly like equity risk-premia literature predicts.
+
+#### (2) PDP: VIX × Revenue YoY
+
+![PDP/ICE: VIX Level × Rev YoY](results/step5/pdp_ix_vix_level__rev_yoy.png)
+
+**What ML sees**:
+
+- Revenue YoY only helps predict returns when volatility is low.
+- When VIX is high, even strong revenue is ignored by investors.
+
+**Economic interpretation**:
+
+During panic or high uncertainty, the market stops differentiating fundamentals — all correlations go to 1.
+
+#### (3) PDP: TNX (10-year Treasury Yield)
+
+![PDP/ICE: TNX Yield](results/step5/pdp_tnx_yield.png)
+
+**What ML sees**:
+
+- Higher TNX depresses NVDA expected 12M returns (negative slope).
+- The effect is convex → rising rates hurt more when already elevated.
+
+**Economic interpretation**:
+
+- **TNX = discount rate**
+- **NVDA = long-duration cash-flow asset**
+- **Therefore**: interest rate changes dominate valuation sensitivity more than quarterly revenue.
+
+This is consistent with 2022–2023 AI drawdowns and re-ratings.
+
+#### (4) SHAP Summary: Interaction Terms Dominate
+
+![SHAP Beeswarm](results/step5/shap_beeswarm.png)
+
+**SHAP shows interaction features (macro × micro) explaining most variance.**
+
+**Meaning**:
+
+- You cannot explain NVDA by revenue alone.
+- You cannot explain NVDA by rates alone.
+- The real driver is: **"Given the macro regime, how much does the market choose to reward fundamentals?"**
+
+This perfectly captures institutional pricing dynamics.
+
+---
+
+### 6.3 Macro → Micro Narrative (The Economic Bridge)
+
+To unify the two worlds:
+
+#### Short Horizon (12M)
+
+**Market determines valuation**
+
+→ Macro cycle, VIX regime, rates, liquidity
+
+→ Micro (revenue/margin) only matter conditionally
+
+#### Medium Horizon (36M)
+
+**Business determines numbers**
+
+→ Revenue trajectory, margins, ASP mix, GPU supply chain
+
+→ Macro is a background conditioning factor
+
+#### Long Horizon (60–120M)
+
+**Strategy & TAM determine cash-flow**
+
+→ Data center AI adoption
+
+→ CUDA ecosystem lock-in
+
+→ AI server architecture cycles
+
+→ GPU supply chain & HBM bottlenecks
+
+→ Nvidia's platform economics
+
+**This step "glues" them together**:
+
+- **Macro prices NVDA in the short-term**
+- **Business delivers NVDA in the medium-term**
+- **Strategy defines NVDA in the long-term**
+
+This is exactly how real hedge funds and CFO offices reason.
+
+---
+
+### 6.4 What Step 6 Tells Us About NVIDIA Today
+
+Based on the extracted drivers + PDP/SHAP interpretation:
+
+#### (1) NVDA is not priced on revenue in short horizons
+
+Revenue improves slowly, so it is not the marginal information set the market reacts to.
+
+#### (2) NVDA is priced on the state of macro regime
+
+- Rates ↓ → higher valuation multiple
+- Volatility ↓ → higher risk appetite
+- "Macro calmness" = "NVIDIA β > 1 expansion"
+
+#### (3) Revenue signals become stronger only when macro stabilizes
+
+This matches the 2023–2024 AI supercycle where rates stabilized.
+
+#### (4) Rate cycle > revenue cycle in 12M horizon
+
+**This is the headline finding**: valuation drivers dominate business drivers in short horizons.
+
+#### (5) This is not contradictory — it is exactly textbook asset pricing for long-duration tech
+
+Your ML pipeline basically rediscovered academic finance:
+
+- long-duration equity
+- macro discounting
+- volatility + flows
+- convexity
+
+But with NVDA-specific structure + business interpretation.
+
+---
+
 ## AMD Analysis Summary
 
 This section provides a comprehensive summary of the AMD analysis following the same structure as NVDA: **Data**, **Features**, **Models**, and **Time Window**.
