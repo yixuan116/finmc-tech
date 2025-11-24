@@ -144,6 +144,21 @@ def plots_cmd(args):
     logger.info("=" * 70)
 
 
+def step5_cmd(args):
+    """Extract key drivers from champion RF model (Step 5)."""
+    from finmc_tech.step5_key_drivers import run_step5
+    
+    run_step5(
+        data_path=getattr(args, 'data_path', "data/processed/nvda_features_extended.csv"),
+        target_column=getattr(args, 'target_column', "return_next_month"),
+        model_path=getattr(args, 'model_path', "models/champion_model.pkl"),
+        scaler_path=getattr(args, 'scaler_path', "models/feature_scaler.pkl"),
+        output_dir=getattr(args, 'output_dir', "results/step5"),
+        top_n=getattr(args, 'top_n', 5),
+        rolling=getattr(args, 'rolling', False),
+    )
+
+
 def main():
     """Main CLI entry point with subcommands."""
     parser = argparse.ArgumentParser(
@@ -195,6 +210,27 @@ def main():
     plots_parser.add_argument("--h", type=int, default=24, help="Horizon for simulation plots")
     plots_parser.add_argument("--n", type=int, default=200, help="Number of paths for simulation plots")
     plots_parser.set_defaults(func=plots_cmd)
+    
+    # step5 subcommand
+    step5_parser = subparsers.add_parser(
+        "step5",
+        help="Extract key drivers from champion RF model (Step 5)",
+    )
+    step5_parser.add_argument("--data-path", default="data/processed/nvda_features_extended.csv",
+                             help="Path to feature CSV")
+    step5_parser.add_argument("--target-column", default="return_next_month",
+                             help="Target column name")
+    step5_parser.add_argument("--model-path", default="models/champion_model.pkl",
+                             help="Path to champion model")
+    step5_parser.add_argument("--scaler-path", default="models/feature_scaler.pkl",
+                             help="Path to feature scaler")
+    step5_parser.add_argument("--output-dir", default="results/step5",
+                             help="Output directory")
+    step5_parser.add_argument("--top-n", type=int, default=5,
+                             help="Number of top drivers for PDP/ICE plots")
+    step5_parser.add_argument("--rolling", action="store_true",
+                             help="Generate rolling importance plot")
+    step5_parser.set_defaults(func=step5_cmd)
     
     args = parser.parse_args()
     
