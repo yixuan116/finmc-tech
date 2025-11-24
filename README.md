@@ -560,6 +560,197 @@ Sequence models (LSTM/GRU) come later when the project transitions from tabular 
 
 ---
 
+## Step 5 — Short-Horizon (12M) Key Drivers Analysis
+
+### 🔎 Overview
+
+Step 5 extracts the true drivers behind NVDA's 12-month forward returns using the champion Random Forest model from Step 4.
+
+This step focuses on interpreting the model rather than re-training it.
+
+We compute:
+
+- Mean Decrease Impurity (MDI) importance
+- Permutation importance
+- SHAP (Shapley Additive Explanations) values
+- PDP/ICE curves
+- Final driver rankings + economic interpretation
+
+This produces the most complete short-horizon driver decomposition of NVDA's return dynamics.
+
+---
+
+### 🧠 Mathematical Foundations
+
+#### SHAP (Shapley Additive Explanations)
+
+SHAP decomposes a model prediction into marginal contributions from each feature, based on the Shapley value from cooperative game theory:
+
+$$\phi_i = \sum_{S \subseteq F \setminus \{i\}} \frac{|S|!(|F| - |S| - 1)!}{|F|!} [f(S \cup \{i\}) - f(S)]$$
+
+Where:
+
+- $\phi_i$ = contribution of feature $i$
+- $F$ = full set of features
+- $S$ = subset of features not containing $i$
+- $f(S)$ = model prediction using only features in $S$
+
+TreeSHAP gives an exact polynomial-time algorithm for tree models:
+
+$$O(T \cdot L^2)$$
+
+where $T$ = number of trees, $L$ = depth.
+
+This makes SHAP ideal for RF/XGBoost.
+
+#### PDP (Partial Dependence)
+
+PDP shows the average effect of a feature on predictions:
+
+$$PD_i(x_i) = E_{X_{\sim i}}[f(x_i, X_{\sim i})]$$
+
+#### ICE (Individual Conditional Expectation)
+
+ICE shows sample-specific effects:
+
+$$ICE_j(x_i) = f(x_i, x_{\sim i}^{(j)})$$
+
+Together:
+
+- **SHAP** = local driver attribution
+- **PDP** = global marginal effect
+- **ICE** = regime heterogeneity
+
+#### Permutation Importance
+
+Randomly shuffling feature $i$ breaks its relationship to the target.
+
+Performance deterioration = true predictive value.
+
+#### MDI Importance
+
+Measures decrease in impurity (variance/MSE) when splitting on feature $i$.
+
+Useful but can be biased → we combine all methods.
+
+---
+
+### 📊 Key Plots
+
+#### MDI: Top 20 Features
+
+![MDI Importance](results/step5/mdi_top20.png)
+
+#### Permutation Importance
+
+![Permutation Importance](results/step5/perm_top20.png)
+
+#### SHAP Summary
+
+![SHAP Beeswarm](results/step5/shap_beeswarm.png)
+
+#### PDP/ICE: TNX Yield
+
+![PDP/ICE: TNX Yield](results/step5/pdp_tnx_yield.png)
+
+**Interpretation**:
+
+- Clear negative contribution from higher TNX
+- Nonlinear "kink" around ~2%
+- ICE curves show regime-dependent sensitivity (2020→2024)
+- Short-term NVDA returns behave like a discount-rate asset.
+
+#### PDP/ICE: VIX Change × 6M Return
+
+![PDP/ICE: VIX Change × 6M Return](results/step5/pdp_ix_vix_change_3m__price_returns_6m.png)
+
+**Interpretation**:
+
+- Momentum is not standalone
+- Only meaningful when conditioned on volatility shocks
+- Captures AI-narrative amplification during risk-on periods
+
+#### PDP/ICE: VIX Change × Revenue
+
+![PDP/ICE: VIX Change × Revenue](results/step5/pdp_ix_vix_change_3m__revenue.png)
+
+**Interpretation**:
+
+- Revenue only matters when VIX spikes
+- High volatility → fundamentals get discounted
+- Markets re-price growth under stress
+
+#### PDP/ICE: VIX Level × Rev YoY
+
+![PDP/ICE: VIX Level × Rev YoY](results/step5/pdp_ix_vix_level__rev_yoy.png)
+
+**Interpretation**:
+
+- Revenue YoY influence is suppressed in low-VIX regimes
+- But becomes negative in high-VIX regimes
+- Reflects risk-adjusted growth repricing
+
+---
+
+### 🧩 Findings: Short-Horizon (12M) Drivers
+
+#### 1. TNX Yield = strongest single-factor driver
+
+- **SHAP**: high TNX → negative return forecast
+- **PDP**: nonlinear / threshold around 2%
+- **Economic meaning**: NVDA short-term pricing is macro-discount-rate driven.
+
+#### 2. VIX Change = regime-switching driver
+
+- Large VIX spikes sharply reduce predicted returns
+- Cross-terms VIX × Momentum / VIX × Revenue rank highest
+- Matches real-world "AI high-beta behavior"
+
+#### 3. Momentum only matters conditionally
+
+Pure momentum features are weak.
+
+Momentum becomes powerful only through macro interaction:
+
+$$\text{Return}_{12M} = f(\Delta VIX \times PR_{6M})$$
+
+#### 4. Revenue fundamentals are not priced at the 12M horizon
+
+SHAP ~ 0 for:
+
+- `revenue`
+- `rev_yoy`
+- `rev_accel`
+
+Fundamentals require longer horizons to appear in pricing.
+
+This is a key empirical finding of Step 5.
+
+#### 5. Time Trend (AI Supercycle) is present but not a driver
+
+`days_since_start` contributes weakly and nonlinearly.
+
+---
+
+### 🔍 Why Step 5 Naturally Leads to a Multi-Horizon Framework
+
+Step 5 empirically shows:
+
+- Short-term price = macro (TNX, VIX)
+- NOT fundamentals (SHAP ≈ 0 for rev variables)
+- Momentum is macro-conditioned
+- Growth only priced in high-vol regimes
+
+Thus the market structure itself forces a multi-horizon view:
+
+- **12M** → macro-driven
+- **36M** → revenue acceleration becomes visible
+- **60–120M** → margins, TAM & ecosystem drive valuation
+
+This three-horizon architecture is an empirical consequence of Step 5, not an arbitrary design choice.
+
+---
+
 ## AMD Analysis Summary
 
 This section provides a comprehensive summary of the AMD analysis following the same structure as NVDA: **Data**, **Features**, **Models**, and **Time Window**.
