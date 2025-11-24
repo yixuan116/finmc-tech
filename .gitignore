@@ -61,6 +61,7 @@ docs/_build/
 !results/shap/*.png
 !results/*union_heatmap.png
 !results/feature_importance_heatmap*.png
+!results/step5/*.png
 results/
 *.png
 *.jpg

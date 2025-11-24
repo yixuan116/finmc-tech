@@ -1,0 +1,10 @@
+feature,appearances_in_top10,persistence_rate
+revenue,5,1.0
+adj_close,5,1.0
+rev_qoq,5,1.0
+rev_yoy,5,1.0
+rev_accel,5,1.0
+vix_level,5,1.0
+tnx_yield,5,1.0
+vix_change_3m,5,1.0
+tnx_change_3m,5,1.0
