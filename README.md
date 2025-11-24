@@ -558,7 +558,112 @@ Sequence models (LSTM/GRU) come later when the project transitions from tabular 
 - **Non-linear models are essential**: Tree-based models (RF, XGB) capture interactions that linear models miss
 - **Feature engineering matters**: Interaction features (macro × micro) are critical for both companies
 
+---
+
+## AMD Analysis Summary
+
+This section provides a comprehensive summary of the AMD analysis following the same structure as NVDA: **Data**, **Features**, **Models**, and **Time Window**.
+
+### Quick Comparison Table
+
+| Dimension | NVDA | AMD | Notes |
+|-----------|------|-----|-------|
+| **DATA** |
+| Sample Size | 71 | 184 | AMD has 2.6× more samples |
+| Feature Count | 71 | 42 | NVDA has 1.7× more features |
+| Time Period | 2008-01-28 to 2025-07-28 | 1980-03-31 to 2025-11-18 | AMD has longer history (45.6 vs 17.5 years) |
+| Time Span | 17.5 years | 45.6 years | - |
+| Data Frequency | Quarterly | Quarterly | Same |
+| **FEATURES** |
+| Total Features | 71 | 42 | - |
+| Price Features | ~36 | ~28 | - |
+| Macro Features | ~44 | ~14 | NVDA has more macro features |
+| Time Features | 4 | 4 | Same |
+| Interaction Features | ~42 | ~12 | NVDA has more interactions |
+| Revenue Features | ~20 | ~4 | AMD revenue data limited |
+| Common Features | - | - | 21 features |
+| **MODELS** |
+| Models Used | 5 (Linear, Ridge, RF, XGB, NN) | 5 (Linear, Ridge, RF, XGB, NN) | Same pipeline |
+| **Best Model** | **RF (R²=0.8886)** | **RF (R²=0.9256)** | **Most reasonable (no overfitting)** |
+| XGB Performance | 1.0000 ⚠️ | 1.0000 ⚠️ | Severe overfitting |
+| NN Performance | 0.9867 ⚠️ | 0.9971 ⚠️ | Severe overfitting |
+| Linear Performance | 0.6747 | 0.5389 | NVDA better |
+| **TIME WINDOW** |
+| Sample/Feature Ratio | 1.00 | 4.38 | AMD better (but both risky) |
+| Overfitting Risk | **EXTREME** | **HIGH** | NVDA: 1 sample/feature |
+| Train/Test Split | ❌ No | ❌ No | **CRITICAL: Both need this** |
+| **RISK ASSESSMENT** |
+| Overfitting Status | ⚠️ Severe | ⚠️ Severe | XGB R²=1.0, NN R²>0.98 |
+| Data Quality | ✅ Good | ⚠️ Limited revenue | AMD missing revenue data |
+| Generalization | ❌ Poor | ⚠️ Better than NVDA | Both need train/test split |
+
+### AMD Dataset Details
+
+- **File**: `data/processed/amd_features_extended.csv`
+- **Sample Size**: 184 rows (quarterly data)
+- **Feature Count**: 42 columns
+- **Time Period**: 1980-03-31 to 2025-11-18
+- **Time Span**: 45.6 years
+- **Data Frequency**: Quarterly
+- **Data Sources**:
+  - Price data: Yahoo Finance (adjusted close, returns)
+  - Macro variables: FRED API (VIX, 10Y yield, SP500)
+  - Revenue data: Limited (most revenue features are NaN)
+
+### AMD Feature Engineering
+
+AMD uses the same feature engineering pipeline as NVDA:
+
+1. **Price Momentum Features**: Price returns (1m, 3m, 6m, 12m), momentum, volatility, price-to-moving-average ratios
+2. **Market Macro Features**: VIX level and changes, 10-year Treasury yield and changes, SP500 level and returns
+3. **Time Features**: `quarter`, `month`, `year`, `days_since_start`
+4. **Interaction Features**: Kronecker product structure (macro × micro interactions)
+5. **Revenue Features**: Limited revenue data (most features are NaN)
+
+### AMD Model Performance
+
+**Best Reasonable Model**: Random Forest (R² = 0.9256 on training set)
+
+**Key Observations**:
+- **AMD RF performs slightly better** than NVDA RF on training set (0.9256 vs 0.8886)
+- **AMD has better sample/feature ratio**: 184/42 = 4.38 vs NVDA 71/71 = 1.00, reducing overfitting risk
+- **Both companies show severe overfitting** with XGB and NN when evaluated on training set
+- **Linear models perform worse on AMD** (R² = 0.5389) than NVDA (R² = 0.6747), suggesting AMD has more non-linear relationships
+
+### AMD Time Window & Risk Assessment
+
+| Company | Samples | Features | Ratio | Risk Level |
+|---------|---------|----------|-------|------------|
+| **NVDA** | 71 | 71 | **1.00** | **EXTREME** |
+| **AMD** | 184 | 42 | **4.38** | **HIGH** |
+| Industry Standard | - | - | < 10 | Risky |
+
+**Risk Assessment**:
+- **AMD**: High risk - better than NVDA, but still below safe threshold (10+)
+- **Both companies need**:
+  1. Train/test split (CRITICAL)
+  2. Feature selection (reduce to Top-20)
+  3. Regularization (XGB, NN)
+  4. Cross-validation
+
+### AMD vs NVDA Feature Importance Differences
+
+**AMD Top Features**:
+- Price features more important (`adj_close`, `atr`, `bb_position`)
+- SP500 interaction features dominate
+- Limited revenue features (revenue data missing)
+
+**NVDA Top Features**:
+- Revenue features important (`rev_qoq`, `rev_yoy`, `rev_accel`)
+- TNX (interest rate) interactions dominate
+- More interaction features overall
+
+**Common Features** (8 features):
+- Time features: `year`, `month`, `days_since_start` (3 features)
+- Price/Technical features: `adj_close`, `price_to_ma_4q`, `price_volatility`, `price_ma_4q`, `price_returns_6m` (5 features)
+
 **Key Findings**:
+- **Tree-based models (RF, XGB) dominate**: Non-linear tree structures are essential for capturing complex feature interactions
 - **Tree-based models (RF, XGB) dominate**: Non-linear tree structures are essential for capturing complex feature interactions
 - **Random Forest is the champion**: Best balance of accuracy (lowest MAE/RMSE) and stability (best R²) on the test set
 - **Linear models fail completely**: Cannot capture non-linear relationships between macro, micro, and interaction features
@@ -1034,6 +1139,204 @@ The pipeline checks for existing data files in this order (to avoid redundant AP
 This ensures efficient data loading and avoids unnecessary API calls.
 
 # Appendix
+
+## Overfitting Issue Analysis
+
+### Key Terminology
+
+- **Overfitting**: Model memorizes training data instead of learning patterns
+- **Curse of Dimensionality**: Too many features relative to samples
+- **Generalization**: Model's ability to perform on new data
+- **Train/Test Split**: Separating data for training vs. evaluation
+
+---
+
+### 1. Problem Identified
+
+#### Current Situation
+
+- **XGB**: R² = 1.0000 (perfect fit - suspicious)
+- **NN**: R² > 0.98 (near-perfect - suspicious)
+- **RF**: R² = 0.88-0.93 (more reasonable)
+
+#### Red Flags
+
+1. XGB R² = 1.0000 → In finance, this is almost impossible
+2. MAE ≈ 0.0003-0.0004 → Too good to be true
+3. Models evaluated on training data (no train/test split)
+4. Sample/feature ratio too low
+
+---
+
+### 2. Root Cause Analysis
+
+#### NVDA: EXTREME RISK
+
+- **Samples**: 71 (quarterly data, ~18 years)
+- **Features**: 68
+- **Ratio**: 1.04 (each feature has only 1 sample!)
+- **Risk Level**: EXTREME
+
+#### AMD: HIGH RISK
+
+- **Samples**: 184
+- **Features**: 38
+- **Ratio**: 4.84
+- **Risk Level**: HIGH
+
+#### Why NVDA is Extreme Risk?
+
+1. **Data Scarcity**: Only 71 quarterly samples
+2. **Feature Explosion**: 68 features from feature engineering
+3. **Curse of Dimensionality**: Ratio < 2 means model can memorize all data
+4. **No Train/Test Split**: Models evaluated on training data
+
+---
+
+### 3. Proposed Solutions
+
+#### Solution 1: Add Train/Test Split (CRITICAL)
+
+- Split data: 80% train, 20% test
+- Train on training set, evaluate on test set
+- **Impact**: Proper performance assessment
+
+#### Solution 2: Feature Selection
+
+- Select Top-20 features (based on feature importance)
+- **NVDA Impact**: 71/20 = 3.55 (risk reduced by 70%)
+- **AMD Impact**: 184/20 = 9.2 (risk reduced by 47%)
+
+#### Solution 3: Regularization
+
+- **XGB**: Add `reg_alpha=0.1`, `reg_lambda=1.0`
+- **NN**: Add dropout, weight decay
+- **Impact**: Limit model complexity
+
+#### Solution 4: Model Simplification
+
+- **XGB**: Reduce `n_estimators` (500 → 100)
+- **NN**: Reduce layers (64,32 → 32,16)
+- **Impact**: Reduce overfitting risk
+
+#### Solution 5: Cross-Validation
+
+- Time-series walk-forward validation
+- **Impact**: More reliable performance assessment
+
+---
+
+### 4. Expected Outcomes
+
+#### Before Fix
+
+- R² = 1.0000 (unrealistic)
+- MAE ≈ 0.0003 (too good)
+- Cannot assess generalization
+
+#### After Fix
+
+- R² = 0.6-0.8 (realistic for finance)
+- Reliable test set performance
+- Better generalization
+- Reduced overfitting risk
+
+---
+
+### 5. Implementation Plan
+
+#### Phase 1: Add Train/Test Split (Immediate)
+
+- **Time**: 1 day
+- **Priority**: CRITICAL
+- **Impact**: Proper evaluation
+
+#### Phase 2: Feature Selection (1-2 days)
+
+- Use feature importance from RF
+- Select Top-20 features
+- **Impact**: Risk reduction 70%
+
+#### Phase 3: Regularization Tuning (2-3 days)
+
+- Add regularization to XGB/NN
+- Tune hyperparameters
+- **Impact**: Better generalization
+
+#### Phase 4: Cross-Validation (3-5 days)
+
+- Implement time-series CV
+- Walk-forward validation
+- **Impact**: Reliable assessment
+
+---
+
+### 6. Data Evidence
+
+#### Current Performance (Training Set)
+
+**NVDA:**
+
+| Model | MAE | RMSE | R² | MAPE |
+|-------|-----|------|----|----|
+| XGB | 0.0003 | 0.0004 | 1.0000 | 0.22% |
+| NN | 0.0391 | 0.0878 | 0.9867 | 19.41% |
+| RF | 0.1973 | 0.2540 | 0.8886 | 323.93% |
+
+**AMD:**
+
+| Model | MAE | RMSE | R² | MAPE |
+|-------|-----|------|----|----|
+| XGB | 0.0004 | 0.0005 | 1.0000 | 0.21% |
+| NN | 0.0252 | 0.0510 | 0.9971 | 9.13% |
+| RF | 0.1846 | 0.2567 | 0.9256 | 72.44% |
+
+#### Risk Assessment
+
+| Company | Samples | Features | Ratio | Risk Level |
+|---------|---------|----------|-------|------------|
+| NVDA | 71 | 68 | 1.04 | **EXTREME** |
+| AMD | 184 | 38 | 4.84 | **HIGH** |
+| Industry Standard | - | - | < 10 | Risky |
+
+---
+
+### 7. Key Questions for Discussion
+
+1. **Priority**: Should we fix overfitting immediately or continue analysis?
+2. **Approach**: Feature selection vs. dimensionality reduction (PCA)?
+3. **Validation**: Time-series CV vs. simple train/test split?
+4. **Model Selection**: Should we focus on RF (more reasonable) or fix XGB/NN?
+5. **Timeline**: How urgent is this fix for the project timeline?
+
+---
+
+### 8. Technical Terms Reference
+
+- **Overfitting**: Model memorizes training data
+- **Curse of Dimensionality**: Too many features vs. samples
+- **Generalization**: Performance on new data
+- **Train/Test Split**: Data separation for evaluation
+- **Cross-Validation**: Multiple train/test splits
+- **Regularization**: Penalty for complexity
+- **Feature Selection**: Choosing important features
+- **Dimensionality Reduction**: Reducing feature space
+- **Early Stopping**: Stop training before overfitting
+- **Walk-forward Validation**: Time-series CV method
+
+---
+
+### Summary
+
+**Problem**: Severe overfitting detected in NVDA (extreme risk) and AMD (high risk) models.
+
+**Root Cause**: No train/test split + low sample/feature ratio (NVDA: 1.04, AMD: 4.84).
+
+**Solution**: Multi-phase approach: train/test split → feature selection → regularization → cross-validation.
+
+**Expected Impact**: More realistic R² (0.6-0.8), better generalization, reliable performance assessment.
+
+---
 
 ## Technology Stack
 
