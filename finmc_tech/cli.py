@@ -159,6 +159,31 @@ def step5_cmd(args):
     )
 
 
+def simulate_scenarios_cmd(args):
+    """Run Step 7: Scenario-based Monte Carlo forecasting."""
+    logger.info("=" * 70)
+    logger.info("Running Step 7: Scenario-Based Monte Carlo Forecasting")
+    logger.info("=" * 70)
+    
+    from finmc_tech.simulation.scenario_mc import run_scenario_forecast
+    
+    results = run_scenario_forecast(
+        ticker=args.ticker,
+        horizon_months=args.h,
+        n_sims=args.n,
+        model_path=args.model_path,
+        scaler_path=args.scaler_path,
+        output_dir=args.output_dir,
+    )
+    
+    logger.info("\n" + "=" * 70)
+    logger.info("Step 7 Analysis Complete!")
+    logger.info("=" * 70)
+    logger.info(f"Forecast table saved to: {args.output_dir}/scenario_forecast_table.csv")
+    logger.info(f"Fan charts saved to: {args.output_dir}/fan_chart_*.png")
+    logger.info(f"Distribution plots saved to: {args.output_dir}/distribution_shift_*.png")
+
+
 def main():
     """Main CLI entry point with subcommands."""
     parser = argparse.ArgumentParser(
@@ -231,6 +256,22 @@ def main():
     step5_parser.add_argument("--rolling", action="store_true",
                              help="Generate rolling importance plot")
     step5_parser.set_defaults(func=step5_cmd)
+    
+    # simulate-scenarios subcommand
+    sim_scenarios_parser = subparsers.add_parser(
+        "simulate-scenarios",
+        parents=[common_parser],
+        help="Run Step 7: Scenario-based Monte Carlo forecasting",
+    )
+    sim_scenarios_parser.add_argument("--h", type=int, default=12,
+                                     help="Horizon in months (default: 12)")
+    sim_scenarios_parser.add_argument("--n", type=int, default=5000,
+                                     help="Number of simulations (default: 5000)")
+    sim_scenarios_parser.add_argument("--model-path", default=None,
+                                     help="Path to champion model (default: models/champion_model.pkl)")
+    sim_scenarios_parser.add_argument("--scaler-path", default=None,
+                                     help="Path to feature scaler (default: models/feature_scaler.pkl)")
+    sim_scenarios_parser.set_defaults(func=simulate_scenarios_cmd)
     
     args = parser.parse_args()
     

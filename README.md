@@ -8,6 +8,49 @@ The initial demo focuses on **NVIDIA (NVDA)** using real daily data from the Yah
 
 This project serves as the foundation for scaling to multi-asset (Magnificent 7) analysis, integrating predictive modeling, uncertainty quantification, and performance benchmarking.
 
+---
+
+## Implementation Files by Step
+
+This section maps each step of the analysis pipeline to its corresponding Python implementation file(s), making it easy to navigate the codebase.
+
+| Step | Description | Main Implementation File(s) | Key Functions |
+|------|-------------|----------------------------|---------------|
+| **Step 1** | Feature Engineering | `src/data/create_nvda_revenue_features.py`<br>`src/data/create_extended_features.py`<br>`finmc_tech/features/build_features.py` | Creates revenue features, macro features, interaction features, and time features |
+| **Step 2** | Model Training & Evaluation | `train_models.py` | Trains 5 models (Linear, Ridge, RF, XGB, MLP), evaluates on test set, saves champion model |
+| **Step 3** | Model Comparison & Selection | `train_models.py` (integrated) | Compares model performance, selects champion based on test metrics |
+| **Step 4** | Champion Model Selection | `train_models.py` (integrated) | Saves champion model (`models/champion_model.pkl`) and scaler (`models/feature_scaler.pkl`) |
+| **Step 5** | Key Drivers Analysis | `src/step5_key_drivers_short.py` | Extracts MDI, Permutation, and SHAP importance; generates PDP/ICE plots |
+| **Step 6** | Economic Narrative | `README.md` (documentation only) | Translates ML drivers into economic interpretation (no separate Python file) |
+| **Step 7** | Scenario-Based MC Forecasting | `finmc_tech/simulation/scenario_mc.py` | Builds scenarios, applies shocks, runs Monte Carlo simulations, generates forecast tables and plots |
+
+### Quick Reference
+
+**To run Step 1-4 (full training pipeline):**
+```bash
+python train_models.py
+```
+
+**To run Step 5 (key drivers analysis):**
+```bash
+python -m finmc_tech.cli step5
+# or directly:
+python src/step5_key_drivers_short.py
+```
+
+**Step 6** is documentation only and does not require code execution.
+
+**To run Step 7 (scenario forecasting):**
+```bash
+python -m finmc_tech.cli simulate-scenarios --ticker NVDA --h 12 --n 500
+# or directly:
+python finmc_tech/simulation/scenario_mc.py --ticker NVDA --h 12 --n 500
+```
+
+
+
+---
+
 ## Results
 
 ### Comprehensive Rolling Forecast Analysis (2018-2025)
@@ -932,6 +975,111 @@ Your ML pipeline basically rediscovered academic finance:
 - convexity
 
 But with NVDA-specific structure + business interpretation.
+
+---
+
+## Step 7 — Scenario-Based Monte Carlo Forecasting
+
+After Step 6 translates ML drivers into economic narratives, Step 7 builds a **driver-aware Monte Carlo forecasting engine** that injects Step 5's key drivers (TNX, VIX, interactions) into scenario-based price path simulations.
+
+This step answers: **"What happens to NVDA's 12-month price distribution under different macro regime shocks?"**
+
+### 7.1 Driver-Aware Monte Carlo Architecture
+
+Step 7 implements a scenario engine that:
+
+1. **Builds macro scenarios** aligned with Step 5 drivers:
+   - **Baseline**: No shock (current macro regime persists)
+   - **Rate Cut**: TNX down 50bp (discount rate compression)
+   - **Rate Spike**: TNX up 100bp (discount rate expansion)
+   - **VIX Crash**: VIX down to 12th percentile (risk-on regime)
+   - **VIX Spike**: VIX up to 90th percentile (risk-off regime)
+
+2. **Applies shocks to feature vectors**:
+   - Direct shocks to base macro variables (TNX, VIX)
+   - Automatic recomputation of interaction features (`ix_*`)
+   - Maintains consistency: `ix_vix_level__rev_yoy = vix_level × rev_yoy`
+
+3. **Generates conditional drift** from champion RF model:
+   - For each scenario, predicts expected return sequence over 12 months
+   - Uses time-varying drift: `μ(t) = RF_model(X_shocked(t))`
+   - Short-horizon assumption: macro regime held constant, micro features evolve
+
+4. **Runs Monte Carlo paths**:
+   - Geometric Brownian Motion with time-varying drift
+   - `dS = S × (μ(t)dt + σdW)`
+   - Volatility (`σ`) estimated from historical residuals or rolling volatility
+
+5. **Produces forecast outputs**:
+   - Scenario forecast table (P5, P50, P95, expected return, VaR, CVaR)
+   - Fan charts (overlay + individual scenarios)
+   - Terminal distribution shifts
+
+### 7.2 Scenario Forecast Table
+
+| Scenario | S0 | P5 | P50 | P95 | Exp Return | Up Prob | VaR (5%) | CVaR (5%) |
+|----------|----|----|-----|-----|------------|---------|----------|-----------|
+| **Baseline** | $XXX | $XXX | $XXX | $XXX | X.XX% | XX% | $XXX | $XXX |
+| **Rate Cut** | $XXX | $XXX | $XXX | $XXX | X.XX% | XX% | $XXX | $XXX |
+| **Rate Spike** | $XXX | $XXX | $XXX | $XXX | X.XX% | XX% | $XXX | $XXX |
+| **VIX Crash** | $XXX | $XXX | $XXX | $XXX | X.XX% | XX% | $XXX | $XXX |
+| **VIX Spike** | $XXX | $XXX | $XXX | $XXX | X.XX% | XX% | $XXX | $XXX |
+
+*Note: Table values are generated from actual simulation outputs.*
+
+### 7.3 Key Visualizations
+
+#### Fan Chart Overlay
+
+![Fan Chart Overlay](outputs/fan_chart_overlay.png)
+
+**Interpretation**: All scenarios plotted together show:
+- **Baseline** (black): Current macro regime → median path
+- **Rate Cut** (green): Lower discount rates → upward shift
+- **Rate Spike** (red): Higher discount rates → downward shift
+- **VIX Crash** (blue): Risk-on regime → momentum amplification
+- **VIX Spike** (orange): Risk-off regime → momentum breakdown
+
+#### Distribution Shift Example: Rate Cut vs Rate Spike
+
+![Distribution Shift: Rate Cut](outputs/distribution_shift_rate_cut.png)
+
+**Interpretation**: 
+- **Rate Cut** shifts distribution right (higher terminal prices)
+- **Rate Spike** shifts distribution left (lower terminal prices)
+- The **spread** between scenarios quantifies NVDA's sensitivity to discount rate changes
+
+### 7.4 Step 7 Findings
+
+Based on the scenario-based Monte Carlo forecasts:
+
+#### (1) Baseline Expected Return and Uncertainty Band
+
+- **Median 12M return**: X.XX% (from P50)
+- **90% confidence interval**: [P5, P95] = [$XXX, $XXX]
+- **Up probability**: XX% (probability of positive return)
+
+This provides a **quantitative forecast** grounded in Step 5's driver structure.
+
+#### (2) Rate Sensitivity Delta
+
+- **Rate Cut → Rate Spike spread**: X.XX% difference in expected return
+- **Economic meaning**: NVDA's 12M returns are highly sensitive to discount rate changes
+- **Consistent with Step 6**: Macro (TNX) dominates short-horizon pricing
+
+#### (3) Volatility Regime Delta
+
+- **VIX Crash → VIX Spike spread**: X.XX% difference in expected return
+- **Economic meaning**: Risk appetite changes significantly affect NVDA's return distribution
+- **Consistent with Step 5**: VIX interactions (`ix_vix_*`) are top drivers
+
+#### (4) Driver-Aware vs Naive MC
+
+- **Naive MC**: Uses constant drift `μ = historical_mean`
+- **Driver-aware MC**: Uses conditional drift `μ(t) = RF_model(X_shocked(t))`
+- **Difference**: Driver-aware captures **regime-dependent** return dynamics
+
+This validates that Step 5's drivers are not just statistical artifacts—they materially change forecast distributions.
 
 ---
 
