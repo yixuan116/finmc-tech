@@ -1,12 +1,14 @@
 #!/usr/bin/env python3
 """
 Step 7: Scenario-Based Monte Carlo Forecasting with Driver-Aware Shocks.
+Step 8: Scenario-Based Risk Engine + HPC Benchmark.
 
 This module implements driver-aware Monte Carlo simulation by:
 1. Building macro scenarios aligned with Step 5 drivers (TNX/VIX + interactions)
 2. Generating conditional drift from champion RF model
 3. Running Monte Carlo paths for 12-month horizon
 4. Producing forecast tables, fan charts, and distribution plots
+5. Providing an HPC benchmark comparing vectorized NumPy vs Numba parallel execution
 """
 
 from __future__ import annotations
@@ -14,13 +16,19 @@ from __future__ import annotations
 import warnings
 from pathlib import Path
 from typing import Dict, List, Tuple, Optional, Any
+import time
 import joblib
 import numpy as np
 import pandas as pd
+import matplotlib
+matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 from sklearn.ensemble import RandomForestRegressor
 from sklearn.preprocessing import StandardScaler
 from tqdm import tqdm
+from numba import njit, prange
+from concurrent.futures import ThreadPoolExecutor, as_completed
+import os
 
 warnings.filterwarnings("ignore")
 
@@ -299,8 +307,9 @@ def apply_shock(
             X_shocked["vix_change_3m"] = new_change
             base_features["vix_change_3m"] = new_change
     
-    # Recompute interaction features
-    X_shocked = recompute_interaction_features(X_shocked, base_features)
+    # Recompute interaction features only if base features were updated
+    if base_features:
+        X_shocked = recompute_interaction_features(X_shocked, base_features)
     
     return X_shocked
 
@@ -334,7 +343,16 @@ def predict_conditional_drift(
         Conditional drift sequence (shape: [horizon_steps])
     """
     # Strict training-order alignment
-    feat_order = list(scaler.feature_names_in_)
+    if hasattr(scaler, "feature_names_in_"):
+        feat_order = list(scaler.feature_names_in_)
+    else:
+        # Fallback: scaler was fit on numpy array (no names). Enforce same feature count.
+        n_expected = int(getattr(scaler, "n_features_in_", X_seq.shape[1]))
+        feat_order = list(X_seq.columns)[:n_expected]
+        if len(feat_order) < n_expected:
+            # pad with dummy names to match expected dim
+            feat_order += [f"__pad_{i}__" for i in range(n_expected - len(feat_order))]
+        print(f"⚠ scaler has no feature_names_in_; enforcing n_features_in_={n_expected}")
     
     # Build X_current with exactly these columns in this order
     X_current = pd.DataFrame(index=X_seq.index, columns=feat_order, dtype=float)
@@ -370,6 +388,11 @@ def predict_conditional_drift(
     return mu_seq
 
 
+# ------------------------------------------------------------------
+# Baseline Monte Carlo engine (NumPy, vectorized)
+# - Single-process, vectorized over all paths using NumPy/BLAS
+# - Serves as the non-HPC baseline for Step 8 benchmarks
+# ------------------------------------------------------------------
 def run_driver_aware_mc_fast(
     S0: float,
     mu_seq: np.ndarray,
@@ -377,6 +400,7 @@ def run_driver_aware_mc_fast(
     n_sims: int,
     horizon_steps: int,
     seed: int = RANDOM_STATE,
+    steps_per_year: int = 12,
 ) -> Tuple[np.ndarray, np.ndarray]:
     """
     Fast vectorized Monte Carlo simulation (no progress bar).
@@ -399,6 +423,8 @@ def run_driver_aware_mc_fast(
         Number of steps ahead
     seed : int
         Random seed
+    steps_per_year : int
+        Number of steps per year (12 for monthly, 4 for quarterly)
     
     Returns
     -------
@@ -410,7 +436,7 @@ def run_driver_aware_mc_fast(
     rng = np.random.default_rng(seed)
     
     # Convert annualized sigma to per-step sigma
-    sigma_step = sigma_annual / np.sqrt(12)
+    sigma_step = sigma_annual / np.sqrt(steps_per_year)
     
     # Initialize paths
     paths = np.zeros((n_sims, horizon_steps + 1))
@@ -422,6 +448,9 @@ def run_driver_aware_mc_fast(
     # Vectorized: compute all steps in one shot via cumprod
     # rets shape: (n_sims, horizon_steps)
     rets = mu_seq.reshape(1, -1) + sigma_step * Z
+    
+    # Clip extreme returns to prevent negative prices
+    rets = np.clip(rets, -0.99, None)
     
     # paths[:, 1:] = S0 * cumprod(1.0 + rets, axis=1)
     paths[:, 1:] = S0 * np.cumprod(1.0 + rets, axis=1)
@@ -439,6 +468,7 @@ def run_driver_aware_mc_batched(
     horizon_steps: int,
     seed: int = RANDOM_STATE,
     batch_size: int = 1000,
+    steps_per_year: int = 12,
 ) -> Tuple[np.ndarray, np.ndarray]:
     """
     Batched Monte Carlo simulation with progress bar.
@@ -463,6 +493,8 @@ def run_driver_aware_mc_batched(
         Random seed
     batch_size : int
         Batch size for progress tracking
+    steps_per_year : int
+        Number of steps per year (12 for monthly, 4 for quarterly)
     
     Returns
     -------
@@ -474,7 +506,7 @@ def run_driver_aware_mc_batched(
     rng = np.random.default_rng(seed)
     
     # Convert annualized sigma to per-step sigma
-    sigma_step = sigma_annual / np.sqrt(12)
+    sigma_step = sigma_annual / np.sqrt(steps_per_year)
     
     # Initialize paths
     paths = np.zeros((n_sims, horizon_steps + 1))
@@ -492,15 +524,60 @@ def run_driver_aware_mc_batched(
         # Generate random shocks for this batch
         Z_batch = rng.standard_normal((batch_size_actual, horizon_steps))
         
-        # Simulate paths for this batch
-        for t in range(horizon_steps):
-            # Arithmetic return per step
-            rets = mu_seq[t] + sigma_step * Z_batch[:, t]
-            paths[start_idx:end_idx, t + 1] = paths[start_idx:end_idx, t] * (1 + rets)
+        # Vectorized: compute all steps in one shot via cumprod
+        # rets shape: (batch_size_actual, horizon_steps)
+        rets = mu_seq.reshape(1, -1) + sigma_step * Z_batch
+        
+        # Clip extreme returns to prevent negative prices
+        rets = np.clip(rets, -0.99, None)
+        
+        # paths[start_idx:end_idx, 1:] = S0 * cumprod(1.0 + rets, axis=1)
+        paths[start_idx:end_idx, 1:] = S0 * np.cumprod(1.0 + rets, axis=1)
     
     terminals = paths[:, -1]
     
     return paths, terminals
+
+
+# ------------------------------------------------------------------
+# HPC Part A: Path-level parallelism with Numba
+# - Data-parallel over Monte Carlo paths using prange
+# - Multi-core Monte Carlo kernel for Step 8 HPC benchmark
+# ------------------------------------------------------------------
+# [HPC-OpenMP-Analogy]
+# This Numba kernel uses @njit(parallel=True) + prange to parallelize
+# over Monte Carlo paths on a single node. Conceptually this mirrors
+# the OpenMP parallel-for loop implemented in hpc_demos/openmp_mc_demo.c.
+@njit(parallel=True)
+def mc_numba_parallel(
+    S0: float,
+    mu: float,
+    sigma_annual: float,
+    n_sims: int,
+    horizon_steps: int,
+    steps_per_year: int,
+) -> np.ndarray:
+    """
+    Numba-parallel Monte Carlo kernel (data-parallel over paths).
+
+    Uses a simple arithmetic return model:
+        r_t = mu + sigma_step * eps
+        S_{t+1} = S_t * (1 + r_t)
+    """
+    sigma_step = sigma_annual / np.sqrt(steps_per_year)
+    paths = np.zeros((n_sims, horizon_steps + 1))
+    paths[:, 0] = S0
+
+    # Parallel loop over simulation paths (one path per core where possible)
+    for i in prange(n_sims):
+        for t in range(horizon_steps):
+            eps = np.random.normal()
+            r_t = mu + sigma_step * eps
+            if r_t < -0.99:
+                r_t = -0.99
+            paths[i, t + 1] = paths[i, t] * (1.0 + r_t)
+
+    return paths
 
 
 def summarize_paths(terminals: np.ndarray, S0: float) -> Dict[str, float]:
@@ -543,13 +620,72 @@ def summarize_paths(terminals: np.ndarray, S0: float) -> Dict[str, float]:
     }
 
 
+# Helper used by both sequential and concurrent scenario execution:
+# - Apply macro shock, predict conditional drift, run Monte Carlo,
+#   and summarize results for a single scenario.
+# - Designed to be side-effect free so it can be used safely in threads.
+def _run_single_scenario_task(
+    scenario_name: str,
+    shock_spec: Dict[str, Any],
+    X_last: pd.DataFrame,
+    S0: float,
+    sigma_annual: float,
+    horizon_steps: int,
+    steps_per_year: int,
+    n_sims: int,
+    model: RandomForestRegressor,
+    scaler: StandardScaler,
+    random_seed: int,
+) -> Dict[str, Any]:
+    """
+    Run the full pipeline for a single scenario:
+    - apply shock
+    - predict conditional drift
+    - run Monte Carlo
+    - summarize paths
+
+    Returns a dict with keys:
+        - "scenario": scenario_name
+        - "summary": summary_dict
+        - "paths": np.ndarray
+        - "terminals": np.ndarray
+        - "mu_seq": np.ndarray
+    
+    This function is side-effect free (no file I/O, no plots, no tqdm).
+    """
+    # Apply shock
+    X_shocked = apply_shock(X_last, shock_spec)
+    
+    # Predict conditional drift
+    mu_seq = predict_conditional_drift(model, scaler, X_shocked, horizon_steps)
+    
+    # Run MC (using fast vectorized version to avoid tqdm in threads)
+    paths, terminals = run_driver_aware_mc_fast(
+        S0, mu_seq, sigma_annual, n_sims, horizon_steps, random_seed,
+        steps_per_year=steps_per_year
+    )
+    
+    # Summarize
+    summary = summarize_paths(terminals, S0)
+    summary["scenario"] = scenario_name
+    summary["S0"] = S0
+    
+    return {
+        "scenario": scenario_name,
+        "summary": summary,
+        "paths": paths,
+        "terminals": terminals,
+        "mu_seq": mu_seq,
+    }
+
+
 def run_scenario_forecast(
     ticker: str = "NVDA",
     horizon_months: int = DEFAULT_HORIZON_MONTHS,
     n_sims: int = DEFAULT_N_SIMS,
     model_path: Optional[str] = None,
     scaler_path: Optional[str] = None,
-    output_dir: str = "outputs",
+    output_dir: str = "results/step7",
     random_seed: int = RANDOM_STATE,
 ) -> Dict[str, Any]:
     """
@@ -583,11 +719,17 @@ def run_scenario_forecast(
     # Load data
     X_last, S0, dates, freq_info = load_latest_features(ticker)
     
-    # Determine horizon steps
+    # Determine horizon steps and steps per year
     if freq_info["is_quarterly"]:
         horizon_steps = horizon_months // 3  # Convert months to quarters
     else:
         horizon_steps = horizon_months
+    
+    if freq_info["is_quarterly"] and horizon_months % 3 != 0:
+        print(f"⚠ Quarterly data: horizon_months={horizon_months} not divisible by 3; "
+              f"using horizon_steps={horizon_steps} (~{horizon_steps*3} months).")
+    
+    steps_per_year = freq_info["steps_per_year"]
     
     print(f"\nForecast horizon: {horizon_months} months ({horizon_steps} steps)")
     
@@ -632,7 +774,7 @@ def run_scenario_forecast(
     # For now, use a default or estimate from data
     if "adj_close" in history_df.columns:
         returns = history_df["adj_close"].pct_change().dropna()
-        sigma_annual = returns.std() * np.sqrt(12)  # Annualized
+        sigma_annual = returns.std() * np.sqrt(steps_per_year)  # Annualized with freq-aware scaling
     else:
         sigma_annual = 0.40  # Default 40% annualized volatility
     
@@ -643,55 +785,64 @@ def run_scenario_forecast(
     forecast_table_rows = []
     
     print(f"\n{'='*60}")
-    print(f"Running {len(scenarios)} scenarios with {n_sims:,} simulations each...")
+    print(f"Running {len(scenarios)} scenarios with {n_sims:,} simulations each (concurrent across scenarios)...")
+    print(f"Monte Carlo is still parallelized at the path level (NumPy / Numba).")
+    print(f"Now, scenarios are also run concurrently using ThreadPoolExecutor.")
     print(f"{'='*60}\n")
     
-    for scenario_name, shock_spec in tqdm(scenarios.items(), desc="Scenarios", unit="scenario"):
-        # Apply shock
-        X_shocked = apply_shock(X_last, shock_spec)
-        
-        # Predict conditional drift (simplified: predict once, repeat for all steps)
-        mu_seq = predict_conditional_drift(model, scaler, X_shocked, horizon_steps)
-        
-        # Run MC: use batched version with progress bar for large simulations
-        if n_sims >= 1000:
-            # For large simulations, use batched MC with progress bar
-            paths, terminals = run_driver_aware_mc_batched(
-                S0, mu_seq, sigma_annual, n_sims, horizon_steps, random_seed
-            )
-        else:
-            # For small simulations, use fast vectorized MC without progress bar
-            paths, terminals = run_driver_aware_mc_fast(
-                S0, mu_seq, sigma_annual, n_sims, horizon_steps, random_seed
-            )
-        
-        # Summarize
-        summary = summarize_paths(terminals, S0)
-        summary["scenario"] = scenario_name
-        summary["S0"] = S0
-        all_results[scenario_name] = {
-            "paths": paths,
-            "terminals": terminals,
-            "summary": summary,
-            "mu_seq": mu_seq,
+    # Determine max workers
+    max_workers = min(len(scenarios), os.cpu_count() or 4)
+    
+    # HPC Part B (runtime):
+    # Run all macro scenarios concurrently using ThreadPoolExecutor.
+    # Each worker runs a full scenario (_run_single_scenario_task),
+    # while path-level Monte Carlo remains vectorized/parallel inside.
+    # [HPC-MPI-Analogy]
+    # Scenario-level concurrency uses ThreadPoolExecutor to run macro scenarios
+    # concurrently. Conceptually this is similar to coarse-grained task / rank
+    # decomposition in MPI, as illustrated in hpc_demos/mpi_mc_demo.py.
+    with ThreadPoolExecutor(max_workers=max_workers) as executor:
+        futures = {
+            executor.submit(
+                _run_single_scenario_task,
+                scenario_name,
+                shock_spec,
+                X_last,
+                S0,
+                sigma_annual,
+                horizon_steps,
+                steps_per_year,
+                n_sims,
+                model,
+                scaler,
+                random_seed,
+            ): scenario_name
+            for scenario_name, shock_spec in scenarios.items()
         }
         
-        # Add to forecast table
-        forecast_table_rows.append({
-            "Scenario": scenario_name,
-            "S0": f"${S0:.2f}",
-            "P5": f"${summary['P5']:.2f}",
-            "P50": f"${summary['P50']:.2f}",
-            "P95": f"${summary['P95']:.2f}",
-            "Exp Return": f"{summary['exp_return']:.2%}",
-            "Up Prob": f"{summary['up_prob']:.2%}",
-            "VaR (5%)": f"${summary['VaR_5']:.2f}",
-            "CVaR (5%)": f"${summary['CVaR_5']:.2f}",
-        })
-        
-        # Save terminal distribution
-        terminals_df = pd.DataFrame({"terminal_price": terminals})
-        terminals_df.to_csv(output_path / f"scenario_terminals_{scenario_name}.csv", index=False)
+        for fut in as_completed(futures):
+            scenario_name = futures[fut]
+            try:
+                result = fut.result()
+                all_results[scenario_name] = result
+                summary = result["summary"]
+                
+                # Add to forecast table
+                forecast_table_rows.append({
+                    "Scenario": scenario_name,
+                    "S0": f"${S0:.2f}",
+                    "P5": f"${summary['P5']:.2f}",
+                    "P50": f"${summary['P50']:.2f}",
+                    "P95": f"${summary['P95']:.2f}",
+                    "Exp Return": f"{summary['exp_return']:.2%}",
+                    "Up Prob": f"{summary['up_prob']:.2%}",
+                    "VaR (5%)": f"${summary['VaR_5']:.2f}",
+                    "CVaR (5%)": f"${summary['CVaR_5']:.2f}",
+                })
+                print(f"✓ Scenario completed: {scenario_name}")
+            except Exception as e:
+                print(f"❌ Scenario failed: {scenario_name} - {e}")
+                raise e
     
     # Save forecast table
     forecast_df = pd.DataFrame(forecast_table_rows)
@@ -704,8 +855,13 @@ def run_scenario_forecast(
     # Fan chart overlay
     plot_fan_chart_overlay(all_results, S0, horizon_steps, output_path / "fan_chart_overlay.png")
     
-    # Individual fan charts
-    for scenario_name, result in tqdm(all_results.items(), desc="Fan charts", unit="plot", leave=False):
+    # Individual fan charts and distributions (Sequential I/O)
+    for scenario_name, result in tqdm(all_results.items(), desc="Plots & I/O", unit="scenario"):
+        # Save terminal distribution (moved from loop)
+        terminals = result["terminals"]
+        terminals_df = pd.DataFrame({"terminal_price": terminals})
+        terminals_df.to_csv(output_path / f"scenario_terminals_{scenario_name}.csv", index=False)
+        
         plot_fan_chart(
             result["paths"],
             S0,
@@ -713,11 +869,9 @@ def run_scenario_forecast(
             scenario_name,
             output_path / f"fan_chart_{scenario_name}.png",
         )
-    
-    # Distribution shift plots
-    for scenario_name, result in tqdm(all_results.items(), desc="Distributions", unit="plot", leave=False):
+        
         plot_distribution_shift(
-            result["terminals"],
+            terminals,
             S0,
             scenario_name,
             output_path / f"distribution_shift_{scenario_name}.png",
@@ -846,6 +1000,324 @@ def plot_distribution_shift(
     print(f"✓ Saved: {output_path}")
 
 
+def run_step8_scenario_engine(
+    ticker: str = "NVDA",
+    horizon_months: int = 12,
+    n_sims: int = 2000,
+    output_dir: str = "results/step8",
+    model_path: Optional[str] = None,
+    scaler_path: Optional[str] = None,
+    random_seed: int = RANDOM_STATE,
+) -> Dict[str, Any]:
+    """
+    Step 8: final scenario-based risk engine.
+
+    Reuses the Step 7 scenario Monte Carlo engine, but writes
+    all outputs into results/step8.
+    """
+    out_dir = Path(output_dir)
+    out_dir.mkdir(parents=True, exist_ok=True)
+
+    results = run_scenario_forecast(
+        ticker=ticker,
+        horizon_months=horizon_months,
+        n_sims=n_sims,
+        output_dir=str(out_dir),
+        model_path=model_path,
+        scaler_path=scaler_path,
+        random_seed=random_seed,
+    )
+    return results
+
+def run_step8_mc(
+    ticker: str = "NVDA",
+    horizon_months: int = 12,
+    n_sims: int = 2000,
+    output_dir: str = "results/step8",
+    model_path: Optional[str] = None,
+    scaler_path: Optional[str] = None,
+    random_seed: int = RANDOM_STATE,
+) -> Dict[str, Any]:
+    """
+    Wrapper for Step 8 MC engine (MC only).
+    """
+    return run_step8_scenario_engine(
+        ticker=ticker,
+        horizon_months=horizon_months,
+        n_sims=n_sims,
+        output_dir=output_dir,
+        model_path=model_path,
+        scaler_path=scaler_path,
+        random_seed=random_seed,
+    )
+
+
+# ------------------------------------------------------------------
+# HPC Part A Benchmark
+# - Compares baseline NumPy vectorized MC vs Numba-parallel kernel
+# - Writes hpc_benchmark.csv with runtime and speedup_vs_baseline
+# ------------------------------------------------------------------
+def benchmark_mc_backends(
+    output_dir: str = "results/step8",
+    n_sims: int = 5000,
+    horizon_steps: int = 24,
+    steps_per_year: int = 12,
+    sigma_annual: float = 0.40,
+    mu: float = 0.01,
+    S0: float = 100.0,
+    random_seed: int = RANDOM_STATE,
+) -> pd.DataFrame:
+    """
+    Benchmark baseline NumPy Monte Carlo vs Numba-parallel Monte Carlo.
+
+    Writes results to results/step8/hpc_benchmark.csv and returns a DataFrame.
+    """
+    out_dir = Path(output_dir)
+    out_dir.mkdir(parents=True, exist_ok=True)
+
+    # Baseline: reuse the existing vectorized engine
+    mu_seq = np.full(horizon_steps, mu, dtype=float)
+
+    print(f"\n--- Starting Baseline (NumPy) Benchmark ({n_sims:,} sims) ---")
+    t0 = time.time()
+    paths_base, terminals_base = run_driver_aware_mc_fast(
+        S0=S0,
+        mu_seq=mu_seq,
+        sigma_annual=sigma_annual,
+        n_sims=n_sims,
+        horizon_steps=horizon_steps,
+        seed=random_seed,
+        steps_per_year=steps_per_year,
+    )
+    t1 = time.time()
+    baseline_time = t1 - t0
+    print(f"✓ Baseline finished in {baseline_time:.4f} seconds")
+
+    # Numba-parallel: warm-up
+    print(f"\n--- Starting Numba Parallel Benchmark ({n_sims:,} sims) ---")
+    print("Warm-up run...")
+    _ = mc_numba_parallel(
+        S0=S0,
+        mu=mu,
+        sigma_annual=sigma_annual,
+        n_sims=100,          # small warmup
+        horizon_steps=4,
+        steps_per_year=steps_per_year,
+    )
+
+    # Numba-parallel: timed run
+    print("Timed run...")
+    t2 = time.time()
+    paths_par = mc_numba_parallel(
+        S0=S0,
+        mu=mu,
+        sigma_annual=sigma_annual,
+        n_sims=n_sims,
+        horizon_steps=horizon_steps,
+        steps_per_year=steps_per_year,
+    )
+    t3 = time.time()
+    parallel_time = t3 - t2
+    print(f"✓ Numba Parallel finished in {parallel_time:.4f} seconds")
+
+    df = pd.DataFrame({
+        "backend": ["baseline_numpy", "numba_parallel"],
+        "time_sec": [baseline_time, parallel_time],
+    })
+    df["speedup_vs_baseline"] = df["time_sec"].iloc[0] / df["time_sec"]
+
+    csv_path = out_dir / "hpc_benchmark.csv"
+    df.to_csv(csv_path, index=False)
+    print(f"\nHPC benchmark written to: {csv_path}")
+    print(df)
+
+    return df
+
+
+# ------------------------------------------------------------------
+# HPC Part B Benchmark: Scenario-level concurrency
+# - Compares sequential vs ThreadPoolExecutor-based execution
+#   across all macro scenarios
+# - Writes hpc_benchmark_scenarios.csv with runtime and speedup
+# ------------------------------------------------------------------
+def benchmark_scenario_concurrency(
+    ticker: str = "NVDA",
+    horizon_months: int = 12,
+    n_sims: int = 2000,
+    output_dir: str = "results/step8",
+    model_path: Optional[str] = None,
+    scaler_path: Optional[str] = None,
+    random_seed: int = RANDOM_STATE,
+) -> pd.DataFrame:
+    """
+    HPC Part B: Scenario-level concurrency benchmark.
+
+    Compares:
+    - Sequential execution of all macro scenarios
+    - Concurrent execution using ThreadPoolExecutor
+
+    Writes results to results/step8/hpc_benchmark_scenarios.csv
+    and returns the benchmark DataFrame.
+    """
+    out_dir = Path(output_dir)
+    out_dir.mkdir(parents=True, exist_ok=True)
+
+    # Load data
+    X_last, S0, dates, freq_info = load_latest_features(ticker)
+
+    # Determine horizon steps
+    if freq_info["is_quarterly"]:
+        horizon_steps = horizon_months // 3
+    else:
+        horizon_steps = horizon_months
+    
+    steps_per_year = freq_info["steps_per_year"]
+
+    # Load model and scaler
+    model_path = model_path or DEFAULT_MODEL_PATH
+    scaler_path = scaler_path or DEFAULT_SCALER_PATH
+    
+    if not Path(model_path).exists():
+        raise FileNotFoundError(f"Model not found: {model_path}")
+    if not Path(scaler_path).exists():
+        raise FileNotFoundError(f"Scaler not found: {scaler_path}")
+    
+    model = joblib.load(model_path)
+    scaler = joblib.load(scaler_path)
+
+    # Load history for scenarios
+    data_path = None
+    for path in DEFAULT_DATA_PATHS:
+        if Path(path).exists():
+            data_path = Path(path)
+            break
+            
+    if data_path:
+        history_df = pd.read_csv(data_path)
+        date_col = None
+        for col in ["px_date", "date", "Date", "period_end", "timestamp"]:
+            if col in history_df.columns:
+                date_col = col
+                break
+        if date_col:
+            history_df[date_col] = pd.to_datetime(history_df[date_col])
+            history_df = history_df.sort_values(date_col).set_index(date_col)
+    else:
+        history_df = X_last
+
+    # Build scenarios
+    scenarios = build_scenarios(X_last, history_df)
+
+    # Estimate volatility
+    if "adj_close" in history_df.columns:
+        returns = history_df["adj_close"].pct_change().dropna()
+        sigma_annual = returns.std() * np.sqrt(steps_per_year)
+    else:
+        sigma_annual = 0.40
+
+    print(f"\n{'='*60}")
+    print(f"Starting Scenario Concurrency Benchmark")
+    print(f"Scenarios: {len(scenarios)}, Sims: {n_sims}, Horizon: {horizon_months}m")
+    print(f"{'='*60}")
+
+    # --- Sequential Run ---
+    print("\n1. Running Sequential...")
+    t0_seq = time.time()
+    
+    # Sequential baseline: run all scenarios one-by-one on a single thread.
+    for scenario_name, shock_spec in scenarios.items():
+        _ = _run_single_scenario_task(
+            scenario_name,
+            shock_spec,
+            X_last,
+            S0,
+            sigma_annual,
+            horizon_steps,
+            steps_per_year,
+            n_sims,
+            model,
+            scaler,
+            random_seed,
+        )
+        
+    t1_seq = time.time()
+    seq_time = t1_seq - t0_seq
+    print(f"✓ Sequential finished in {seq_time:.4f} seconds")
+
+    # --- Concurrent Run ---
+    print("\n2. Running Concurrent (ThreadPoolExecutor)...")
+    max_workers = min(len(scenarios), os.cpu_count() or 4)
+    t0_conc = time.time()
+    
+    # Concurrent run: dispatch all scenarios to the ThreadPoolExecutor.
+    with ThreadPoolExecutor(max_workers=max_workers) as executor:
+        futures = {
+            executor.submit(
+                _run_single_scenario_task,
+                scenario_name,
+                shock_spec,
+                X_last,
+                S0,
+                sigma_annual,
+                horizon_steps,
+                steps_per_year,
+                n_sims,
+                model,
+                scaler,
+                random_seed,
+            ): scenario_name
+            for scenario_name, shock_spec in scenarios.items()
+        }
+        
+        for fut in as_completed(futures):
+            _ = fut.result()
+            
+    t1_conc = time.time()
+    conc_time = t1_conc - t0_conc
+    print(f"✓ Concurrent finished in {conc_time:.4f} seconds")
+
+    # --- Results ---
+    df = pd.DataFrame([
+        {
+            "mode": "scenarios_sequential",
+            "n_scenarios": len(scenarios),
+            "n_sims": n_sims,
+            "horizon_steps": horizon_steps,
+            "time_sec": seq_time,
+        },
+        {
+            "mode": "scenarios_concurrent",
+            "n_scenarios": len(scenarios),
+            "n_sims": n_sims,
+            "horizon_steps": horizon_steps,
+            "time_sec": conc_time,
+        },
+    ])
+    df["speedup_vs_sequential"] = df.loc[df["mode"] == "scenarios_sequential", "time_sec"].iloc[0] / df["time_sec"]
+
+    csv_path = out_dir / "hpc_benchmark_scenarios.csv"
+    df.to_csv(csv_path, index=False)
+    print(f"\n[HPC Part B] Scenario concurrency benchmark written to: {csv_path}")
+    print(df)
+
+    return df
+
+
+# Convenience wrapper for running only the HPC Part A benchmark
+# (NumPy vs Numba) without running the full scenario engine.
+def run_step8_hpc(
+    output_dir: str = "results/step8",
+    n_sims: int = 5000,
+) -> pd.DataFrame:
+    """
+    Wrapper for Step 8 HPC benchmark (HPC only).
+    """
+    return benchmark_mc_backends(
+        output_dir=output_dir,
+        n_sims=n_sims,
+    )
+
+
 if __name__ == "__main__":
     import argparse
     
@@ -853,7 +1325,7 @@ if __name__ == "__main__":
     parser.add_argument("--ticker", default="NVDA", help="Stock ticker")
     parser.add_argument("--h", type=int, default=DEFAULT_HORIZON_MONTHS, help="Horizon in months")
     parser.add_argument("--n", type=int, default=DEFAULT_N_SIMS, help="Number of simulations")
-    parser.add_argument("--output-dir", default="outputs", help="Output directory")
+    parser.add_argument("--output-dir", default="results/step7", help="Output directory")
     parser.add_argument("--model-path", default=None, help="Path to champion model")
     parser.add_argument("--scaler-path", default=None, help="Path to feature scaler")
     
@@ -872,3 +1344,5 @@ if __name__ == "__main__":
     print("Step 7 Complete!")
     print("="*60)
 
+    # Usage Example:
+    # python3 -m finmc_tech.simulation.scenario_mc --ticker NVDA --h 6 --n 50 --output-dir results/step7_sanity

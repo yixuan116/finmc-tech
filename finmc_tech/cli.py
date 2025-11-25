@@ -184,6 +184,78 @@ def simulate_scenarios_cmd(args):
     logger.info(f"Distribution plots saved to: {args.output_dir}/distribution_shift_*.png")
 
 
+def step8_mc_cmd(args):
+    """Step 8 MC: Scenario Engine only."""
+    logger.info("=" * 70)
+    logger.info("Running Step 8: Scenario Engine (MC Only)")
+    logger.info("=" * 70)
+
+    from finmc_tech.simulation.scenario_mc import run_step8_mc
+
+    run_step8_mc(
+        ticker=args.ticker,
+        horizon_months=args.h,
+        n_sims=args.n,
+        output_dir=args.output_dir,
+        model_path=args.model_path,
+        scaler_path=args.scaler_path,
+    )
+    logger.info("\n" + "=" * 70)
+    logger.info("Step 8 MC Complete! Outputs in results/step8/")
+    logger.info("=" * 70)
+
+
+def step8_hpc_cmd(args):
+    """Step 8 HPC: Benchmark only."""
+    logger.info("=" * 70)
+    logger.info("Running Step 8: HPC Benchmark (HPC Only)")
+    logger.info("=" * 70)
+
+    from finmc_tech.simulation.scenario_mc import run_step8_hpc
+
+    run_step8_hpc(
+        output_dir=args.output_dir,
+        n_sims=args.n_bench,
+    )
+    logger.info("\n" + "=" * 70)
+    logger.info("Step 8 HPC Complete! Outputs in results/step8/")
+    logger.info("=" * 70)
+
+
+def step8_cmd(args):
+    """Step 8: final scenario-based risk engine + HPC benchmark."""
+    logger.info("=" * 70)
+    logger.info("Running Step 8: Scenario Engine + HPC Benchmark")
+    logger.info("=" * 70)
+
+    from finmc_tech.simulation.scenario_mc import (
+        run_step8_mc,
+        run_step8_hpc,
+    )
+
+    # 1. Run scenario engine
+    logger.info("\n[1/2] Running Scenario Engine...")
+    run_step8_mc(
+        ticker=args.ticker,
+        horizon_months=args.h,
+        n_sims=args.n,
+        output_dir=args.output_dir,
+        model_path=args.model_path,
+        scaler_path=args.scaler_path,
+    )
+
+    # 2. Run HPC benchmark
+    logger.info("\n[2/2] Running HPC Benchmark...")
+    run_step8_hpc(
+        output_dir=args.output_dir,
+        n_sims=args.n_bench,
+    )
+
+    logger.info("\n" + "=" * 70)
+    logger.info("Step 8 Complete! Outputs in results/step8/")
+    logger.info("=" * 70)
+
+
 def main():
     """Main CLI entry point with subcommands."""
     parser = argparse.ArgumentParser(
@@ -265,6 +337,8 @@ def main():
     )
     sim_scenarios_parser.add_argument("--h", type=int, default=12,
                                      help="Horizon in months (default: 12)")
+    sim_scenarios_parser.add_argument("--output-dir", default="results/step7",
+                                     help="Output directory (default: results/step7)")
     sim_scenarios_parser.add_argument("--n", type=int, default=5000,
                                      help="Number of simulations (default: 5000)")
     sim_scenarios_parser.add_argument("--model-path", default=None,
@@ -272,6 +346,56 @@ def main():
     sim_scenarios_parser.add_argument("--scaler-path", default=None,
                                      help="Path to feature scaler (default: models/feature_scaler.pkl)")
     sim_scenarios_parser.set_defaults(func=simulate_scenarios_cmd)
+
+    # step8_mc subcommand
+    step8_mc_parser = subparsers.add_parser(
+        "step8_mc",
+        parents=[common_parser],
+        help="Run Step 8 MC: Scenario Engine only",
+    )
+    step8_mc_parser.add_argument("--h", type=int, default=12,
+                                help="Horizon in months (default: 12)")
+    step8_mc_parser.add_argument("--n", type=int, default=2000,
+                                help="Number of simulations (default: 2000)")
+    step8_mc_parser.add_argument("--output-dir", default="results/step8",
+                                help="Output directory (default: results/step8)")
+    step8_mc_parser.add_argument("--model-path", default=None,
+                                help="Path to champion model")
+    step8_mc_parser.add_argument("--scaler-path", default=None,
+                                help="Path to feature scaler")
+    step8_mc_parser.set_defaults(func=step8_mc_cmd)
+
+    # step8_hpc subcommand
+    step8_hpc_parser = subparsers.add_parser(
+        "step8_hpc",
+        parents=[common_parser],
+        help="Run Step 8 HPC: Benchmark only",
+    )
+    step8_hpc_parser.add_argument("--n-bench", type=int, default=5000,
+                                 help="Number of simulations for benchmark (default: 5000)")
+    step8_hpc_parser.add_argument("--output-dir", default="results/step8",
+                                 help="Output directory (default: results/step8)")
+    step8_hpc_parser.set_defaults(func=step8_hpc_cmd)
+
+    # step8 subcommand (combined)
+    step8_parser = subparsers.add_parser(
+        "step8",
+        parents=[common_parser],
+        help="Run Step 8: Scenario MC + HPC Benchmark",
+    )
+    step8_parser.add_argument("--h", type=int, default=12,
+                             help="Horizon in months (default: 12)")
+    step8_parser.add_argument("--n", type=int, default=2000,
+                             help="Number of simulations for scenario engine (default: 2000)")
+    step8_parser.add_argument("--n-bench", type=int, default=5000,
+                             help="Number of simulations for HPC benchmark (default: 5000)")
+    step8_parser.add_argument("--output-dir", default="results/step8",
+                             help="Output directory (default: results/step8)")
+    step8_parser.add_argument("--model-path", default=None,
+                             help="Path to champion model (default: models/champion_model.pkl)")
+    step8_parser.add_argument("--scaler-path", default=None,
+                             help="Path to feature scaler (default: models/feature_scaler.pkl)")
+    step8_parser.set_defaults(func=step8_cmd)
     
     args = parser.parse_args()
     
