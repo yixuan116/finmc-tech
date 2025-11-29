@@ -1,0 +1,175 @@
+{
+  "NVDA_Firm_Fundamentals": [
+    {
+      "fiscal_year": 2025,
+      "fiscal_quarter": "Q1",
+      "period_end": "2024-04-28",
+      "report_date": "2024-05-22",
+      "financials": {
+        "revenue": 26044000000,
+        "gross_margin_gaap": 0.784,
+        "gross_margin_nongaap": 0.789,
+        "operating_expenses_gaap": 3497000000,
+        "operating_expenses_nongaap": 2501000000,
+        "operating_income_gaap": 16909000000,
+        "operating_income_nongaap": 18059000000,
+        "net_income_gaap": 14881000000,
+        "net_income_nongaap": 15238000000,
+        "eps_gaap": 0.6,
+        "eps_nongaap": 0.61,
+        "segment": {
+          "data_center": 22600000000,
+          "gaming": 2600000000
+        }
+      },
+      "guidance": {
+        "next_q_revenue": 28000000000,
+        "notes": "Q2 FY25 revenue guidance $28.0B ±2%; GAAP gross margin 74.8%, non-GAAP 75.5%."
+      },
+      "narratives": {
+        "ai_demand": "Record Data Center demand driven by generative AI training and inference.",
+        "product_cycle": "Blackwell platform unveiled; Grace Hopper and DGX systems ramping.",
+        "strategic_themes": [
+          "Shift from traditional to accelerated computing",
+          "AI factories as new infrastructure",
+          "Enterprise generative AI adoption"
+        ]
+      },
+      "source_files": {
+        "press_release": "Q1 25 NVIDIAAn (1).pdf",
+        "ten_q": "NVIDIA-10Q-Q1 25.pdf",
+        "transcript": null
+      }
+    },
+    {
+      "fiscal_year": 2025,
+      "fiscal_quarter": "Q2",
+      "period_end": "2024-07-28",
+      "report_date": "2024-08-28",
+      "financials": {
+        "revenue": 30040000000,
+        "gross_margin_gaap": 0.751,
+        "gross_margin_nongaap": 0.757,
+        "operating_expenses_gaap": 3932000000,
+        "operating_expenses_nongaap": 2792000000,
+        "operating_income_gaap": 18642000000,
+        "operating_income_nongaap": 19937000000,
+        "net_income_gaap": 16599000000,
+        "net_income_nongaap": 16952000000,
+        "eps_gaap": 0.67,
+        "eps_nongaap": 0.68,
+        "segment": {
+          "data_center": 26300000000,
+          "gaming": 2900000000
+        }
+      },
+      "guidance": {
+        "next_q_revenue": 32500000000,
+        "notes": "Q3 FY25 revenue guidance $32.5B ±2%; GAAP gross margin 74.4%, non-GAAP 75.0%."
+      },
+      "narratives": {
+        "ai_demand": "Hopper demand remained strong; hyperscalers and enterprises scaling generative AI.",
+        "product_cycle": "Blackwell samples shipping; Spectrum-X Ethernet and NVIDIA AI Enterprise scaling.",
+        "strategic_themes": [
+          "Full-stack data center platform",
+          "Sovereign AI and national AI infrastructure",
+          "Cloud partnerships across AWS, Google Cloud, Microsoft, Oracle"
+        ]
+      },
+      "source_files": {
+        "press_release": "Q2 25 NVIDIAAn.pdf",
+        "ten_q": "10Q Q2 25.pdf",
+        "transcript": null
+      }
+    },
+    {
+      "fiscal_year": 2025,
+      "fiscal_quarter": "Q3",
+      "period_end": "2024-10-27",
+      "report_date": "2024-11-20",
+      "financials": {
+        "revenue": 35082000000,
+        "gross_margin_gaap": 0.746,
+        "gross_margin_nongaap": 0.75,
+        "operating_expenses_gaap": 4287000000,
+        "operating_expenses_nongaap": 3046000000,
+        "operating_income_gaap": 21869000000,
+        "operating_income_nongaap": 23276000000,
+        "net_income_gaap": 19309000000,
+        "net_income_nongaap": 20010000000,
+        "eps_gaap": 0.78,
+        "eps_nongaap": 0.81,
+        "segment": {
+          "data_center": 30800000000,
+          "gaming": 3300000000
+        }
+      },
+      "guidance": {
+        "next_q_revenue": 37500000000,
+        "notes": "Q4 FY25 revenue guidance $37.5B ±2%; GAAP gross margin 73.0%, non-GAAP 73.5%."
+      },
+      "narratives": {
+        "ai_demand": "AI demand in full steam with Hopper and Blackwell powering large-scale training and inference.",
+        "product_cycle": "Hopper H200 cloud instances launched; Blackwell in full production and on MLPerf.",
+        "strategic_themes": [
+          "Agentic AI and enterprise workflows",
+          "Physical AI and industrial robotics",
+          "Sovereign AI supercomputers worldwide"
+        ]
+      },
+      "source_files": {
+        "press_release": "Q3 25NVIDIAAn.pdf",
+        "ten_q": "10Q Q3 25.pdf",
+        "transcript": null
+      }
+    },
+    {
+      "fiscal_year": 2025,
+      "fiscal_quarter": "Q4",
+      "period_end": "2025-01-26",
+      "report_date": "2025-02-26",
+      "financials": {
+        "revenue": 39331000000,
+        "revenue_qoq": 0.12,
+        "revenue_yoy": 0.78,
+        "gross_margin_gaap": 0.73,
+        "gross_margin_nongaap": 0.735,
+        "operating_expenses_gaap": 4689000000,
+        "operating_expenses_nongaap": 3378000000,
+        "operating_income_gaap": 24034000000,
+        "operating_income_nongaap": 25516000000,
+        "net_income_gaap": 22091000000,
+        "net_income_nongaap": 22066000000,
+        "eps_gaap": 0.89,
+        "eps_nongaap": 0.89,
+        "segment": {
+          "data_center": 35600000000,
+          "compute_networking_full_year": 116193000000,
+          "graphics_full_year": 14304000000
+        },
+        "inventory": 19784000000,
+        "accounts_receivable": 33391000000,
+        "cash_and_marketable_securities": 60608000000,
+        "cfo_full_year": 77000000000
+      },
+      "guidance": {
+        "next_q_revenue": null,
+        "notes": "Guidance not included in Q4 PR; appears in next quarter filings."
+      },
+      "narratives": {
+        "ai_demand": "Record Data Center revenue; Blackwell ramp accelerating.",
+        "product_cycle": "First Blackwell shipments expected next quarter.",
+        "strategic_themes": [
+          "AI infrastructure global expansion",
+          "Training + inference demand surging",
+          "Enterprise AI becoming mainstream"
+        ]
+      },
+      "source_files": {
+        "press_release": "Q4 25 NVIDIAAn.pdf",
+        "ten_k": "Q4 25 10-K.pdf",
+        "transcript": null
+      }
+    }
+  ]
+}

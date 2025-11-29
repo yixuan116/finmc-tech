@@ -1,0 +1,181 @@
+{
+    "NVDA_Firm_Fundamentals": [
+      {
+        "fiscal_year": 2024,
+        "fiscal_quarter": "Q1",
+        "period_end": "2023-04-30",
+        "report_date": "2023-05-24",
+        "financials": {
+          "revenue": 7192000000,
+          "gross_margin_gaap": 0.646,
+          "gross_margin_nongaap": 0.668,
+          "operating_expenses_gaap": 2508000000,
+          "operating_expenses_nongaap": 2110256000,
+          "operating_income_gaap": 2140000000,
+          "operating_income_nongaap": 2694000000,
+          "net_income_gaap": 2043000000,
+          "net_income_nongaap": 2680000000,
+          "eps_gaap": 0.82,
+          "eps_nongaap": 1.09,
+          "segment": {
+            "data_center": 4270000000,
+            "gaming": 2224000000,
+            "professional_visualization": 295000000,
+            "automotive": 296000000,
+            "oem_other": 44000000
+          }
+        },
+        "guidance": {
+          "next_q_revenue": 11000000000,
+          "notes": "Company guided Q2 FY24 revenue to approximately $11.0 billion, with higher expected Data Center demand as generative AI workloads ramp."
+        },
+        "narratives": {
+          "ai_demand": "Early phase of the generative AI boom; hyperscalers and large internet companies begin ramping H100-powered clusters, driving record Data Center revenue despite still-muted macro backdrop.",
+          "product_cycle": "Hopper H100, Grace CPU, and advanced networking ramp; Gaming demand stabilizes after prior-year correction as RTX 40-series starts to gain traction.",
+          "strategic_themes": [
+            "Inflection point in demand for generative AI infrastructure",
+            "Shift of data center capex from CPUs to accelerated computing",
+            "NVIDIA positioning full-stack platform: GPU, networking, and CUDA/AI software"
+          ]
+        },
+        "source_files": {
+          "press_release": "Q1 24 release.pdf",
+          "ten_q": "Q1 24 10Q.pdf",
+          "transcript": null
+        }
+      },
+      {
+        "fiscal_year": 2024,
+        "fiscal_quarter": "Q2",
+        "period_end": "2023-07-30",
+        "report_date": "2023-08-21",
+        "financials": {
+          "revenue": 13507000000,
+          "gross_margin_gaap": 0.701,
+          "gross_margin_nongaap": 0.712,
+          "operating_expenses_gaap": 2662000000,
+          "operating_expenses_nongaap": 1674984000,
+          "operating_income_gaap": 6800000000,
+          "operating_income_nongaap": 7942000000,
+          "net_income_gaap": 6188000000,
+          "net_income_nongaap": 7422000000,
+          "eps_gaap": 2.48,
+          "eps_nongaap": 2.70,
+          "segment": {
+            "data_center": 10323000000,
+            "gaming": 2426000000,
+            "professional_visualization": 379000000,
+            "automotive": 253000000,
+            "oem_other": 126000000
+          }
+        },
+        "guidance": {
+          "next_q_revenue": 16000000000,
+          "notes": "Q3 FY24 revenue outlook of about $16.0 billion, plus or minus 2%, driven by continued acceleration in Data Center AI demand."
+        },
+        "narratives": {
+          "ai_demand": "Massive step-function increase in AI infrastructure spend as cloud service providers, consumer internet platforms, and enterprise customers deploy generative AI and LLM workloads at scale.",
+          "product_cycle": "Hopper H100 volumes ramp aggressively; Mellanox networking and NVLink/Switch products become critical for large-scale AI clusters.",
+          "strategic_themes": [
+            "Data Center overtakes all other segments as primary growth engine",
+            "NVIDIA GPUs and networking form de facto standard AI training stack",
+            "Early signals of multi-year AI infrastructure capex cycle"
+          ]
+        },
+        "source_files": {
+          "press_release": "Q2 24 NVIDIAAn.pdf",
+          "ten_q": "Q2 24 10Q.pdf",
+          "transcript": null
+        }
+      },
+      {
+        "fiscal_year": 2024,
+        "fiscal_quarter": "Q3",
+        "period_end": "2023-10-29",
+        "report_date": "2023-11-21",
+        "financials": {
+          "revenue": 18120000000,
+          "gross_margin_gaap": 0.740,
+          "gross_margin_nongaap": 0.750,
+          "operating_expenses_gaap": 2983000000,
+          "operating_expenses_nongaap": 1976000000,
+          "operating_income_gaap": 10417000000,
+          "operating_income_nongaap": 11614000000,
+          "net_income_gaap": 9243000000,
+          "net_income_nongaap": 10516000000,
+          "eps_gaap": 3.71,
+          "eps_nongaap": 4.02,
+          "segment": {
+            "data_center": 14492000000,
+            "gaming": 2811000000,
+            "professional_visualization": 576000000,
+            "automotive": 261000000,
+            "oem_other": -20000000
+          }
+        },
+        "guidance": {
+          "next_q_revenue": 20000000000,
+          "notes": "Q4 FY24 revenue guided to roughly $20.0 billion, plus or minus 2%, with continued broad-based AI demand across hyperscale, consumer internet, and enterprise customers."
+        },
+        "narratives": {
+          "ai_demand": "AI demand broadens beyond early hyperscaler adopters to regional clouds, sovereign AI initiatives, and enterprises building custom LLM and copilot-style applications.",
+          "product_cycle": "Hopper-based platforms hit full stride; NVIDIA’s full-stack (GPU, networking, CUDA, inference libraries) is adopted as standard across most large AI deployments.",
+          "strategic_themes": [
+            "Generative AI demand drives recurring, visibility-rich data center pipeline",
+            "Software and ecosystem (CUDA, AI frameworks) deepen customer lock-in",
+            "Automotive and Omniverse/Pro Viz positioned as next-wave AI beneficiaries"
+          ]
+        },
+        "source_files": {
+          "press_release": "Q3 24 NVIDIAAn.pdf",
+          "ten_q": "Q3 24 NVIDIA-10Q.pdf",
+          "transcript": null
+        }
+      },
+      {
+        "fiscal_year": 2024,
+        "fiscal_quarter": "Q4",
+        "period_end": "2024-01-28",
+        "report_date": "2024-02-21",
+        "financials": {
+          "revenue": 22100000000,
+          "gross_margin_gaap": 0.760,
+          "gross_margin_nongaap": 0.767,
+          "operating_expenses_gaap": 3734000000,
+          "operating_expenses_nongaap": 3088700000,
+          "operating_income_gaap": 13062000000,
+          "operating_income_nongaap": 13862000000,
+          "net_income_gaap": 12285000000,
+          "net_income_nongaap": 12980000000,
+          "eps_gaap": 4.93,
+          "eps_nongaap": 5.16,
+          "segment": {
+            "data_center": 18400000000,
+            "gaming": 2890000000,
+            "professional_visualization": 463000000,
+            "automotive": 281000000,
+            "oem_other": 75000000
+          }
+        },
+        "guidance": {
+          "next_q_revenue": null,
+          "notes": "No explicit numerical revenue guidance for Q1 FY25 provided in this JSON; management commentary emphasized continued strong AI demand and the transition toward next-generation architectures."
+        },
+        "narratives": {
+          "ai_demand": "AI infrastructure spending hits a new peak; Data Center revenue dominates the P&L as customers race to deploy and monetize generative AI across products and services.",
+          "product_cycle": "Hopper cycle still in full swing while NVIDIA prepares the transition to next-generation architectures, laying groundwork for the next leg of AI growth.",
+          "strategic_themes": [
+            "Fiscal 2024 marks the first full-blown generative AI capex super-cycle",
+            "NVIDIA positioned as core enabler of AI factories and AI cloud services",
+            "Full-year results validate data-center-first, platform-centric strategy"
+          ]
+        },
+        "source_files": {
+          "press_release": "Q4 24 release.pdf",
+          "ten_k": "Q4 24 10K.pdf",
+          "transcript": null
+        }
+      }
+    ]
+  }
+  

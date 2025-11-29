@@ -1,0 +1,168 @@
+{
+    "FY24": {
+      "Q1": {
+        "quarter": "Q1 2024",
+        "period": "FY24 Q1",
+        "revenue": {
+          "total": 7130,
+          "YoY": -13,
+          "QoQ": -31
+        },
+        "segments": {
+          "data_center": 4270,
+          "gaming": 2224,
+          "professional_visualization": 295,
+          "automotive": 296,
+          "oem_other": 44
+        },
+        "gross_margin": {
+          "gaap": 64.6,
+          "non_gaap": 66.8
+        },
+        "operating_income": {
+          "gaap": 2098,
+          "non_gaap": 2694
+        },
+        "net_income": {
+          "gaap": 2043,
+          "non_gaap": 2680
+        },
+        "eps": {
+          "gaap": 0.82,
+          "non_gaap": 1.09
+        },
+        "cash_flow": {
+          "operating_cash_flow": 2670
+        },
+        "guidance_next_q": {
+          "revenue": 11000,
+          "gaap_gross_margin": 68.6,
+          "non_gaap_gross_margin": 70.0
+        }
+      },
+  
+      "Q2": {
+        "quarter": "Q2 2024",
+        "period": "FY24 Q2",
+        "revenue": {
+          "total": 13507,
+          "YoY": 101,
+          "QoQ": 89
+        },
+        "segments": {
+          "data_center": 10323,
+          "gaming": 2426,
+          "professional_visualization": 379,
+          "automotive": 253,
+          "oem_other": 126
+        },
+        "gross_margin": {
+          "gaap": 70.1,
+          "non_gaap": 71.2
+        },
+        "operating_income": {
+          "gaap": 6990,
+          "non_gaap": 7942
+        },
+        "net_income": {
+          "gaap": 6179,
+          "non_gaap": 7422
+        },
+        "eps": {
+          "gaap": 2.48,
+          "non_gaap": 2.70
+        },
+        "cash_flow": {
+          "operating_cash_flow": 6946
+        },
+        "guidance_next_q": {
+          "revenue": 16000,
+          "gaap_gross_margin": 71.5,
+          "non_gaap_gross_margin": 72.5
+        }
+      },
+  
+      "Q3": {
+        "quarter": "Q3 2024",
+        "period": "FY24 Q3",
+        "revenue": {
+          "total": 18120,
+          "YoY": 206,
+          "QoQ": 34
+        },
+        "segments": {
+          "data_center": 14492,
+          "gaming": 2811,
+          "professional_visualization": 576,
+          "automotive": 261,
+          "oem_other":  -20
+        },
+        "gross_margin": {
+          "gaap": 74.0,
+          "non_gaap": 75.0
+        },
+        "operating_income": {
+          "gaap": 10679,
+          "non_gaap": 11614
+        },
+        "net_income": {
+          "gaap": 9293,
+          "non_gaap": 10516
+        },
+        "eps": {
+          "gaap": 3.71,
+          "non_gaap": 4.02
+        },
+        "cash_flow": {
+          "operating_cash_flow": 13150
+        },
+        "guidance_next_q": {
+          "revenue": 20000,
+          "gaap_gross_margin": 74.5,
+          "non_gaap_gross_margin": 75.5
+        }
+      },
+  
+      "Q4": {
+        "quarter": "Q4 2024",
+        "period": "FY24 Q4",
+        "revenue": {
+          "total": 22100,
+          "YoY": 265,
+          "QoQ": 22
+        },
+        "segments": {
+          "data_center": 18400,
+          "gaming": 2890,
+          "professional_visualization": 463,
+          "automotive": 281,
+          "oem_other": 75
+        },
+        "gross_margin": {
+          "gaap": 76.0,
+          "non_gaap": 76.7
+        },
+        "operating_income": {
+          "gaap": 13062,
+          "non_gaap": 13862
+        },
+        "net_income": {
+          "gaap": 12285,
+          "non_gaap": 12980
+        },
+        "eps": {
+          "gaap": 4.93,
+          "non_gaap": 5.16
+        },
+        "cash_flow": {
+          "operating_cash_flow": 13500
+        },
+        "guidance_next_q": {
+          "revenue": null,
+          "gaap_gross_margin": null,
+          "non_gaap_gross_margin": null
+        }
+      }
+    }
+  }
+  

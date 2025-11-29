@@ -1,0 +1,140 @@
+{
+    "NVDA_Firm_Fundamentals": [
+      {
+        "fiscal_year": 2014,
+        "fiscal_quarter": "Q4",
+        "period_end": "2014-01-26",
+        "report_date": "2014-02-12",
+        "financials": {
+          "revenue": 1144000000,
+          "gross_margin_gaap": 0.533,
+          "gross_margin_nongaap": 0.545,
+          "operating_expenses_gaap": 453000000,
+          "operating_expenses_nongaap": 402000000,
+          "net_income_gaap": 147000000,
+          "net_income_nongaap": 217000000,
+          "eps_gaap": 0.25,
+          "eps_nongaap": 0.36,
+          "segment": null
+        },
+        "narratives": {
+          "ai_demand": "GPU-accelerated computing adoption continued to expand across enterprise and HPC segments, though still in its early stage.",
+          "product_cycle": "Kepler-based GeForce and Quadro GPUs drove solid gaming and professional graphics performance; Tegra 4 ramped across mobile OEMs.",
+          "strategic_themes": [
+            "Disciplined expense control during transition to Maxwell architecture",
+            "Broadening GPU computing adoption across enterprise and research",
+            "Expanding licensing and IP monetization initiatives"
+          ]
+        },
+        "source_files": {
+          "press_release": "Q4 14 NVIDIARe.pdf",
+          "ten_q": null,
+          "ten_k": "Q4 14 10K-2014.pdf",
+          "transcript": null
+        }
+      },
+  
+      {
+        "fiscal_year": 2014,
+        "fiscal_quarter": "Q3",
+        "period_end": "2013-10-27",
+        "report_date": "2013-11-07",
+        "financials": {
+          "revenue": 1054000000,
+          "gross_margin_gaap": 0.554,
+          "gross_margin_nongaap": 0.557,
+          "operating_expenses_gaap": 443000000,
+          "operating_expenses_nongaap": 405000000,
+          "net_income_gaap": 118700000,
+          "net_income_nongaap": 153800000,
+          "eps_gaap": 0.20,
+          "eps_nongaap": 0.26,
+          "segment": null
+        },
+        "narratives": {
+          "ai_demand": "Early datacenter and cloud GPU virtualization trials increased, supported by GRID adoption.",
+          "product_cycle": "Kepler architecture continued to strengthen gaming, workstation and Tesla deployments.",
+          "strategic_themes": [
+            "Rising interest in GRID virtual GPU for enterprise VDI",
+            "Growth in high-end gaming GPUs and workstation graphics",
+            "Tegra 4 shipments begin across global OEMs"
+          ]
+        },
+        "source_files": {
+          "press_release": "Q3 14 NVIDIARe (1).pdf",
+          "ten_q": "Q3 14 10Q-2014.pdf",
+          "ten_k": null,
+          "transcript": null
+        }
+      },
+  
+      {
+        "fiscal_year": 2014,
+        "fiscal_quarter": "Q2",
+        "period_end": "2013-07-28",
+        "report_date": "2013-08-08",
+        "financials": {
+          "revenue": 977200000,
+          "gross_margin_gaap": 0.558,
+          "gross_margin_nongaap": 0.563,
+          "operating_expenses_gaap": 440000000,
+          "operating_expenses_nongaap": 400800000,
+          "net_income_gaap": 96400000,
+          "net_income_nongaap": 133300000,
+          "eps_gaap": 0.16,
+          "eps_nongaap": 0.23,
+          "segment": null
+        },
+        "narratives": {
+          "ai_demand": "GPU computing and deep learning remained in early incubation, with Tesla and GRID trial deployments accelerating.",
+          "product_cycle": "Kepler-based gaming GPUs and Tegra 4 devices launched globally, supporting sequential growth and margin improvement.",
+          "strategic_themes": [
+            "Record gross margins driven by high-end GPU mix",
+            "Growth in enterprise virtualization with GRID vGPU",
+            "Tegra 4 platform expansion in smartphones and tablets"
+          ]
+        },
+        "source_files": {
+          "press_release": "Q2 14 NVIDIARe (2).pdf",
+          "ten_q": "Q2 14 10Q-2014.pdf",
+          "ten_k": null,
+          "transcript": null
+        }
+      },
+  
+      {
+        "fiscal_year": 2014,
+        "fiscal_quarter": "Q1",
+        "period_end": "2013-04-28",
+        "report_date": "2013-05-09",
+        "financials": {
+          "revenue": 954700000,
+          "gross_margin_gaap": 0.543,
+          "gross_margin_nongaap": 0.546,
+          "operating_expenses_gaap": 435800000,
+          "operating_expenses_nongaap": 396200000,
+          "net_income_gaap": 77900000,
+          "net_income_nongaap": 113800000,
+          "eps_gaap": 0.13,
+          "eps_nongaap": 0.18,
+          "segment": null
+        },
+        "narratives": {
+          "ai_demand": "GPU acceleration gained traction in research and hyperscale trials, though still an emerging business.",
+          "product_cycle": "Kepler GPUs drove strong mix in gaming; Tegra 3 and Tegra 4 transitions influenced mobile revenue.",
+          "strategic_themes": [
+            "Strengthening high-end gaming and workstation GPU franchises",
+            "Early progress in Tesla HPC and cloud GPU adoption",
+            "Tegra roadmap transition toward higher-end mobile compute"
+          ]
+        },
+        "source_files": {
+          "press_release": "Q1 14 NVIDIARe (3).pdf",
+          "ten_q": "Q1 14 10Q-2014.pdf",
+          "ten_k": null,
+          "transcript": null
+        }
+      }
+    ]
+  }
+  

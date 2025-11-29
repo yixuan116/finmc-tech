@@ -1,0 +1,138 @@
+{
+    "NVDA_Firm_Fundamentals": [
+      {
+        "fiscal_year": 2010,
+        "fiscal_quarter": "Q1",
+        "period_end": "2009-05-03",
+        "report_date": "2009-05-14",
+        "financials": {
+          "revenue": 664251000,
+          "gross_margin_gaap": 0.451,
+          "gross_margin_nongaap": null,
+          "operating_expenses_gaap": null,
+          "operating_expenses_nongaap": null,
+          "net_income_gaap": -201338000,
+          "net_income_nongaap": null,
+          "eps_gaap": -0.37,
+          "eps_nongaap": null,
+          "segment": null
+        },
+        "narratives": {
+          "ai_demand": "GPU computing was in an early formation stage, with Tesla and CUDA beginning to be adopted in HPC and research computing, while mainstream demand was still primarily graphics-driven.",
+          "product_cycle": "NVIDIA continued transitioning out of its problematic legacy chipset (MCP) cycle while stabilizing the GPU franchise and preparing next-generation architectures.",
+          "strategic_themes": [
+            "Early adoption of Tesla and CUDA in technical computing",
+            "Ongoing recovery from prior-year inventory and quality charges",
+            "Refocusing on GPU core business and away from lower-margin chipset products"
+          ]
+        },
+        "source_files": {
+          "press_release": "Q1 10 NVIDIARe (3).pdf",
+          "ten_q": "Q1 10 10Q-2010.pdf",
+          "ten_k": "Q4 10 10K-2010.pdf",
+          "transcript": null
+        }
+      },
+      {
+        "fiscal_year": 2010,
+        "fiscal_quarter": "Q2",
+        "period_end": "2009-08-02",
+        "report_date": "2009-08-13",
+        "financials": {
+          "revenue": 776520000,
+          "gross_margin_gaap": 0.381,
+          "gross_margin_nongaap": null,
+          "operating_expenses_gaap": null,
+          "operating_expenses_nongaap": null,
+          "net_income_gaap": -105302000,
+          "net_income_nongaap": null,
+          "eps_gaap": -0.19,
+          "eps_nongaap": null,
+          "segment": null
+        },
+        "narratives": {
+          "ai_demand": "Tesla and professional GPUs saw steady traction in HPC and workstation workloads, while consumer GPU mix shifted toward lower-priced parts during a soft PC demand environment.",
+          "product_cycle": "Company continued working through legacy MCP and prior-generation notebook GPU quality charges while ramping newer GPU designs across desktop and notebook platforms.",
+          "strategic_themes": [
+            "Mix shift toward lower-priced GPUs under macro pressure",
+            "Remediation of prior-generation quality issues",
+            "Investment in emerging compute and mobile GPU opportunities"
+          ]
+        },
+        "source_files": {
+          "press_release": "Q2 10 NVIDIARe (2).pdf",
+          "ten_q": "Q2 10 10Q-2010.pdf",
+          "ten_k": "Q4 10 10K-2010.pdf",
+          "transcript": null
+        }
+      },
+      {
+        "fiscal_year": 2010,
+        "fiscal_quarter": "Q3",
+        "period_end": "2009-11-01",
+        "report_date": "2009-11-12",
+        "financials": {
+          "revenue": 903206000,
+          "gross_margin_gaap": 0.400,
+          "gross_margin_nongaap": null,
+          "operating_expenses_gaap": null,
+          "operating_expenses_nongaap": null,
+          "net_income_gaap": 107577000,
+          "net_income_nongaap": null,
+          "eps_gaap": 0.19,
+          "eps_nongaap": null,
+          "segment": null
+        },
+        "narratives": {
+          "ai_demand": "GPU demand strengthened across gaming, workstation, and technical markets, supported by improving attach rates and early GPU compute use cases.",
+          "product_cycle": "New-generation GPUs ramped across desktop and notebook designs, helping margins recover following the Q2 correction.",
+          "strategic_themes": [
+            "Return to profitability driven by high-end GPU mix",
+            "Broadening deployment of GPUs in workstation and compute markets",
+            "Foundation building for long-term GPU computing strategy"
+          ]
+        },
+        "source_files": {
+          "press_release": "Q3 10 NVIDIARe (1).pdf",
+          "ten_q": "Q3 10 10Q-2010.pdf",
+          "ten_k": "Q4 10 10K-2010.pdf",
+          "transcript": null
+        }
+      },
+      {
+        "fiscal_year": 2010,
+        "fiscal_quarter": "Q4",
+        "period_end": "2010-01-31",
+        "report_date": "2010-02-11",
+        "financials": {
+          "revenue": 982311000,
+          "gross_margin_gaap": 0.453,
+          "gross_margin_nongaap": null,
+          "operating_expenses_gaap": null,
+          "operating_expenses_nongaap": null,
+          "net_income_gaap": 131111000,
+          "net_income_nongaap": null,
+          "eps_gaap": 0.23,
+          "eps_nongaap": null,
+          "segment": null
+        },
+        "narratives": {
+          "ai_demand": "By late FY2010, Tesla GPUs and CUDA established clearer traction in HPC, scientific computing, and technical workloads, laying groundwork for future enterprise GPU compute adoption.",
+          "product_cycle": "FY2010 ended with a significantly improved product mix, strengthened GPU franchise, and multi-market traction across gaming, workstation, mobile, and compute.",
+          "strategic_themes": [
+            "Full-year recovery from prior-year losses",
+            "Improved product mix driven by next-gen GPUs",
+            "Emergence of GPU computing as a strategic long-term pillar",
+            "Positioning for future growth in mobile, PC, and data-centric workloads"
+          ]
+        },
+        "source_files": {
+          "press_release": "Q4 10 NVIDIARe.pdf",
+          "ten_q": null,
+          "ten_k": "Q4 10 10K-2010.pdf",
+          "transcript": null
+        }
+      }
+    ]
+  }
+  

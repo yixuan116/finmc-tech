@@ -1,0 +1,124 @@
+{
+    "NVDA_Firm_Fundamentals": [
+      {
+        "fiscal_year": 2009,
+        "fiscal_quarter": "Q1",
+        "period_end": "2008-04-27",
+        "report_date": null,
+        "financials": {
+          "revenue": 1153388000,
+          "gross_margin_gaap": 0.4464,
+          "gross_margin_nongaap": null,
+          "operating_expenses_gaap": null,
+          "operating_expenses_nongaap": null,
+          "net_income_gaap": 176805000,
+          "net_income_nongaap": null,
+          "eps_gaap": 0.30,
+          "eps_nongaap": null,
+          "segment": null
+        },
+        "narratives": {
+          "ai_demand": null,
+          "product_cycle": null,
+          "strategic_themes": []
+        },
+        "source_files": {
+          "press_release": null,
+          "ten_q": "Q1 09 10Q-2009.pdf",
+          "ten_k": null,
+          "transcript": null
+        }
+      },
+      {
+        "fiscal_year": 2009,
+        "fiscal_quarter": "Q2",
+        "period_end": "2008-07-27",
+        "report_date": null,
+        "financials": {
+          "revenue": 892676000,
+          "gross_margin_gaap": 0.1679,
+          "gross_margin_nongaap": null,
+          "operating_expenses_gaap": null,
+          "operating_expenses_nongaap": null,
+          "net_income_gaap": -120929000,
+          "net_income_nongaap": null,
+          "eps_gaap": -0.22,
+          "eps_nongaap": null,
+          "segment": null
+        },
+        "narratives": {
+          "ai_demand": null,
+          "product_cycle": null,
+          "strategic_themes": []
+        },
+        "source_files": {
+          "press_release": null,
+          "ten_q": "Q2 09 10Q-2009.pdf",
+          "ten_k": null,
+          "transcript": null
+        }
+      },
+      {
+        "fiscal_year": 2009,
+        "fiscal_quarter": "Q3",
+        "period_end": "2008-10-26",
+        "report_date": null,
+        "financials": {
+          "revenue": 897655000,
+          "gross_margin_gaap": 0.4098,
+          "gross_margin_nongaap": null,
+          "operating_expenses_gaap": null,
+          "operating_expenses_nongaap": null,
+          "net_income_gaap": 61748000,
+          "net_income_nongaap": null,
+          "eps_gaap": 0.11,
+          "eps_nongaap": null,
+          "segment": null
+        },
+        "narratives": {
+          "ai_demand": null,
+          "product_cycle": null,
+          "strategic_themes": []
+        },
+        "source_files": {
+          "press_release": null,
+          "ten_q": "Q3 09 10Q-2009.pdf",
+          "ten_k": null,
+          "transcript": null
+        }
+      },
+      {
+        "fiscal_year": 2009,
+        "fiscal_quarter": "Q4",
+        "period_end": "2009-01-25",
+        "report_date": "2009-03-13",
+        "financials": {
+          "revenue": 481140000,
+          "gross_margin_gaap": 0.2944,
+          "gross_margin_nongaap": null,
+          "operating_expenses_gaap": null,
+          "operating_expenses_nongaap": null,
+          "net_income_gaap": -147665000,
+          "net_income_nongaap": null,
+          "eps_gaap": -0.27,
+          "eps_nongaap": null,
+          "segment": null
+        },
+        "narratives": {
+          "ai_demand": null,
+          "product_cycle": null,
+          "strategic_themes": [
+            "Significant warranty charge related to weak die/packaging material set in certain notebook MCP and GPU products",
+            "Macroeconomic slowdown and inventory corrections impacting GPU demand"
+          ]
+        },
+        "source_files": {
+          "press_release": null,
+          "ten_q": null,
+          "ten_k": "Q4 09 10K-2009.pdf",
+          "transcript": null
+        }
+      }
+    ]
+  }
+  

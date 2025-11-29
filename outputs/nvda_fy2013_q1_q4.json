@@ -1,0 +1,128 @@
+{
+    "NVDA_Firm_Fundamentals": [
+      {
+        "fiscal_year": 2013,
+        "fiscal_quarter": "Q1",
+        "period_end": "2012-04-29",
+        "report_date": "2012-05-10",
+        "financials": {
+          "revenue": 924900000,
+          "gross_margin_gaap": 0.501,
+          "gross_margin_nongaap": 0.504,
+          "operating_expenses_gaap": 390500000,
+          "operating_expenses_nongaap": 348000000,
+          "net_income_gaap": 60400000,
+          "net_income_nongaap": 97500000,
+          "eps_gaap": 0.10,
+          "eps_nongaap": 0.16,
+          "segment": null
+        },
+        "narratives": {
+          "ai_demand": null,
+          "product_cycle": null,
+          "strategic_themes": []
+        },
+        "source_files": {
+          "press_release": "Q1 13 NVIDIAAn.pdf",
+          "ten_q": "Q1 13 10-Q.pdf",
+          "transcript": null
+        }
+      },
+      {
+        "fiscal_year": 2013,
+        "fiscal_quarter": "Q2",
+        "period_end": "2012-07-29",
+        "report_date": "2012-08-09",
+        "financials": {
+          "revenue": 1044300000,
+          "gross_margin_gaap": 0.518,
+          "gross_margin_nongaap": 0.52,
+          "operating_expenses_gaap": 401100000,
+          "operating_expenses_nongaap": 342500000,
+          "net_income_gaap": 119000000,
+          "net_income_nongaap": 170400000,
+          "eps_gaap": 0.19,
+          "eps_nongaap": 0.27,
+          "segment": null
+        },
+        "narratives": {
+          "ai_demand": "GPU demand remained resilient in a weak PC market, helped by Kepler-based GPUs and Tegra shipments into tablets.",
+          "product_cycle": "Kepler desktop and notebook GPUs ramped, while Tegra 3 scaled across Android tablets such as Nexus 7.",
+          "strategic_themes": [
+            "Mobile computing expansion with Tegra",
+            "Visual computing growth driven by Kepler"
+          ]
+        },
+        "source_files": {
+          "press_release": "Q2 13 NVIDIAAn.pdf",
+          "ten_q": "Q2 13 10-Q.pdf",
+          "transcript": null
+        }
+      },
+      {
+        "fiscal_year": 2013,
+        "fiscal_quarter": "Q3",
+        "period_end": "2012-10-28",
+        "report_date": "2012-11-08",
+        "financials": {
+          "revenue": 1204100000,
+          "gross_margin_gaap": 0.529,
+          "gross_margin_nongaap": 0.531,
+          "operating_expenses_gaap": 384400000,
+          "operating_expenses_nongaap": 344800000,
+          "net_income_gaap": 209100000,
+          "net_income_nongaap": 245500000,
+          "eps_gaap": 0.33,
+          "eps_nongaap": 0.39,
+          "segment": null
+        },
+        "narratives": {
+          "ai_demand": "Kepler-based Tesla GPUs powered systems like the Titan supercomputer, highlighting early GPU-accelerated HPC and AI workloads.",
+          "product_cycle": "Kepler ramped across GeForce, Quadro and Tesla, while Tegra platforms appeared in flagship tablets, phones and cars.",
+          "strategic_themes": [
+            "GPU-accelerated computing and HPC",
+            "Kepler architecture rollout across product lines",
+            "Mobile and automotive growth with Tegra"
+          ]
+        },
+        "source_files": {
+          "press_release": "Q3 13 NVIDIAAn.pdf",
+          "ten_q": "Q3 13 10-Q.pdf",
+          "transcript": null
+        }
+      },
+      {
+        "fiscal_year": 2013,
+        "fiscal_quarter": "Q4",
+        "period_end": "2013-01-27",
+        "report_date": "2013-02-13",
+        "financials": {
+          "revenue": 1106900000,
+          "gross_margin_gaap": 0.529,
+          "gross_margin_nongaap": 0.532,
+          "operating_expenses_gaap": 402000000,
+          "operating_expenses_nongaap": 360400000,
+          "net_income_gaap": 174000000,
+          "net_income_nongaap": 214900000,
+          "eps_gaap": 0.28,
+          "eps_nongaap": 0.35,
+          "segment": null
+        },
+        "narratives": {
+          "ai_demand": "Tesla K20 GPU accelerators and GRID cloud gaming platforms underscored growing demand for GPU compute in HPC and data center-like workloads.",
+          "product_cycle": "Kepler-generation GPUs, Tegra 3 and newly announced Tegra 4, plus Project SHIELD and GRID, formed the core product cycle entering FY2014.",
+          "strategic_themes": [
+            "GPU computing for HPC and cloud",
+            "Mobile and gaming expansion with Tegra and SHIELD",
+            "Platform strategy around GRID and Kepler"
+          ]
+        },
+        "source_files": {
+          "press_release": "Q4 13 NVIDIAAn.pdf",
+          "ten_q": null,
+          "transcript": null
+        }
+      }
+    ]
+  }
+  
