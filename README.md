@@ -2339,6 +2339,61 @@ scenario construction, Monte Carlo forecasting, and HPC acceleration.
 
 ---
 
+## 📂 Codebase Navigation (File Map)
+
+This map connects the conceptual phases above to the actual code files in the project.
+
+### **Phase 0-1: Data & Features (Step 1 & 2)**
+- **Data Fetching**:
+  - `finmc_tech/data/fetch_firm.py` (NVDA/Stock data)
+  - `finmc_tech/data/fetch_macro.py` (FRED/Macro data)
+- **Alignment**: `finmc_tech/data/align.py` (Merge macro + micro)
+- **Feature Engineering**: `finmc_tech/features/build_features.py` (YoY, QoQ, Interactions)
+
+### **Phase 2: Model Training (Step 3)**
+- **Model Definition**: `finmc_tech/models/rf_model.py` (RandomForest logic)
+- **Training Pipeline**: `finmc_tech/sim/run_simulation.py` (Full train/test/sim flow)
+
+### **Phase 3: Driver Analysis (Step 5)**
+- **Key Drivers**: `finmc_tech/step5_key_drivers.py` (SHAP, Feature Importance, PDPs)
+
+### **Phase 4-5: Scenario Monte Carlo (Step 7)**
+- **Core Engine**: `finmc_tech/simulation/scenario_mc.py`
+  - `run_scenario_forecast()`: Main entry point
+  - `build_scenarios()`: Macro scenario definitions
+  - `run_driver_aware_mc_fast()`: Vectorized MC kernel
+
+### **Phase 6: HPC Extensions (Step 8)**
+- **Python Concurrency**: `finmc_tech/simulation/scenario_mc.py` (via `ThreadPoolExecutor`)
+- **Python Parallelism**: `finmc_tech/simulation/scenario_mc.py` (via Numba `prange`)
+- **C + OpenMP**: `finmc_tech/hpc_demos/openmp_mc_demo.c`
+- **Python + MPI**: `finmc_tech/hpc_demos/mpi_mc_demo.py`
+
+### **Utilities & Entry Points**
+- **CLI Entry**: `finmc_tech/cli.py` (Main command-line interface)
+- **Configuration**: `finmc_tech/config.py` (Global settings)
+- **Visualization**: `finmc_tech/viz/plots.py` (Plotting functions)
+
+### **Robustness Testing (AMD Comparison)**
+- **Core Comparison Script**: `compare_nvda_amd.py`
+- **AMD Features**: `create_amd_features_extended.py`
+- **Heatmap Viz**: `create_feature_importance_heatmap.py`
+
+### **Legacy / Pending Cleanup (Do Not Use)**
+The following files are legacy artifacts pending removal:
+- **`src/` folder**: Superseded by `finmc_tech/`
+- **`examples/` folder**: Legacy examples
+- **Root Scripts**:
+  - `run_pipeline.py`
+  - `train_models.py`
+  - `lstm_forecast.py`
+  - `rolling_corr_plot.py`
+  - `rolling_feature_importance.py`
+  - `feature_importance_rf.py`
+  - `feature_importance_rf_light.py`
+
+---
+
 ## Usage Examples
 
 ### Data Fetching

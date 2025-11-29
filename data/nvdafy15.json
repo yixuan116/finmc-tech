@@ -1,0 +1,157 @@
+{
+    "NVDA_Firm_Fundamentals": [
+      {
+        "fiscal_year": 2015,
+        "fiscal_quarter": "Q4",
+        "period_end": "2015-01-25",
+        "report_date": "2015-02-11",
+        "financials": {
+          "revenue": 1251000000,
+          "gross_margin_gaap": 0.559,
+          "gross_margin_nongaap": 0.562,
+          "operating_expenses_gaap": 468000000,
+          "operating_expenses_nongaap": 420000000,
+          "net_income_gaap": 193000000,
+          "net_income_nongaap": 241000000,
+          "eps_gaap": 0.35,
+          "eps_nongaap": 0.43,
+          "segment": {
+            "gaming": 646000000,
+            "pro_visualization": 190000000,
+            "datacenter": 88000000,
+            "auto": 56000000,
+            "oem_ip": 271000000
+          }
+        },
+        "narratives": {
+          "ai_demand": "Discrete GPU demand driven by high-end gaming and workstation upgrades; early growth in datacenter GPU adoption.",
+          "product_cycle": "Maxwell GPU ramp continues across desktop, notebook and cloud; automotive design wins build Tegra pipeline.",
+          "strategic_themes": [
+            "Shift toward gaming, professional visualization and GPU-accelerated datacenter",
+            "Early automotive platform momentum around DRIVE and Tegra",
+            "Ongoing capital return via dividends and buybacks at start of Pascal/NVLink era"
+          ]
+        },
+        "source_files": {
+          "press_release": "Q4 15 NVIDIAAn.pdf",
+          "ten_k": "Q4 15 10K-2015.pdf",
+          "transcript": null
+        }
+      },
+      {
+        "fiscal_year": 2015,
+        "fiscal_quarter": "Q3",
+        "period_end": "2014-10-26",
+        "report_date": "2014-11-06",
+        "financials": {
+          "revenue": 1225000000,
+          "gross_margin_gaap": 0.552,
+          "gross_margin_nongaap": 0.555,
+          "operating_expenses_gaap": 463000000,
+          "operating_expenses_nongaap": 415000000,
+          "net_income_gaap": 173000000,
+          "net_income_nongaap": 220000000,
+          "eps_gaap": 0.31,
+          "eps_nongaap": 0.39,
+          "segment": {
+            "gaming": 528000000,
+            "pro_visualization": 206000000,
+            "datacenter": 90000000,
+            "auto": 52000000,
+            "oem_ip": 350000000
+          }
+        },
+        "narratives": {
+          "ai_demand": "Record quarter driven by gaming GPUs and growth across GRID, Tesla and automotive platforms.",
+          "product_cycle": "Maxwell-based GeForce GTX gaming cards ramp; GRID virtual GPU and Tesla adoption expand in enterprises and cloud.",
+          "strategic_themes": [
+            "PC gaming as core profit engine",
+            "GPU-accelerated datacenter and virtualization gaining traction",
+            "Automotive infotainment and ADAS starting to contribute"
+          ]
+        },
+        "source_files": {
+          "press_release": "Q3 15 NVIDIAAn (1).pdf",
+          "ten_q": "Q3 15 10Q-2015.pdf",
+          "transcript": null
+        }
+      },
+      {
+        "fiscal_year": 2015,
+        "fiscal_quarter": "Q2",
+        "period_end": "2014-07-27",
+        "report_date": "2014-08-07",
+        "financials": {
+          "revenue": 1103000000,
+          "gross_margin_gaap": 0.561,
+          "gross_margin_nongaap": 0.564,
+          "operating_expenses_gaap": 456000000,
+          "operating_expenses_nongaap": 411000000,
+          "net_income_gaap": 128000000,
+          "net_income_nongaap": 173000000,
+          "eps_gaap": 0.22,
+          "eps_nongaap": 0.30,
+          "segment": {
+            "gaming": 417000000,
+            "pro_visualization": 208000000,
+            "datacenter": 83000000,
+            "auto": 40000000,
+            "oem_ip": 355000000
+          }
+        },
+        "narratives": {
+          "ai_demand": "Healthy gaming GPU demand and improved gross margins; early datacenter and automotive contributions.",
+          "product_cycle": "Notebook and desktop GPU refresh with Maxwell architecture; continued rollout of GRID and Tegra automotive platforms.",
+          "strategic_themes": [
+            "Focus on higher-margin gaming and professional GPUs",
+            "Building recurring revenue in datacenter virtualization",
+            "Scaling automotive design wins with global OEMs"
+          ]
+        },
+        "source_files": {
+          "press_release": "Q2 15 NVIDIAFi.pdf",
+          "ten_q": "Q2 15 10Q-2015.pdf",
+          "transcript": null
+        }
+      },
+      {
+        "fiscal_year": 2015,
+        "fiscal_quarter": "Q1",
+        "period_end": "2014-04-27",
+        "report_date": "2014-05-08",
+        "financials": {
+          "revenue": 1102800000,
+          "gross_margin_gaap": 0.548,
+          "gross_margin_nongaap": 0.551,
+          "operating_expenses_gaap": 452800000,
+          "operating_expenses_nongaap": 410800000,
+          "net_income_gaap": 136500000,
+          "net_income_nongaap": 166100000,
+          "eps_gaap": 0.24,
+          "eps_nongaap": 0.29,
+          "segment": {
+            "gaming": 468000000,
+            "pro_visualization": 191000000,
+            "datacenter": 57000000,
+            "auto": 35000000,
+            "oem_ip": 352000000
+          }
+        },
+        "narratives": {
+          "ai_demand": "Growth in PC gaming GPUs with early traction in datacenter, cloud and virtual GPU evaluations.",
+          "product_cycle": "Introduction of Maxwell architecture in notebooks and GPUs; launch of Jetson TK1 and early GRID deployments.",
+          "strategic_themes": [
+            "Laying groundwork for GPU-accelerated data centers",
+            "Strengthening gaming and professional visualization franchises",
+            "Seeding embedded and automotive compute with Jetson/Tegra"
+          ]
+        },
+        "source_files": {
+          "press_release": "Q1 15 NVIDIAFi (1).pdf",
+          "ten_q": "Q1 15 10Q-2015.pdf",
+          "transcript": null
+        }
+      }
+    ]
+  }
+  

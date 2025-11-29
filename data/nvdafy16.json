@@ -1,0 +1,140 @@
+{
+    "NVDA_Firm_Fundamentals": [
+      {
+        "fiscal_year": 2016,
+        "fiscal_quarter": "Q4",
+        "period_end": "2016-01-31",
+        "report_date": "2016-02-17",
+        "financials": {
+          "revenue": 1401000000,
+          "gross_margin_gaap": 0.569,
+          "gross_margin_nongaap": 0.574,
+          "operating_expenses_gaap": 562000000,
+          "operating_expenses_nongaap": 476000000,
+          "net_income_gaap": 207000000,
+          "net_income_nongaap": 297000000,
+          "eps_gaap": 0.35,
+          "eps_nongaap": 0.52,
+          "segment": null
+        },
+        "narratives": {
+          "ai_demand": "Deep learning adoption accelerated across hyperscale and automotive development partners.",
+          "product_cycle": "Maxwell GPUs continued to drive gaming and professional visualization performance.",
+          "strategic_themes": [
+            "Record FY16 revenue",
+            "Strong gaming GPU demand",
+            "Growing traction in deep learning and automotive"
+          ]
+        },
+        "source_files": {
+          "press_release": "Q4 16 NVIDIAAn.pdf",
+          "ten_q": null,
+          "ten_k": "Q4 16 10K-2016.pdf",
+          "transcript": null
+        }
+      },
+  
+      {
+        "fiscal_year": 2016,
+        "fiscal_quarter": "Q3",
+        "period_end": "2015-10-25",
+        "report_date": "2015-11-05",
+        "financials": {
+          "revenue": 1305000000,
+          "gross_margin_gaap": 0.563,
+          "gross_margin_nongaap": 0.565,
+          "operating_expenses_gaap": 489000000,
+          "operating_expenses_nongaap": 430000000,
+          "net_income_gaap": 246000000,
+          "net_income_nongaap": 255000000,
+          "eps_gaap": 0.44,
+          "eps_nongaap": 0.46,
+          "segment": null
+        },
+        "narratives": {
+          "ai_demand": "Datacenter adoption increased, including cloud GPU virtualization and early deep learning workloads.",
+          "product_cycle": "GeForce GTX 950 and GRID 2.0 expanded gaming and virtualization opportunities.",
+          "strategic_themes": [
+            "Record Q3 revenue",
+            "Expansion of VR and gaming ecosystem",
+            "Early acceleration in deep learning deployments"
+          ]
+        },
+        "source_files": {
+          "press_release": "Q3 16 NVIDIAAn (1).pdf",
+          "ten_q": "Q3 16 10Q-2016.pdf",
+          "ten_k": null,
+          "transcript": null
+        }
+      },
+  
+      {
+        "fiscal_year": 2016,
+        "fiscal_quarter": "Q2",
+        "period_end": "2015-07-26",
+        "report_date": "2015-08-06",
+        "financials": {
+          "revenue": 1153000000,
+          "gross_margin_gaap": 0.550,
+          "gross_margin_nongaap": 0.566,
+          "operating_expenses_gaap": 558000000,
+          "operating_expenses_nongaap": 421000000,
+          "net_income_gaap": 26000000,
+          "net_income_nongaap": 190000000,
+          "eps_gaap": 0.05,
+          "eps_nongaap": 0.34,
+          "segment": null
+        },
+        "narratives": {
+          "ai_demand": "Deep learning interest rose, supported by CUDA platform adoption across research organizations.",
+          "product_cycle": "Gaming demand held strong with GTX 980 Ti and SHIELD TV ramping.",
+          "strategic_themes": [
+            "GPU-accelerated computing broadening",
+            "Expansion of DRIVE partners in automotive",
+            "Growth in GRID virtualization customers"
+          ]
+        },
+        "source_files": {
+          "press_release": "Q2 16 NVIDIAAn (2).pdf",
+          "ten_q": "Q2 16 10Q-2016.pdf",
+          "ten_k": null,
+          "transcript": null
+        }
+      },
+  
+      {
+        "fiscal_year": 2016,
+        "fiscal_quarter": "Q1",
+        "period_end": "2015-04-26",
+        "report_date": "2015-05-07",
+        "financials": {
+          "revenue": 1151000000,
+          "gross_margin_gaap": 0.567,
+          "gross_margin_nongaap": 0.569,
+          "operating_expenses_gaap": 477000000,
+          "operating_expenses_nongaap": 425000000,
+          "net_income_gaap": 134000000,
+          "net_income_nongaap": 187000000,
+          "eps_gaap": 0.24,
+          "eps_nongaap": 0.33,
+          "segment": null
+        },
+        "narratives": {
+          "ai_demand": "Deep learning R&D activity expanded as more enterprises evaluated GPU acceleration.",
+          "product_cycle": "Maxwell GPUs strengthened gaming and notebook design wins.",
+          "strategic_themes": [
+            "Growth in gaming GPU platforms",
+            "Early traction in deep learning research",
+            "Automotive DRIVE PX engagements increasing"
+          ]
+        },
+        "source_files": {
+          "press_release": "Q1 16 NVIDIAAn (3).pdf",
+          "ten_q": "Q1 16 10Q-2016.pdf",
+          "ten_k": null,
+          "transcript": null
+        }
+      }
+    ]
+  }
+  

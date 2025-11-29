@@ -1,0 +1,137 @@
+{
+    "NVDA_Firm_Fundamentals": [
+      {
+        "fiscal_year": 2017,
+        "fiscal_quarter": "Q4",
+        "period_end": "2017-01-29",
+        "report_date": "2017-02-09",
+        "financials": {
+          "revenue": 2173000000,
+          "gross_margin_gaap": 0.600,
+          "gross_margin_nongaap": 0.602,
+          "operating_expenses_gaap": 570000000,
+          "operating_expenses_nongaap": 498000000,
+          "net_income_gaap": 655000000,
+          "net_income_nongaap": 704000000,
+          "eps_gaap": 0.99,
+          "eps_nongaap": 1.13,
+          "segment": null
+        },
+        "narratives": {
+          "ai_demand": "Broad-based strength across Gaming, Datacenter and Automotive, with deep learning and GPU computing gaining traction across workloads.",
+          "product_cycle": "Pascal architecture ramp continues across gaming GPUs and datacenter accelerators.",
+          "strategic_themes": [
+            "Record quarterly and full-year revenue",
+            "Expansion of GPU computing platform across AI, cloud, gaming and autonomous vehicles",
+            "Increased capital return to shareholders"
+          ]
+        },
+        "source_files": {
+          "press_release": "Q4 17 NVIDIAAn.pdf",
+          "ten_q": null,
+          "ten_k": "Q4 17 10K-2017.pdf",
+          "transcript": null
+        }
+      },
+      {
+        "fiscal_year": 2017,
+        "fiscal_quarter": "Q3",
+        "period_end": "2016-10-30",
+        "report_date": "2016-11-10",
+        "financials": {
+          "revenue": 2004000000,
+          "gross_margin_gaap": 0.590,
+          "gross_margin_nongaap": 0.592,
+          "operating_expenses_gaap": 544000000,
+          "operating_expenses_nongaap": 478000000,
+          "net_income_gaap": 542000000,
+          "net_income_nongaap": 570000000,
+          "eps_gaap": 0.83,
+          "eps_nongaap": 0.94,
+          "segment": null
+        },
+        "narratives": {
+          "ai_demand": "Datacenter and deep learning demand accelerate alongside strong Gaming platform performance.",
+          "product_cycle": "Pascal-based GPUs drive record revenue and margins in gaming and professional visualization.",
+          "strategic_themes": [
+            "Record revenue and earnings",
+            "Improving gross margin profile",
+            "Growing AI and datacenter contribution"
+          ]
+        },
+        "source_files": {
+          "press_release": "Q3 17 NVIDIA Announces Financial Results for Third Quarter Fiscal 2017 _ NVIDIA Newsroom.pdf",
+          "ten_q": "Q3 17 10Q-2017.pdf",
+          "ten_k": null,
+          "transcript": null
+        }
+      },
+      {
+        "fiscal_year": 2017,
+        "fiscal_quarter": "Q2",
+        "period_end": "2016-07-31",
+        "report_date": "2016-08-11",
+        "financials": {
+          "revenue": 1428000000,
+          "gross_margin_gaap": 0.579,
+          "gross_margin_nongaap": 0.581,
+          "operating_expenses_gaap": 509000000,
+          "operating_expenses_nongaap": 448000000,
+          "net_income_gaap": 253000000,
+          "net_income_nongaap": 313000000,
+          "eps_gaap": 0.40,
+          "eps_nongaap": 0.53,
+          "segment": null
+        },
+        "narratives": {
+          "ai_demand": "Early deep learning and hyperscale adoption contribute alongside core Gaming strength.",
+          "product_cycle": "GeForce and datacenter GPU ramps support revenue growth and margin expansion.",
+          "strategic_themes": [
+            "Strong year-on-year growth across major platforms",
+            "Operating leverage as revenue scales",
+            "Foundation for larger AI and datacenter business"
+          ]
+        },
+        "source_files": {
+          "press_release": "Q2 17 NVIDIAAn (1).pdf",
+          "ten_q": "Q2 17 10Q-2017.pdf",
+          "ten_k": null,
+          "transcript": null
+        }
+      },
+      {
+        "fiscal_year": 2017,
+        "fiscal_quarter": "Q1",
+        "period_end": "2016-05-01",
+        "report_date": "2016-05-12",
+        "financials": {
+          "revenue": 1305000000,
+          "gross_margin_gaap": 0.575,
+          "gross_margin_nongaap": 0.586,
+          "operating_expenses_gaap": 506000000,
+          "operating_expenses_nongaap": 443000000,
+          "net_income_gaap": 196000000,
+          "net_income_nongaap": 263000000,
+          "eps_gaap": 0.33,
+          "eps_nongaap": 0.46,
+          "segment": null
+        },
+        "narratives": {
+          "ai_demand": "Early-stage deep learning engagements begin to scale alongside gaming and professional visualization.",
+          "product_cycle": "Pascal and Maxwell product cycles support growth across GPU platforms.",
+          "strategic_themes": [
+            "Broad-based growth across all platforms",
+            "Initial scaling of deep learning workloads on GPUs",
+            "Improving profitability and gross margin"
+          ]
+        },
+        "source_files": {
+          "press_release": "Q1 17 NVIDIAAn (2).pdf",
+          "ten_q": "Q1 17 10Q-2017.pdf",
+          "ten_k": null,
+          "transcript": null
+        }
+      }
+    ]
+  }
+  
