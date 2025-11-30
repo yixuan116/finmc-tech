@@ -1,9 +1,9 @@
 """
-MPI Monte Carlo benchmark demo (HPC extension, Step 8).
+MPI Monte Carlo benchmark demo (HPC, Step 8).
 
 Usage example:
     # 12 months (1Y) - default
-    mpirun -n 4 python -m finmc_tech.hpc_demos.mpi_mc_demo
+    mpirun -n 4 python -m finmc_tech.hpc_demos.mpi_mc_demo # 4 core CPUs
     
     # 36 months (3Y)
     mpirun -n 4 python -m finmc_tech.hpc_demos.mpi_mc_demo --steps 36
@@ -90,7 +90,7 @@ def run_single_mpi_benchmark(n_steps: int, total_sims: int, output_dir: Path) ->
         Maximum parallel runtime across all ranks (seconds)
     """
     comm = MPI.COMM_WORLD
-    rank = comm.Get_rank()
+    rank = comm.Get_rank() #path simulation rank
     size = comm.Get_size()
     
     # Calculate local workload
@@ -115,7 +115,7 @@ def run_single_mpi_benchmark(n_steps: int, total_sims: int, output_dir: Path) ->
     # Gather max time (the effective parallel runtime)
     max_time = comm.reduce(local_time, op=MPI.MAX, root=0)
     
-    if rank == 0:
+    if rank == 0: #the master rank
         csv_path = output_dir / "hpc_benchmark_mpi.csv"
         file_exists = csv_path.exists()
         

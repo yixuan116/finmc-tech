@@ -2445,6 +2445,19 @@ This project goes beyond standard Python vectorization and demonstrates the four
 
 All implementations use the *same Monte Carlo kernel structure*, allowing direct comparison across architectures.
 
+#### **HPC Code Distribution Summary**
+
+All HPC implementations for Step 8 benchmarks are organized in three files:
+
+| HPC Paradigm | Implementation | Location |
+|--------------|----------------|----------|
+| **Path-level Parallelism** | Numba (`@njit(parallel=True)` + `prange`) | `scenario_mc.py` |
+| **Scenario-level Concurrency** | ThreadPoolExecutor | `scenario_mc.py` |
+| **Distributed Memory** | MPI (`mpi4py`) | `mpi_mc_demo.py` |
+| **Shared Memory** | OpenMP (`#pragma omp parallel for`) | `openmp_mc_demo.c` |
+
+**Note:** The `src/parallel/executor.py` file (using `joblib.Parallel`) exists but is not part of the current HPC benchmark workflow. All Step 8 HPC benchmarks are implemented in the three files listed above.
+
 ---
 
 #### **8.4.1 Parallelism (Python + Numba `prange`)**
