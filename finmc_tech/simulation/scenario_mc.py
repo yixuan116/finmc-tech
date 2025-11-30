@@ -1028,25 +1028,43 @@ def run_step8_scenario_engine(
     model_path: Optional[str] = None,
     scaler_path: Optional[str] = None,
     random_seed: int = RANDOM_STATE,
+    multi_horizon: bool = False,
 ) -> Dict[str, Any]:
     """
     Step 8: final scenario-based risk engine.
 
     Reuses the Step 7 scenario Monte Carlo engine, but writes
     all outputs into results/step8.
+    
+    Parameters
+    ----------
+    multi_horizon : bool, default False
+        If True, run multi-horizon driver-aware MC (1Y, 3Y, 5Y, 10Y).
+        If False, run single-horizon scenario forecast.
     """
     out_dir = Path(output_dir)
     out_dir.mkdir(parents=True, exist_ok=True)
 
-    results = run_scenario_forecast(
-        ticker=ticker,
-        horizon_months=horizon_months,
-        n_sims=n_sims,
-        output_dir=str(out_dir),
-        model_path=model_path,
-        scaler_path=scaler_path,
-        random_seed=random_seed,
-    )
+    if multi_horizon:
+        # Run multi-horizon driver-aware Monte Carlo
+        n_paths = n_sims if n_sims > 1000 else 10000  # Use 10k for multi-horizon
+        results = run_driver_aware_mc_multi_horizon(
+            ticker=ticker,
+            n_paths=n_paths,
+            output_dir=str(out_dir),
+            random_seed=random_seed,
+        )
+    else:
+        # Run single-horizon scenario forecast
+        results = run_scenario_forecast(
+            ticker=ticker,
+            horizon_months=horizon_months,
+            n_sims=n_sims,
+            output_dir=str(out_dir),
+            model_path=model_path,
+            scaler_path=scaler_path,
+            random_seed=random_seed,
+        )
     return results
 
 def run_step8_mc(
@@ -1057,9 +1075,16 @@ def run_step8_mc(
     model_path: Optional[str] = None,
     scaler_path: Optional[str] = None,
     random_seed: int = RANDOM_STATE,
+    multi_horizon: bool = False,
 ) -> Dict[str, Any]:
     """
     Wrapper for Step 8 MC engine (MC only).
+    
+    Parameters
+    ----------
+    multi_horizon : bool, default False
+        If True, run multi-horizon driver-aware MC (1Y, 3Y, 5Y, 10Y).
+        If False, run single-horizon scenario forecast.
     """
     return run_step8_scenario_engine(
         ticker=ticker,
@@ -1069,6 +1094,7 @@ def run_step8_mc(
         model_path=model_path,
         scaler_path=scaler_path,
         random_seed=random_seed,
+        multi_horizon=multi_horizon,
     )
 
 
@@ -1661,14 +1687,14 @@ def run_scenarios(
     return scenarios
 
 
-def plot_fan_chart(
+def plot_fan_chart_multi_horizon(
     horizon_label: str,
     scenario_label: str,
     price_paths: np.ndarray,
     current_price: float,
     output_path: Path,
 ) -> None:
-    """Plot fan chart for a single scenario (in percentage returns)."""
+    """Plot fan chart for a single scenario (in percentage returns) - multi-horizon version."""
     fig, ax = plt.subplots(figsize=(12, 7))
     
     n_steps = price_paths.shape[1] - 1
@@ -1720,7 +1746,37 @@ def plot_terminal_distribution(
     # terminal_return = (terminal_price / S0 - 1) * 100
     terminal_returns = (terminal_prices / current_price - 1) * 100
     
-    ax.hist(terminal_returns, bins=50, alpha=0.7, color="steelblue", edgecolor="black")
+    # Filter out any NaN or inf values
+    terminal_returns = terminal_returns[np.isfinite(terminal_returns)]
+    
+    if len(terminal_returns) == 0:
+        print(f"Warning: No valid terminal returns for {horizon_label} - {scenario_label}")
+        return
+    
+    # Check data range and unique values
+    data_range = np.max(terminal_returns) - np.min(terminal_returns)
+    unique_values = np.unique(terminal_returns)
+    
+    # If all values are the same or range is extremely small, use a simple visualization
+    if data_range < 1e-10 or len(unique_values) == 1:
+        # All values are essentially the same - show as a single bar
+        ax.bar([np.mean(terminal_returns)], [len(terminal_returns)], 
+               width=max(0.1, abs(np.mean(terminal_returns)) * 0.1) if np.mean(terminal_returns) != 0 else 0.1,
+               alpha=0.7, color="steelblue", edgecolor="black")
+    else:
+        # Calculate appropriate number of bins based on data
+        # Use Scott's rule as a starting point, but cap it
+        n_bins_scott = int(np.ceil(3.49 * np.std(terminal_returns) / (len(terminal_returns) ** (1/3))))
+        n_bins = min(50, max(5, n_bins_scott))
+        
+        # Ensure we don't have more bins than unique values
+        n_bins = min(n_bins, len(unique_values))
+        
+        try:
+            ax.hist(terminal_returns, bins=n_bins, alpha=0.7, color="steelblue", edgecolor="black")
+        except ValueError:
+            # Last resort: use unique values as bins
+            ax.hist(terminal_returns, bins=len(unique_values), alpha=0.7, color="steelblue", edgecolor="black")
     ax.axvline(0, color="black", linestyle="--", linewidth=2, label="Current Price (0%)")
     median_return = np.median(terminal_returns)
     ax.axvline(median_return, color="red", linestyle="--", linewidth=2, label=f"Median Forecast ({median_return:.1f}%)")
@@ -1823,7 +1879,7 @@ def run_driver_aware_mc_multi_horizon(
             terminals = result["terminals"]
             
             # Plot fan chart
-            plot_fan_chart(
+            plot_fan_chart_multi_horizon(
                 horizon_name, scenario_label, paths, S0,
                 output_path / f"{horizon_name.lower()}_{scenario_label}_fan.png"
             )

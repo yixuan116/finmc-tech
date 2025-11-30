@@ -110,10 +110,9 @@ def plot_monte_carlo_results(
     return_paths = (paths / S0 - 1) * 100
     final_returns = (final_prices / S0 - 1) * 100
     
-    # Plot 1: Historical data (keep as prices) + Forecast paths (as returns)
-    # Historical data - convert to returns relative to last price
-    last_price = data["close"].iloc[-1]
-    historical_returns = ((data["close"] / last_price - 1) * 100).values
+    # Plot 1: Historical data + Forecast paths (both as returns relative to S0)
+    # Historical data - convert to returns relative to S0
+    historical_returns = ((data["close"] / S0 - 1) * 100).values
     ax1.plot(data["date"], historical_returns, label="Historical Returns", linewidth=2, color="black")
     
     # Forecast paths (sample) - as percentage returns

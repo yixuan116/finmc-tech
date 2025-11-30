@@ -199,6 +199,7 @@ def step8_mc_cmd(args):
         output_dir=args.output_dir,
         model_path=args.model_path,
         scaler_path=args.scaler_path,
+        multi_horizon=getattr(args, 'multi_horizon', False),
     )
     logger.info("\n" + "=" * 70)
     logger.info("Step 8 MC Complete! Outputs in results/step8/")
@@ -242,6 +243,7 @@ def step8_cmd(args):
         output_dir=args.output_dir,
         model_path=args.model_path,
         scaler_path=args.scaler_path,
+        multi_horizon=getattr(args, 'multi_horizon', False),
     )
 
     # 2. Run HPC benchmark
@@ -363,6 +365,8 @@ def main():
                                 help="Path to champion model")
     step8_mc_parser.add_argument("--scaler-path", default=None,
                                 help="Path to feature scaler")
+    step8_mc_parser.add_argument("--multi-horizon", action="store_true",
+                                help="Run multi-horizon driver-aware MC (1Y, 3Y, 5Y, 10Y)")
     step8_mc_parser.set_defaults(func=step8_mc_cmd)
 
     # step8_hpc subcommand
@@ -395,6 +399,8 @@ def main():
                              help="Path to champion model (default: models/champion_model.pkl)")
     step8_parser.add_argument("--scaler-path", default=None,
                              help="Path to feature scaler (default: models/feature_scaler.pkl)")
+    step8_parser.add_argument("--multi-horizon", action="store_true",
+                             help="Run multi-horizon driver-aware MC (1Y, 3Y, 5Y, 10Y)")
     step8_parser.set_defaults(func=step8_cmd)
     
     args = parser.parse_args()
