@@ -9,7 +9,7 @@ This package provides tools for:
 - Visualizing results
 """
 
-__version__ = "0.1.0"
+__version__ = "0.0.2"
 
 from finmc_tech.config import Settings, cfg, get_logger, logger
 
