@@ -284,8 +284,8 @@ summary_text += f"  • Best year: {results_df.loc[results_df['sign_acc'].idxmax
 ax6.text(0.1, 0.5, summary_text, fontsize=11, family='monospace', verticalalignment='center')
 
 plt.tight_layout()
-plt.savefig("outputs/comparison_yearly.png", dpi=150, bbox_inches='tight')
-print("✓ Saved: outputs/comparison_yearly.png")
+plt.savefig("outputs/figs/general/comparison_yearly.png", dpi=150, bbox_inches='tight')
+print("✓ Saved: outputs/figs/general/comparison_yearly.png")
 plt.close()
 
 # ============================================================================
@@ -308,6 +308,6 @@ print("SUMMARY")
 print("="*70)
 print(f"✓ Rolling forecast: {len(results_df)} year×setup combinations")
 print(f"✓ Monte Carlo simulations: {len(results_mc_df)} years")
-print(f"✓ Visualization: outputs/comparison_yearly.png")
+print(f"✓ Visualization: outputs/figs/general/comparison_yearly.png")
 print("="*70)
 print("\n✅ Done! All results saved to outputs/")

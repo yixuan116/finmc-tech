@@ -794,6 +794,206 @@ This three-horizon architecture is an empirical consequence of Step 5, not an ar
 
 ---
 
+## Step 5.5 — Long-Term Feature Importance Analysis (5-10 Years)
+
+### 📊 Overview
+
+This section extends the feature importance analysis to long-term horizons (5-10 years), complementing the short-term (12M) analysis in Step 5. The analysis reveals how feature importance shifts as prediction horizons extend, with a particular focus on:
+
+- **Overall feature importance** across all features
+- **FCF-specific importance** (Free Cash Flow features)
+- **Firm Level vs Macro** feature importance comparison
+
+### 📁 Analysis Results Location
+
+**Directory:** `outputs/feature_importance/data/long_term/`
+
+All analysis results, data files, and visualizations are stored in this directory.
+
+### 📈 Overall Feature Importance (5-10 Years)
+
+#### Main Heatmap
+
+![Long-Term Feature Importance Heatmap](outputs/feature_importance/plots/long_term/feature_importance_long_term_heatmap.png)
+
+Comprehensive heatmap showing top 30 features across 5-year, 7-year, and 10-year horizons. **Compare with the short-term (1-5 years) heatmap** (`outputs/feature_importance/plots/mid_term/feature_importance_by_horizon_heatmap.png`) to see how feature importance changes from short-term to long-term.
+
+#### Key Findings
+
+**Top Features Across Long-Term Horizons:**
+
+| Rank | Feature | 5 Years | 7 Years | 10 Years |
+|------|---------|---------|---------|----------|
+| 1 | `rev_cagr_3y` | 0.7713 | - | - |
+| 2 | `rev_cagr_2y` | 0.0153 | 0.3702 | 0.3576 |
+| 3 | `rev_ttm` | 0.0320 | 0.0597 | 0.1212 |
+| 4 | `gross_margin_pct` | - | 0.1042 | 0.0762 |
+| 5 | `eps_cagr_2y` | - | 0.0696 | - |
+
+**Key Insights:**
+- **Revenue CAGR (2-3 years)** is the most important predictor for long-term returns
+- **Revenue TTM** becomes increasingly important in longer horizons
+- **Gross margin percentage** is important for 7-10 year predictions
+- **EPS metrics** gain importance in longer horizons
+
+### 💰 FCF (Free Cash Flow) Importance Analysis
+
+#### FCF Importance Trends
+
+| Horizon | FCF Total Importance | FCF % of Total | Top FCF Feature | Rank |
+|---------|---------------------|----------------|-----------------|------|
+| 3 years | 0.0160 | 1.60% | `fcf_ttm` | 20 |
+| 5 years | 0.0128 | 1.28% | `fcf_conversion` | 22 |
+| 7 years | 0.0201 | 2.01% | `fcf_ttm` | 20 |
+| 10 years | 0.0181 | 1.81% | `fcf_conversion` | 19 |
+
+**Key Insights:**
+1. **Peak Performance**: 7-year prediction window shows highest FCF importance (2.01%)
+2. **Best FCF Feature**: `fcf_ttm` performs best in 7-year predictions
+3. **Long-term Trend**: `fcf_conversion` becomes more important in longer horizons (rank improves to #19 at 10 years)
+4. **Overall Pattern**: FCF features show increasing importance in mid-to-long-term predictions
+
+#### FCF Visualization Charts
+
+![FCF Comprehensive Analysis](outputs/feature_importance/plots/long_term/fcf_comprehensive_analysis.png)
+
+Contains 5 subplots:
+1. FCF Total Importance Trend (3, 5, 7, 10 years)
+2. FCF % of Total Importance (Bar chart)
+3. Top FCF Feature Rank Changes
+4. Top FCF Feature Importance Changes
+5. Heatmap: All FCF Features Across Time Horizons
+
+![FCF Long-Term Analysis](outputs/feature_importance/plots/long_term/fcf_importance_long_term_analysis.png)
+
+Contains 4 subplots:
+1. FCF Total Importance vs Horizon
+2. FCF % of Total Importance vs Horizon
+3. Top FCF Feature Rank vs Horizon
+4. Model Performance vs Horizon
+
+### 🏢 Firm Level vs Macro Feature Importance
+
+![Firm vs Macro Importance Comparison](outputs/feature_importance/plots/long_term/firm_vs_macro_importance_comparison.png)
+
+**Key Findings:**
+- **Firm Level features** dominate across all horizons (82-98% importance)
+- **Macro features** are relatively important in short-term (1-2 years: 19-26%), but decrease significantly in mid-term (3-7 years: 5-8%)
+- **Long-term (10 years)**: Macro importance slightly increases again (12%), suggesting they play a larger role in very long-term outlooks
+
+**Interpretation:**
+- Short-term (1-2 years): Both firm and macro factors matter
+- Mid-term (3-7 years): Firm fundamentals become overwhelmingly dominant
+- Long-term (10 years): Macro factors regain some importance, but firm fundamentals still dominate
+
+### 📊 Data Files
+
+All analysis data is available in `outputs/feature_importance/data/long_term/`:
+
+- **Overall Feature Importance:**
+  - `feature_importance_long_term_all_features.csv` - All features across 5, 7, 10 years
+  - `feature_importance_y_log_20q_all_features.csv` - 5-year prediction (all features)
+  - `feature_importance_y_log_28q_all_features.csv` - 7-year prediction (all features)
+  - `feature_importance_y_log_40q_all_features.csv` - 10-year prediction (all features)
+
+- **FCF Analysis:**
+  - `fcf_importance_by_horizon.csv` - FCF importance summary across horizons
+  - `fcf_importance_complete_comparison.csv` - Complete comparison (3, 5, 7, 10 years)
+  - `firm_vs_macro_importance_summary.csv` - Firm vs Macro comparison data
+
+### 🔗 Related Files
+
+**Training Data:**
+- Location: `outputs/data/training/training_data_extended_10y.csv`
+- Contains: Extended training data with 5-10 year target variables
+  - `y_log_20q` (5 years)
+  - `y_log_24q` (6 years)
+  - `y_log_28q` (7 years)
+  - `y_log_32q` (8 years)
+  - `y_log_36q` (9 years)
+  - `y_log_40q` (10 years)
+
+**Short-term Analysis (1-5 years):**
+- Location: `outputs/feature_importance/plots/mid_term/`
+- File: `feature_importance_by_horizon_heatmap.png` - Heatmap for 1-5 year predictions
+- **Comparison:** Compare with `feature_importance_long_term_heatmap.png` to see how feature importance changes from short-term to long-term
+
+### 🏆 Champion Model Comparison Across Horizons
+
+This section compares multiple model families (Linear, Ridge, Lasso, ElasticNet, RandomForest, XGBoost) across different prediction horizons (1Y, 3Y, 5Y, 10Y) to identify the champion model for each horizon.
+
+**Methodology:**
+- **Models Compared:** Linear, Ridge, Lasso, ElasticNet, RandomForest, XGBoost
+- **Evaluation Metrics:** MAE (Mean Absolute Error), RMSE (Root Mean Squared Error), R² (Coefficient of Determination)
+- **Data Split:** Time-based 80/20 split (first 80% for training, last 20% for testing)
+- **Features:** Extended feature set from `nvda_features_extended_v2.csv` (includes cash flow features)
+
+**Champion Model Summary:**
+
+| Horizon | Champion (MAE) | Champion (RMSE) | Champion (R²) | Consistency |
+|---------|----------------|-----------------|---------------|-------------|
+| **1Y** | RandomForest<br>(0.7643) | RandomForest<br>(0.8424) | RandomForest<br>(-1.1691) | ✓ Consistent |
+| **3Y** | RandomForest<br>(0.4499) | RandomForest<br>(0.5007) | RandomForest<br>(-1.8245) | ✓ Consistent |
+| **5Y** | RandomForest<br>(0.6117) | XGBoost<br>(0.7427) | XGBoost<br>(-2.3342) | ⚠️ Different |
+| **10Y** | ElasticNet<br>(0.5916) | ElasticNet<br>(0.6134) | ElasticNet<br>(-7.0162) | ✓ Consistent |
+
+**Key Findings:**
+- **Short-term (1Y, 3Y):** RandomForest consistently performs best across all metrics
+- **Mid-term (5Y):** RandomForest has best MAE, but XGBoost has best RMSE and R² (very close performance)
+- **Long-term (10Y):** ElasticNet performs best, likely due to regularization benefits with limited sample size
+- **Note:** All models show negative R² values, indicating poor out-of-sample performance. This is common with small sample sizes and long prediction horizons. Champion models are identified based on relative performance.
+
+**Visualization:**
+
+![Model Comparison - MAE](outputs/feature_importance/plots/model_comparison_mae.png)
+*MAE comparison across models and horizons. Lower is better. Green bars indicate champion models.*
+
+![Model Comparison - RMSE](outputs/feature_importance/plots/model_comparison_rmse.png)
+*RMSE comparison across models and horizons. Lower is better. Green bars indicate champion models.*
+
+![Model Comparison - R²](outputs/feature_importance/plots/model_comparison_r2.png)
+*R² comparison across models and horizons. Higher is better (though all values are negative). Green bars indicate champion models.*
+
+**Data Files:**
+- `outputs/feature_importance/results/model_comparison.csv` - Complete comparison table with all metrics
+
+**Analysis Script:**
+- `scripts/champion_model_comparison.py` - Performs model comparison across horizons
+
+**Commands:**
+```bash
+# Run champion model comparison
+python3 scripts/champion_model_comparison.py \
+  --features-csv data/processed/nvda_features_extended_v2.csv \
+  --output-dir outputs/feature_importance
+```
+
+### 📝 Analysis Scripts
+
+The analysis was performed using:
+- **Overall Analysis:** `src/phase2_long_cycle/analyze_long_term_overall_importance.py`
+- **FCF Analysis:** `src/phase2_long_cycle/analyze_long_term_feature_importance.py`
+- **Firm vs Macro:** `src/phase2_long_cycle/create_firm_vs_macro_heatmap.py`
+- **Champion Model Comparison:** `scripts/champion_model_comparison.py`
+
+**Commands:**
+```bash
+# Overall feature importance (5-10 years)
+python3 src/phase2_long_cycle/analyze_long_term_overall_importance.py \
+  --data outputs/data/training/training_data_extended_10y.csv \
+  --targets y_log_20q y_log_28q y_log_40q
+
+# FCF-specific analysis
+python3 src/phase2_long_cycle/analyze_long_term_feature_importance.py \
+  --data outputs/data/training/training_data_extended_10y.csv \
+  --targets y_log_20q y_log_28q y_log_40q
+
+# Firm vs Macro comparison
+python3 src/phase2_long_cycle/create_firm_vs_macro_heatmap.py
+```
+
+---
+
 ## Step 6 — Translating Drivers into Economic Narrative
 
 After Step 5 identifies the dominant machine learning drivers (TNX, VIX, price momentum, rate–volatility interactions), Step 6 converts these statistical signals into real economic meaning.
