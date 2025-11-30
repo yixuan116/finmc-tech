@@ -80,7 +80,7 @@ def plot_monte_carlo_results(
     figsize: tuple = (14, 8),
 ) -> plt.Figure:
     """
-    Plot Monte Carlo simulation results.
+    Plot Monte Carlo simulation results (in percentage returns).
 
     Parameters
     ----------
@@ -106,11 +106,17 @@ def plot_monte_carlo_results(
     S0 = results["S0"]
     final_prices = results["final_prices"]
     
-    # Plot 1: Historical data + Forecast paths
-    # Historical data
-    ax1.plot(data["date"], data["close"], label="Historical", linewidth=2, color="black")
+    # Convert paths and final prices to percentage returns
+    return_paths = (paths / S0 - 1) * 100
+    final_returns = (final_prices / S0 - 1) * 100
     
-    # Forecast paths (sample)
+    # Plot 1: Historical data (keep as prices) + Forecast paths (as returns)
+    # Historical data - convert to returns relative to last price
+    last_price = data["close"].iloc[-1]
+    historical_returns = ((data["close"] / last_price - 1) * 100).values
+    ax1.plot(data["date"], historical_returns, label="Historical Returns", linewidth=2, color="black")
+    
+    # Forecast paths (sample) - as percentage returns
     last_date = data["date"].iloc[-1]
     dates_forward = pd.date_range(
         start=last_date,
@@ -118,17 +124,17 @@ def plot_monte_carlo_results(
         freq="D"
     )
     
-    n_show = min(n_paths_show, len(paths))
+    n_show = min(n_paths_show, len(return_paths))
     for i in range(n_show):
-        ax1.plot(dates_forward, paths[i], alpha=0.1, color="blue")
+        ax1.plot(dates_forward, return_paths[i], alpha=0.1, color="blue")
     
     # Mean path
-    mean_path = np.mean(paths, axis=0)
-    ax1.plot(dates_forward, mean_path, label="Mean Forecast", linewidth=2, color="red")
+    mean_return = np.mean(return_paths, axis=0)
+    ax1.plot(dates_forward, mean_return, label="Mean Forecast", linewidth=2, color="red")
     
     # Confidence intervals
-    ci_lower = np.percentile(paths, 2.5, axis=0)
-    ci_upper = np.percentile(paths, 97.5, axis=0)
+    ci_lower = np.percentile(return_paths, 2.5, axis=0)
+    ci_upper = np.percentile(return_paths, 97.5, axis=0)
     ax1.fill_between(
         dates_forward,
         ci_lower,
@@ -138,26 +144,31 @@ def plot_monte_carlo_results(
         label="95% CI"
     )
     
-    ax1.set_title(f"{ticker} - Monte Carlo Forecast", fontsize=14, fontweight="bold")
-    ax1.set_ylabel("Price ($)", fontsize=12)
+    ax1.axhline(0, color="gray", linestyle="--", linewidth=1, alpha=0.5)
+    ax1.set_title(f"{ticker} - Monte Carlo Forecast (Returns)", fontsize=14, fontweight="bold")
+    ax1.set_ylabel("Total Return (%)", fontsize=12)
     ax1.set_xlabel("Date", fontsize=12)
     ax1.legend(loc="best")
     ax1.grid(True, alpha=0.3)
     ax1.tick_params(axis="x", rotation=45)
     
-    # Plot 2: Distribution of final prices
-    ax2.hist(final_prices, bins=50, alpha=0.7, edgecolor="black")
-    ax2.axvline(results["expected_price"], color="red", linewidth=2, 
-                label=f"Expected: ${results['expected_price']:.2f}")
-    ax2.axvline(results["S0"], color="black", linewidth=2, 
-                label=f"Current: ${results['S0']:.2f}")
-    ax2.axvline(results["ci_lower"], color="red", linestyle="--", 
-                label=f"95% CI Lower: ${results['ci_lower']:.2f}")
-    ax2.axvline(results["ci_upper"], color="red", linestyle="--", 
-                label=f"95% CI Upper: ${results['ci_upper']:.2f}")
+    # Plot 2: Distribution of final returns
+    expected_return = (results["expected_price"] / S0 - 1) * 100
+    ci_lower_return = (results["ci_lower"] / S0 - 1) * 100
+    ci_upper_return = (results["ci_upper"] / S0 - 1) * 100
     
-    ax2.set_title("Distribution of Forecasted Prices", fontsize=12, fontweight="bold")
-    ax2.set_xlabel("Price ($)", fontsize=12)
+    ax2.hist(final_returns, bins=50, alpha=0.7, edgecolor="black")
+    ax2.axvline(expected_return, color="red", linewidth=2, 
+                label=f"Expected: {expected_return:.1f}%")
+    ax2.axvline(0, color="black", linewidth=2, 
+                label="Current (0%)")
+    ax2.axvline(ci_lower_return, color="red", linestyle="--", 
+                label=f"95% CI Lower: {ci_lower_return:.1f}%")
+    ax2.axvline(ci_upper_return, color="red", linestyle="--", 
+                label=f"95% CI Upper: {ci_upper_return:.1f}%")
+    
+    ax2.set_title("Distribution of Forecasted Returns", fontsize=12, fontweight="bold")
+    ax2.set_xlabel("Total Return (%)", fontsize=12)
     ax2.set_ylabel("Frequency", fontsize=12)
     ax2.legend(loc="best")
     ax2.grid(True, alpha=0.3)

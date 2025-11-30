@@ -901,7 +901,7 @@ def plot_fan_chart_overlay(
     horizon_steps: int,
     output_path: Path,
 ) -> None:
-    """Plot overlay fan chart for all scenarios."""
+    """Plot overlay fan chart for all scenarios (in percentage returns)."""
     fig, ax = plt.subplots(figsize=(14, 8))
     
     colors = {
@@ -915,12 +915,15 @@ def plot_fan_chart_overlay(
     for scenario_name, result in all_results.items():
         paths = result["paths"]
         
+        # Convert price paths to percentage returns
+        return_paths = (paths / S0 - 1) * 100
+        
         # Compute percentiles
         percentiles = [5, 25, 50, 75, 95]
         time_steps = np.arange(horizon_steps + 1)
         
         for i, p in enumerate(percentiles):
-            pct_values = np.percentile(paths, p, axis=0)
+            pct_values = np.percentile(return_paths, p, axis=0)
             alpha = 0.3 if p in [25, 75] else 0.5 if p == 50 else 0.2
             linestyle = "-" if p == 50 else "--"
             linewidth = 2 if p == 50 else 1
@@ -935,9 +938,9 @@ def plot_fan_chart_overlay(
                 label=f"{scenario_name} P{p}" if i == 0 else "",
             )
     
-    ax.axhline(S0, color="black", linestyle=":", linewidth=2, label="Current Price")
+    ax.axhline(0, color="black", linestyle=":", linewidth=2, label="Current Price (0%)")
     ax.set_xlabel("Months Ahead", fontsize=12)
-    ax.set_ylabel("Price ($)", fontsize=12)
+    ax.set_ylabel("Total Return (%)", fontsize=12)
     ax.set_title("Scenario Fan Chart Overlay", fontsize=14, fontweight="bold")
     ax.legend(loc="best", fontsize=9)
     ax.grid(alpha=0.3)
@@ -955,26 +958,29 @@ def plot_fan_chart(
     scenario_name: str,
     output_path: Path,
 ) -> None:
-    """Plot individual fan chart for a scenario."""
+    """Plot individual fan chart for a scenario (in percentage returns)."""
     fig, ax = plt.subplots(figsize=(12, 7))
     
     time_steps = np.arange(horizon_steps + 1)
     percentiles = [5, 25, 50, 75, 95]
     
+    # Convert price paths to percentage returns
+    return_paths = (paths / S0 - 1) * 100
+    
     # Fill between percentiles
-    p5 = np.percentile(paths, 5, axis=0)
-    p25 = np.percentile(paths, 25, axis=0)
-    p50 = np.percentile(paths, 50, axis=0)
-    p75 = np.percentile(paths, 75, axis=0)
-    p95 = np.percentile(paths, 95, axis=0)
+    p5 = np.percentile(return_paths, 5, axis=0)
+    p25 = np.percentile(return_paths, 25, axis=0)
+    p50 = np.percentile(return_paths, 50, axis=0)
+    p75 = np.percentile(return_paths, 75, axis=0)
+    p95 = np.percentile(return_paths, 95, axis=0)
     
     ax.fill_between(time_steps, p5, p95, alpha=0.2, color="blue", label="90% CI")
     ax.fill_between(time_steps, p25, p75, alpha=0.3, color="blue", label="50% CI")
     ax.plot(time_steps, p50, color="darkblue", linewidth=2, label="Median")
-    ax.axhline(S0, color="black", linestyle=":", linewidth=2, label="Current Price")
+    ax.axhline(0, color="black", linestyle=":", linewidth=2, label="Current Price (0%)")
     
     ax.set_xlabel("Months Ahead", fontsize=12)
-    ax.set_ylabel("Price ($)", fontsize=12)
+    ax.set_ylabel("Total Return (%)", fontsize=12)
     ax.set_title(f"Fan Chart: {scenario_name.replace('_', ' ').title()}", fontsize=14, fontweight="bold")
     ax.legend(loc="best")
     ax.grid(alpha=0.3)
@@ -991,14 +997,18 @@ def plot_distribution_shift(
     scenario_name: str,
     output_path: Path,
 ) -> None:
-    """Plot terminal distribution shift."""
+    """Plot terminal distribution shift (in percentage returns)."""
     fig, ax = plt.subplots(figsize=(10, 6))
     
-    ax.hist(terminals, bins=50, alpha=0.7, color="steelblue", edgecolor="black")
-    ax.axvline(S0, color="red", linestyle="--", linewidth=2, label="Current Price")
-    ax.axvline(np.median(terminals), color="green", linestyle="--", linewidth=2, label="Median Forecast")
+    # Convert terminal prices to percentage returns
+    terminal_returns = (terminals / S0 - 1) * 100
     
-    ax.set_xlabel("Terminal Price ($)", fontsize=12)
+    ax.hist(terminal_returns, bins=50, alpha=0.7, color="steelblue", edgecolor="black")
+    ax.axvline(0, color="red", linestyle="--", linewidth=2, label="Current Price (0%)")
+    median_return = np.median(terminal_returns)
+    ax.axvline(median_return, color="green", linestyle="--", linewidth=2, label=f"Median Forecast ({median_return:.1f}%)")
+    
+    ax.set_xlabel("Terminal Return (%)", fontsize=12)
     ax.set_ylabel("Frequency", fontsize=12)
     ax.set_title(f"Terminal Distribution: {scenario_name.replace('_', ' ').title()}", fontsize=14, fontweight="bold")
     ax.legend(loc="best")
@@ -1658,27 +1668,31 @@ def plot_fan_chart(
     current_price: float,
     output_path: Path,
 ) -> None:
-    """Plot fan chart for a single scenario."""
+    """Plot fan chart for a single scenario (in percentage returns)."""
     fig, ax = plt.subplots(figsize=(12, 7))
     
     n_steps = price_paths.shape[1] - 1
     time_steps = np.arange(n_steps + 1)
     
-    # Compute percentiles
-    p5 = np.percentile(price_paths, 5, axis=0)
-    p25 = np.percentile(price_paths, 25, axis=0)
-    p50 = np.percentile(price_paths, 50, axis=0)
-    p75 = np.percentile(price_paths, 75, axis=0)
-    p95 = np.percentile(price_paths, 95, axis=0)
+    # Convert price paths to percentage returns
+    # total_return_t = (price_t / S0 - 1) * 100
+    return_paths = (price_paths / current_price - 1) * 100
+    
+    # Compute percentiles from return paths
+    p5 = np.percentile(return_paths, 5, axis=0)
+    p25 = np.percentile(return_paths, 25, axis=0)
+    p50 = np.percentile(return_paths, 50, axis=0)
+    p75 = np.percentile(return_paths, 75, axis=0)
+    p95 = np.percentile(return_paths, 95, axis=0)
     
     # Fill between percentiles
     ax.fill_between(time_steps, p5, p95, alpha=0.2, color="blue", label="90% CI")
     ax.fill_between(time_steps, p25, p75, alpha=0.3, color="blue", label="50% CI")
     ax.plot(time_steps, p50, color="darkblue", linewidth=2, label="Median")
-    ax.axhline(current_price, color="black", linestyle=":", linewidth=2, label="Current Price")
+    ax.axhline(0, color="black", linestyle=":", linewidth=2, label="Current Price (0%)")
     
     ax.set_xlabel("Months Ahead", fontsize=12)
-    ax.set_ylabel("Price ($)", fontsize=12)
+    ax.set_ylabel("Total Return (%)", fontsize=12)
     ax.set_title(
         f"Fan Chart: {horizon_label} - {scenario_label.replace('_', ' ').title()}",
         fontsize=14, fontweight="bold"
@@ -1699,14 +1713,19 @@ def plot_terminal_distribution(
     current_price: float,
     output_path: Path,
 ) -> None:
-    """Plot terminal distribution for a single scenario."""
+    """Plot terminal distribution for a single scenario (in percentage returns)."""
     fig, ax = plt.subplots(figsize=(10, 6))
     
-    ax.hist(terminal_prices, bins=50, alpha=0.7, color="steelblue", edgecolor="black")
-    ax.axvline(current_price, color="black", linestyle="--", linewidth=2, label="Current Price")
-    ax.axvline(np.median(terminal_prices), color="red", linestyle="--", linewidth=2, label="Median Forecast")
+    # Convert terminal prices to percentage returns
+    # terminal_return = (terminal_price / S0 - 1) * 100
+    terminal_returns = (terminal_prices / current_price - 1) * 100
     
-    ax.set_xlabel("Terminal Price ($)", fontsize=12)
+    ax.hist(terminal_returns, bins=50, alpha=0.7, color="steelblue", edgecolor="black")
+    ax.axvline(0, color="black", linestyle="--", linewidth=2, label="Current Price (0%)")
+    median_return = np.median(terminal_returns)
+    ax.axvline(median_return, color="red", linestyle="--", linewidth=2, label=f"Median Forecast ({median_return:.1f}%)")
+    
+    ax.set_xlabel("Terminal Return (%)", fontsize=12)
     ax.set_ylabel("Frequency", fontsize=12)
     ax.set_title(
         f"Terminal Distribution: {horizon_label} - {scenario_label.replace('_', ' ').title()}",
@@ -1724,7 +1743,7 @@ def plot_terminal_distribution(
 def run_driver_aware_mc_multi_horizon(
     ticker: str = "NVDA",
     n_paths: int = 10000,
-    output_dir: str = "docs/monte_carlo",
+    output_dir: str = "results/step7",
     random_seed: int = 42,
 ) -> Dict[str, Any]:
     """
@@ -1870,7 +1889,7 @@ if __name__ == "__main__":
         results = run_driver_aware_mc_multi_horizon(
             ticker=args.ticker,
             n_paths=args.n if args.n > 1000 else 10000,  # Use 10k for multi-horizon
-            output_dir="docs/monte_carlo",
+            output_dir="results/step7",
             random_seed=RANDOM_STATE,
         )
         print("\n" + "="*60)
