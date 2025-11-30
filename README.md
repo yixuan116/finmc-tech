@@ -21,8 +21,9 @@ This section maps each step of the analysis pipeline to its corresponding Python
 | **Step 3** | Model Comparison & Selection | `train_models.py` (integrated) | Compares model performance, selects champion based on test metrics |
 | **Step 4** | Champion Model Selection | `train_models.py` (integrated) | Saves champion model (`models/champion_model.pkl`) and scaler (`models/feature_scaler.pkl`) |
 | **Step 5** | Key Drivers Analysis | `src/step5_key_drivers_short.py` | Extracts MDI, Permutation, and SHAP importance; generates PDP/ICE plots |
-| **Step 6** | Economic Narrative | `README.md` (documentation only) | Translates ML drivers into economic interpretation (no separate Python file) |
-| **Step 7** | Scenario-Based MC Forecasting | `finmc_tech/simulation/scenario_mc.py` | Builds scenarios, applies shocks, runs Monte Carlo simulations, generates forecast tables and plots |
+| **Step 6** | Driver Interpretation Across Horizons | `README.md` (documentation only) | Interprets feature importance evolution across short/mid/long-term horizons |
+| **Step 7** | Economic Narrative | `README.md` (documentation only) | Translates ML drivers into economic interpretation (no separate Python file) |
+| **Step 8** | Scenario-Based MC Forecasting | `finmc_tech/simulation/scenario_mc.py` | Builds scenarios, applies shocks, runs Monte Carlo simulations, generates forecast tables and plots |
 
 ### Quick Reference
 
@@ -38,9 +39,9 @@ python -m finmc_tech.cli step5
 python src/step5_key_drivers_short.py
 ```
 
-**Step 6** is documentation only and does not require code execution.
+**Step 6** and **Step 7** are documentation only and do not require code execution.
 
-**To run Step 7 (scenario forecasting):**
+**To run Step 8 (scenario forecasting):**
 ```bash
 python -m finmc_tech.cli simulate-scenarios --ticker NVDA --h 12 --n 500
 # or directly:
@@ -438,9 +439,9 @@ LSTM adds complexity without improving baseline predictive power.
 
 The project structure allocates deep learning to later stages:
 
-- **Step 6:** LSTM/GRU for multi-step sequential forecasting  
-- **Step 7:** Scenario engine + LSTM-based dynamic response modeling  
-- **Step 8:** HPC/GPU-accelerated training of LSTM/Transformer variants  
+- **Step 7:** LSTM/GRU for multi-step sequential forecasting  
+- **Step 8:** Scenario engine + LSTM-based dynamic response modeling  
+- **Step 9:** HPC/GPU-accelerated training of LSTM/Transformer variants  
 
 Including LSTM in Step 2 would slow the baseline and introduce heavy training cost without improving the benchmark.
 
@@ -994,9 +995,45 @@ python3 src/phase2_long_cycle/create_firm_vs_macro_heatmap.py
 
 ---
 
-## Step 6 — Translating Drivers into Economic Narrative
+## Step 6 — Driver Interpretation Across Forecast Horizons
 
-After Step 5 identifies the dominant machine learning drivers (TNX, VIX, price momentum, rate–volatility interactions), Step 6 converts these statistical signals into real economic meaning.
+Understanding *why* the model makes different predictions across horizons is essential for building an interpretable and finance-aligned ML forecasting system. Using Random Forest (global stability) and XGBoost (nonlinear interaction resolution), we extract horizon-specific feature importance and classify all features into:
+
+- **Firm-Level** (fundamentals, FCF/OCF, revenue acceleration, margins)  
+
+- **Macro** (TNX yield, VIX level, inflation, volatility regimes)  
+
+- **Interaction** (macro × firm, macro × price, macro × momentum)
+
+The results reveal a clean, economically meaningful **evolution of return drivers**:
+
+### 🔹 Short-Term Horizon (0–12 months): Macro & Market-Sentiment Dominance
+
+Short-term forecasts are driven primarily by **macro shocks and price-based sentiment** rather than firm fundamentals. Features such as **TNX yield**, **VIX level**, **3–12M returns**, and macro × price interactions explain the majority of return variation. This matches the market microstructure of high-beta tech stocks: 12-month returns respond more to **discount-rate shocks, volatility regimes, and momentum compression** than to earnings trajectories.
+
+> **Short-term = macro + sentiment driven.**
+
+### 🔹 Mid-Term Horizon (2–4 years): Firm Fundamentals Dominate
+
+Across the 2–4 year window, both RF and XGBoost converge on **firm-level fundamentals as the dominant drivers**: **FCF TTM**, **OCF TTM**, **Revenue YoY**, **Revenue Acceleration**, and margin-related interactions. Macro noise averages out, and structural variables describing unit economics, cash generation, and operational leverage carry the strongest predictive power. This horizon corresponds to standard sell-side modeling practice.
+
+> **Mid-term = revenue + cash-flow trajectory driven.**
+
+### 🔹 Long-Term Horizon (5–10 years): Regime-Driven Macro × Interaction Dominance
+
+At long horizons, fundamentals lose predictive power due to compounding uncertainty. The model instead identifies **macro × price interactions** (e.g., *VIX × momentum*, *TNX × volatility*) as the dominant drivers — particularly in XGBoost, which captures nonlinear regime sensitivity. This mirrors the long-run risk and discount-rate literature: long-horizon returns depend heavily on **future rate regimes and risk-premium structures**, not point forecasts of cash flows.
+
+> **Long-term = macro × regime sensitivity, not fundamentals.**
+
+### ⭐ One-Sentence Summary
+
+**Short-term returns are macro-driven, mid-term returns are fundamentals-driven, and long-term returns are regime-driven via nonlinear macro × interaction channels.**
+
+---
+
+## Step 7 — Translating Drivers into Economic Narrative
+
+After Step 5 identifies the dominant machine learning drivers (TNX, VIX, price momentum, rate–volatility interactions), Step 7 converts these statistical signals into real economic meaning.
 
 This is the step where ML stops being numbers and becomes business intelligence, valuation insight, and strategic forecast.
 
@@ -1008,7 +1045,7 @@ It answers three questions investors, CFOs, and strategists truly care about:
 
 ---
 
-### 6.1 Why MACRO Dominates SHORT Horizon (12M)
+### 7.1 Why MACRO Dominates SHORT Horizon (12M)
 
 The 12-month forecast horizon captures market behavior, not business fundamentals.
 
@@ -1038,7 +1075,7 @@ This matches institutional investor behavior: growth megacap = macro-beta amplif
 
 ---
 
-### 6.2 PDP / SHAP Interpretation (with Economic Meaning)
+### 7.2 PDP / SHAP Interpretation (with Economic Meaning)
 
 #### (1) Partial Dependence Plot: VIX × Price Momentum
 
@@ -1099,7 +1136,7 @@ This perfectly captures institutional pricing dynamics.
 
 ---
 
-### 6.3 Macro → Micro Narrative (The Economic Bridge)
+### 7.3 Macro → Micro Narrative (The Economic Bridge)
 
 To unify the two worlds:
 
@@ -1143,7 +1180,7 @@ This is exactly how real hedge funds and CFO offices reason.
 
 ---
 
-### 6.4 What Step 6 Tells Us About NVIDIA Today
+### 7.4 What Step 7 Tells Us About NVIDIA Today
 
 Based on the extracted drivers + PDP/SHAP interpretation:
 
@@ -1178,15 +1215,15 @@ But with NVDA-specific structure + business interpretation.
 
 ---
 
-## Step 7 — Scenario-Based Monte Carlo Forecasting
+## Step 8 — Scenario-Based Monte Carlo Forecasting
 
-After Step 6 translates ML drivers into economic narratives, Step 7 builds a **driver-aware Monte Carlo forecasting engine** that injects Step 5's key drivers (TNX, VIX, interactions) into scenario-based price path simulations.
+After Step 7 translates ML drivers into economic narratives, Step 8 builds a **driver-aware Monte Carlo forecasting engine** that injects Step 5's key drivers (TNX, VIX, interactions) into scenario-based price path simulations.
 
 This step answers: **"What happens to NVDA's 12-month price distribution under different macro regime shocks?"**
 
-### 7.1 Driver-Aware Monte Carlo Architecture
+### 8.1 Driver-Aware Monte Carlo Architecture
 
-Step 7 implements a scenario engine that:
+Step 8 implements a scenario engine that:
 
 1. **Builds macro scenarios** aligned with Step 5 drivers:
    - **Baseline**: No shock (current macro regime persists)
@@ -1215,7 +1252,7 @@ Step 7 implements a scenario engine that:
    - Fan charts (overlay + individual scenarios)
    - Terminal distribution shifts
 
-### 7.2 Scenario Forecast Table
+### 8.2 Scenario Forecast Table
 
 | Scenario | S0 | P5 | P50 | P95 | Exp Return | Up Prob | VaR (5%) | CVaR (5%) |
 |----------|----|----|-----|-----|------------|---------|----------|-----------|
@@ -1227,7 +1264,7 @@ Step 7 implements a scenario engine that:
 
 *Note: Table values are generated from actual simulation outputs.*
 
-### 7.3 Key Visualizations
+### 8.3 Key Visualizations
 
 #### Fan Chart Overlay
 
@@ -1249,7 +1286,7 @@ Step 7 implements a scenario engine that:
 - **Rate Spike** shifts distribution left (lower terminal prices)
 - The **spread** between scenarios quantifies NVDA's sensitivity to discount rate changes
 
-### 7.4 Step 7 Findings
+### 8.4 Step 8 Findings
 
 Based on the scenario-based Monte Carlo forecasts:
 
@@ -1265,7 +1302,7 @@ This provides a **quantitative forecast** grounded in Step 5's driver structure.
 
 - **Rate Cut → Rate Spike spread**: X.XX% difference in expected return
 - **Economic meaning**: NVDA's 12M returns are highly sensitive to discount rate changes
-- **Consistent with Step 6**: Macro (TNX) dominates short-horizon pricing
+- **Consistent with Step 7**: Macro (TNX) dominates short-horizon pricing
 
 #### (3) Volatility Regime Delta
 
@@ -2420,7 +2457,7 @@ These demos are not required for the forecasting engine to run. Instead, they de
 - Ability to benchmark and validate performance
 - Readiness for graduate-level research or industry HPC environments
 
-Together with the main Monte Carlo engine (Step 7/8), these extensions complete the full HPC picture for FinMC-Tech.
+Together with the main Monte Carlo engine (Step 8), these extensions complete the full HPC picture for FinMC-Tech.
 
 This completes Step 8 of the ML + HPC pipeline.
 
@@ -2557,7 +2594,7 @@ This map connects the conceptual phases above to the actual code files in the pr
 ### **Phase 3: Driver Analysis (Step 5)**
 - **Key Drivers**: `finmc_tech/step5_key_drivers.py` (SHAP, Feature Importance, PDPs)
 
-### **Phase 4-5: Scenario Monte Carlo (Step 7)**
+### **Phase 4-5: Scenario Monte Carlo (Step 8)**
 - **Core Engine**: `finmc_tech/simulation/scenario_mc.py`
   - `run_scenario_forecast()`: Main entry point
   - `build_scenarios()`: Macro scenario definitions
