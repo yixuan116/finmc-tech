@@ -2332,6 +2332,112 @@ The Monte Carlo engine now features:
 
 ---
 
+### **8.3.1 HPC Acceleration Strategy**
+
+The Step 7–8 engine can be viewed as a three-dimensional simulation problem:
+
+- **Scenario dimension** – a small number of macro narratives  
+  (e.g., `baseline`, `rate_cut`, `rate_spike`, `vix_crash`, `vix_spike`, or  
+  `base`, `macro_stress`, `fundamental_stress`, `ai_bull` in the multi-horizon engine).
+
+- **Path dimension** – a large number of simulated price trajectories  
+  (e.g., 10k–500k Monte Carlo paths).
+
+- **Time-step dimension** – monthly steps along each path  
+  (1Y = 12, 3Y = 36, 5Y = 60, 10Y = 120).
+
+From an HPC perspective:
+
+- The **time dimension must remain sequential**.  
+  Each step depends on the previous one (`S_{t+1}` depends on `S_t`),  
+  so we keep the time axis as a forward recursion to preserve the path-dependent  
+  financial structure.
+
+- The **path dimension is the main throughput axis**.  
+  This is where we scale up to 10k–500k simulations and apply data parallelism:
+
+  - A **NumPy vectorized baseline** (`run_driver_aware_mc_fast`) computes all paths
+    via matrix operations and `cumprod` over the time axis.
+
+  - A **Numba-parallel kernel** (`mc_numba_parallel`) uses `@njit(parallel=True)`
+    and `prange` to distribute paths across CPU cores: one path (or batch of paths)
+    per core where possible.
+
+- The **scenario dimension is parallelized at a coarse granularity**.  
+  Multiple macro scenarios are executed concurrently using `ThreadPoolExecutor`:
+
+  - Each worker runs a full scenario via `_run_single_scenario_task`
+    (shock → drift prediction → Monte Carlo → summary).
+
+  - This corresponds to a task-level / rank-level decomposition, similar in spirit
+    to an MPI setup where each rank owns a scenario or slice of the workload.
+
+Putting it together:
+
+- **Within a scenario**, we accelerate Monte Carlo by parallelizing across paths  
+  (NumPy vs Numba; see `benchmark_mc_backends`, `benchmark_scaling_curve`,
+  and `benchmark_mc_paths_multi_horizon`).
+
+- **Across scenarios**, we accelerate the overall risk engine by running macro
+  scenarios concurrently (see `benchmark_scenario_concurrency`).
+
+- **Along the time axis**, we keep the forward recursion sequential to maintain
+  the financial meaning of path-dependent dynamics.
+
+This design makes it explicit that the project is not "just a faster loop," but a
+structured HPC treatment of a `scenario × paths × steps` simulation problem with
+clear mapping between financial structure and parallelization strategy.
+
+#### **Benchmark Results**
+
+**Multi-Horizon Performance (50K simulations per horizon):**
+
+| Horizon | Backend | Time (sec) | Speedup |
+|---------|---------|------------|---------|
+| **1Y (12 steps)** | NumPy baseline | 0.0124 | 1.00× |
+| | Numba parallel | 0.0038 | **3.22×** |
+| **3Y (36 steps)** | NumPy baseline | 0.0358 | 1.00× |
+| | Numba parallel | 0.0097 | **3.70×** |
+| **5Y (60 steps)** | NumPy baseline | 0.0617 | 1.00× |
+| | Numba parallel | 0.0160 | **3.85×** |
+
+**Scaling Performance (3Y horizon, varying simulation counts):**
+
+| Simulations | NumPy (sec) | Numba (sec) | Speedup |
+|-------------|-------------|-------------|---------|
+| 10,000 | 0.0234 | 0.0097 | **2.40×** |
+| 50,000 | 0.0885 | 0.0211 | **4.19×** |
+| 100,000 | 0.2011 | 0.0428 | **4.70×** |
+| 200,000 | 0.4250 | 0.0739 | **5.75×** |
+| 500,000 | 1.6995 | 0.1554 | **10.94×** |
+
+**Key Insights:**
+- Numba parallelization achieves **3.2–3.9× speedup** across all horizons
+- Speedup increases with simulation count (from 2.4× at 10K to **10.9× at 500K**)
+- Longer horizons show slightly better speedup (3.85× for 5Y vs 3.22× for 1Y)
+- Demonstrates strong scaling: the more paths we simulate, the greater the parallel advantage
+
+**Cross-Platform HPC Comparison:**
+
+| Backend | Horizon | Simulations | Time (sec) | Speedup | Notes |
+|---------|---------|-------------|------------|---------|-------|
+| **NumPy** (baseline) | 1Y | 50K | 0.0124 | 1.00× | Vectorized, single-threaded |
+| **Numba** (parallel) | 1Y | 50K | 0.0038 | **3.22×** | Multi-core, shared memory |
+| **OpenMP C** (parallel) | 1Y | 1M | 0.078 | **3.02×** | Native threads, C implementation |
+| **MPI** (4 ranks) | 1Y | 1M | 0.214 | - | Distributed memory, 4 processes |
+| **NumPy** (baseline) | 3Y | 50K | 0.0358 | 1.00× | Vectorized, single-threaded |
+| **Numba** (parallel) | 3Y | 50K | 0.0097 | **3.70×** | Multi-core, shared memory |
+| **OpenMP C** (parallel) | 3Y | 1M | 0.226 | **3.19×** | Native threads, C implementation |
+| **MPI** (4 ranks) | 3Y | 1M | 0.604 | - | Distributed memory, 4 processes |
+| **NumPy** (baseline) | 5Y | 50K | 0.0617 | 1.00× | Vectorized, single-threaded |
+| **Numba** (parallel) | 5Y | 50K | 0.0160 | **3.85×** | Multi-core, shared memory |
+| **OpenMP C** (parallel) | 5Y | 1M | 0.387 | **3.02×** | Native threads, C implementation |
+| **MPI** (4 ranks) | 5Y | 1M | 1.520 | - | Distributed memory, 4 processes |
+
+*Note: NumPy/Numba benchmarks use 50K simulations, while OpenMP/MPI use 1M simulations. Speedup values for OpenMP are relative to its own sequential baseline. All parallel implementations demonstrate significant performance gains over sequential execution.*
+
+---
+
 ### **8.4 HPC Extensions: Parallel, Concurrency, OpenMP, MPI**
 
 This project goes beyond standard Python vectorization and demonstrates the four fundamental HPC paradigms discussed in class:

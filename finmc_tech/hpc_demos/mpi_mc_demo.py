@@ -2,7 +2,17 @@
 MPI Monte Carlo benchmark demo (HPC extension, Step 8).
 
 Usage example:
+    # 12 months (1Y) - default
     mpirun -n 4 python -m finmc_tech.hpc_demos.mpi_mc_demo
+    
+    # 36 months (3Y)
+    mpirun -n 4 python -m finmc_tech.hpc_demos.mpi_mc_demo --steps 36
+    
+    # 60 months (5Y)
+    mpirun -n 4 python -m finmc_tech.hpc_demos.mpi_mc_demo --steps 60
+    
+    # 120 months (10Y)
+    mpirun -n 4 python -m finmc_tech.hpc_demos.mpi_mc_demo --steps 120
 
 This will append a row to results/step8/hpc_benchmark_mpi.csv
 with the measured parallel runtime.
@@ -18,18 +28,27 @@ import numpy as np
 from pathlib import Path
 import csv
 import sys
+import argparse
 
-# Parameters
+# Default parameters
 TOTAL_SIMS = 1000000  # 1e6
-N_STEPS = 12
+DEFAULT_N_STEPS = 12  # 12 months (1Y)
 MU = 0.01
 SIGMA = 0.40
 S0 = 100.0
+STEPS_PER_YEAR = 12  # Monthly steps
 
-def run_mc_paths(n_sims, n_steps, mu, sigma, s0):
+# Multi-horizon configuration
+HORIZONS = {
+    "1Y": 12,
+    "3Y": 36,
+    "5Y": 60,
+}
+
+def run_mc_paths(n_sims, n_steps, mu, sigma, s0, steps_per_year=12):
     """Simple sequential Monte Carlo kernel for a single rank."""
     rng = np.random.default_rng()  # Seed can be rank-dependent if needed
-    sigma_step = sigma / np.sqrt(12)
+    sigma_step = sigma / np.sqrt(steps_per_year)
     
     # Pre-allocate
     terminals = np.zeros(n_sims)
@@ -50,28 +69,42 @@ def run_mc_paths(n_sims, n_steps, mu, sigma, s0):
     
     return paths[:, -1]
 
-def main():
-    # [HPC-MPI] Rank-level decomposition: split total Monte Carlo paths across MPI ranks.
+def run_single_mpi_benchmark(n_steps: int, total_sims: int, output_dir: Path) -> float:
+    """
+    Run the MPI Monte Carlo benchmark for a given number of steps,
+    return the parallel runtime (max rank time).
+    Writes a row to hpc_benchmark_mpi.csv as before.
+    
+    Parameters
+    ----------
+    n_steps : int
+        Number of time steps (months)
+    total_sims : int
+        Total number of Monte Carlo simulations
+    output_dir : Path
+        Output directory for CSV file
+    
+    Returns
+    -------
+    float
+        Maximum parallel runtime across all ranks (seconds)
+    """
     comm = MPI.COMM_WORLD
     rank = comm.Get_rank()
     size = comm.Get_size()
-
-    if rank == 0:
-        print(f"Starting MPI Monte Carlo Demo with {size} ranks...")
-        print(f"Total Sims: {TOTAL_SIMS}, Steps: {N_STEPS}")
-
+    
     # Calculate local workload
-    local_n_sims = TOTAL_SIMS // size
+    local_n_sims = total_sims // size
     # Add remainder to last rank
     if rank == size - 1:
-        local_n_sims += TOTAL_SIMS % size
-
+        local_n_sims += total_sims % size
+    
     # Sync before timing
     comm.Barrier()
     t0 = MPI.Wtime()
-
+    
     # [HPC-MPI] Parallel Monte Carlo execution: each rank simulates `local_n_sims` paths.
-    local_terminals = run_mc_paths(local_n_sims, N_STEPS, MU, SIGMA, S0)
+    local_terminals = run_mc_paths(local_n_sims, n_steps, MU, SIGMA, S0, STEPS_PER_YEAR)
     
     # Wait for all to finish
     comm.Barrier()
@@ -81,14 +114,9 @@ def main():
     
     # Gather max time (the effective parallel runtime)
     max_time = comm.reduce(local_time, op=MPI.MAX, root=0)
-
+    
     if rank == 0:
-        print(f"✓ MPI Parallel finished in {max_time:.4f} seconds")
-        
-        output_dir = Path("results/step8")
-        output_dir.mkdir(parents=True, exist_ok=True)
         csv_path = output_dir / "hpc_benchmark_mpi.csv"
-        
         file_exists = csv_path.exists()
         
         # [HPC-MPI] Benchmark result: written once on rank 0 to
@@ -98,9 +126,93 @@ def main():
             if not file_exists:
                 writer.writerow(["backend", "mode", "n_sims", "n_steps", "n_ranks", "time_sec"])
             
-            writer.writerow(["mpi_python", "mpi_parallel", TOTAL_SIMS, N_STEPS, size, max_time])
+            writer.writerow(["mpi_python", "mpi_parallel", total_sims, n_steps, size, max_time])
+    
+    return max_time if rank == 0 else 0.0
+
+def main():
+    # Parse command line arguments
+    parser = argparse.ArgumentParser(
+        description="MPI Monte Carlo benchmark demo for Step 8 HPC",
+        formatter_class=argparse.ArgumentDefaultsHelpFormatter
+    )
+    parser.add_argument(
+        "--steps", type=int, default=DEFAULT_N_STEPS,
+        help="Number of time steps (months). Common values: 12 (1Y), 36 (3Y), 60 (5Y), 120 (10Y)"
+    )
+    parser.add_argument(
+        "--sims", type=int, default=TOTAL_SIMS,
+        help="Total number of Monte Carlo simulations"
+    )
+    parser.add_argument(
+        "--multi-horizon", action="store_true",
+        help="Run benchmarks for all horizons (1Y, 3Y, 5Y)"
+    )
+    
+    # Only rank 0 parses arguments, then broadcasts to others
+    comm = MPI.COMM_WORLD
+    rank = comm.Get_rank()
+    size = comm.Get_size()
+    
+    if rank == 0:
+        args = parser.parse_args()
+        n_steps = args.steps
+        total_sims = args.sims
+        multi_horizon = args.multi_horizon
+    else:
+        n_steps = None
+        total_sims = None
+        multi_horizon = None
+    
+    # Broadcast parameters to all ranks
+    n_steps = comm.bcast(n_steps, root=0)
+    total_sims = comm.bcast(total_sims, root=0)
+    multi_horizon = comm.bcast(multi_horizon, root=0)
+    
+    output_dir = Path("results/step8")
+    output_dir.mkdir(parents=True, exist_ok=True)
+    
+    if multi_horizon:
+        # Run benchmarks for all horizons
+        if rank == 0:
+            print(f"Starting Multi-Horizon MPI Monte Carlo Demo with {size} ranks...")
+            print(f"Total Sims: {total_sims}")
+            print(f"Horizons: {list(HORIZONS.keys())}\n")
+        
+        for horizon_label, horizon_steps in HORIZONS.items():
+            if rank == 0:
+                print(f"--- Running {horizon_label} ({horizon_steps} steps) ---")
             
-        print(f"Results appended to: {csv_path}")
+            max_time = run_single_mpi_benchmark(horizon_steps, total_sims, output_dir)
+            
+            if rank == 0:
+                print(f"✓ {horizon_label} finished in {max_time:.4f} seconds\n")
+        
+        if rank == 0:
+            csv_path = output_dir / "hpc_benchmark_mpi.csv"
+            print(f"All results appended to: {csv_path}")
+    else:
+        # Original single-horizon behavior
+        if rank == 0:
+            horizon_label = f"{n_steps}M"
+            if n_steps == 12:
+                horizon_label = "1Y"
+            elif n_steps == 36:
+                horizon_label = "3Y"
+            elif n_steps == 60:
+                horizon_label = "5Y"
+            elif n_steps == 120:
+                horizon_label = "10Y"
+            
+            print(f"Starting MPI Monte Carlo Demo with {size} ranks...")
+            print(f"Total Sims: {total_sims}, Steps: {n_steps} ({horizon_label})")
+        
+        max_time = run_single_mpi_benchmark(n_steps, total_sims, output_dir)
+        
+        if rank == 0:
+            print(f"✓ MPI Parallel finished in {max_time:.4f} seconds")
+            csv_path = output_dir / "hpc_benchmark_mpi.csv"
+            print(f"Results appended to: {csv_path}")
 
 if __name__ == "__main__":
     main()

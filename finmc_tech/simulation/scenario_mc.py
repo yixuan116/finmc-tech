@@ -478,7 +478,7 @@ def run_driver_aware_mc_batched(
     horizon_steps: int,
     seed: int = RANDOM_STATE,
     batch_size: int = 1000,
-    steps_per_year: int = 12,
+    steps_per_year: int = 12, #by month
 ) -> Tuple[np.ndarray, np.ndarray]:
     """
     Batched Monte Carlo simulation with progress bar.
@@ -519,7 +519,7 @@ def run_driver_aware_mc_batched(
     sigma_step = sigma_annual / np.sqrt(steps_per_year)
     
     # Initialize paths
-    paths = np.zeros((n_sims, horizon_steps + 1))
+    paths = np.zeros((n_sims, horizon_steps + 1)) #horizon_steps = 12/36/60/120
     paths[:, 0] = S0
     
     # Calculate number of batches
@@ -1181,6 +1181,242 @@ def benchmark_mc_backends(
 
 
 # ------------------------------------------------------------------
+# HPC Scaling Curve Benchmark: NumPy vs Numba across simulation counts
+# ------------------------------------------------------------------
+def benchmark_scaling_curve(
+    output_dir: str = "results/step8",
+    n_sims_grid: Optional[List[int]] = None,
+    horizon_steps: int = 36,
+    steps_per_year: int = 12,
+    sigma_annual: float = 0.40,
+    mu: float = 0.01,
+    S0: float = 100.0,
+    random_seed: int = RANDOM_STATE,
+) -> pd.DataFrame:
+    """
+    HPC scaling benchmark: how NumPy vs Numba speedup changes
+    as we increase the number of Monte Carlo simulations.
+    
+    This uses a fixed horizon (default: 3Y = 36 monthly steps) and
+    sweeps over n_sims_grid (e.g. 10k → 50k → 100k → 200k → 500k).
+    
+    Results are written to results/step8/hpc_scaling_curve.csv and
+    plotted as results/step8/hpc_scaling_curve.png.
+    
+    Parameters
+    ----------
+    output_dir : str
+        Output directory for results
+    n_sims_grid : list[int] | None
+        List of simulation counts to test. If None, defaults to
+        [10_000, 50_000, 100_000, 200_000, 500_000]
+    horizon_steps : int
+        Number of time steps (default: 36 for 3Y)
+    steps_per_year : int
+        Steps per year (default: 12 for monthly)
+    sigma_annual : float
+        Annual volatility
+    mu : float
+        Drift parameter
+    S0 : float
+        Initial stock price
+    random_seed : int
+        Random seed for reproducibility
+    
+    Returns
+    -------
+    pd.DataFrame
+        DataFrame with columns: n_sims, horizon_steps, baseline_time,
+        numba_time, speedup
+    """
+    out_dir = Path(output_dir)
+    out_dir.mkdir(parents=True, exist_ok=True)
+    
+    if n_sims_grid is None:
+        n_sims_grid = [10_000, 50_000, 100_000, 200_000, 500_000]
+    
+    # Precompute constant drift sequence for the baseline
+    mu_seq = np.full(horizon_steps, mu, dtype=float)
+    
+    records = []
+    
+    # Warm-up Numba once (small run) to avoid including compilation time
+    _ = mc_numba_parallel(
+        S0=S0,
+        mu=mu,
+        sigma_annual=sigma_annual,
+        n_sims=1_000,
+        horizon_steps=4,
+        steps_per_year=steps_per_year,
+    )
+    
+    print("\n=== HPC Scaling Benchmark: NumPy vs Numba ===")
+    print(f"Horizon steps: {horizon_steps}, sigma_annual={sigma_annual:.0%}")
+    print(f"n_sims_grid = {n_sims_grid}\n")
+    
+    for n_sims in n_sims_grid:
+        print(f"n_sims = {n_sims:,}")
+        
+        # Baseline NumPy
+        t0 = time.perf_counter()
+        _, _ = run_driver_aware_mc_fast(
+            S0=S0,
+            mu_seq=mu_seq,
+            sigma_annual=sigma_annual,
+            n_sims=n_sims,
+            horizon_steps=horizon_steps,
+            seed=random_seed,
+            steps_per_year=steps_per_year,
+        )
+        t1 = time.perf_counter()
+        baseline_time = t1 - t0
+        print(f"  NumPy baseline:  {baseline_time:.4f} s")
+        
+        # Numba parallel
+        t2 = time.perf_counter()
+        _ = mc_numba_parallel(
+            S0=S0,
+            mu=mu,
+            sigma_annual=sigma_annual,
+            n_sims=n_sims,
+            horizon_steps=horizon_steps,
+            steps_per_year=steps_per_year,
+        )
+        t3 = time.perf_counter()
+        numba_time = t3 - t2
+        print(f"  Numba parallel:  {numba_time:.4f} s")
+        
+        speedup = baseline_time / numba_time if numba_time > 0 else np.nan
+        print(f"  Speedup (NumPy / Numba): {speedup:.2f}x\n")
+        
+        records.append(
+            {
+                "n_sims": n_sims,
+                "horizon_steps": horizon_steps,
+                "baseline_time": baseline_time,
+                "numba_time": numba_time,
+                "speedup": speedup,
+            }
+        )
+    
+    df = pd.DataFrame(records)
+    
+    csv_path = out_dir / "hpc_scaling_curve.csv"
+    df.to_csv(csv_path, index=False)
+    print(f"Scaling benchmark written to: {csv_path}")
+    
+    # Plot scaling curve (log-log style)
+    fig, ax = plt.subplots(figsize=(8, 5))
+    ax.plot(df["n_sims"], df["baseline_time"], marker="o", label="NumPy baseline", linewidth=2)
+    ax.plot(df["n_sims"], df["numba_time"], marker="o", label="Numba parallel", linewidth=2)
+    ax.set_xscale("log")
+    ax.set_yscale("log")
+    ax.set_xlabel("Number of simulations (log scale)", fontsize=12)
+    ax.set_ylabel("Runtime (seconds, log scale)", fontsize=12)
+    ax.set_title("HPC Scaling: NumPy vs Numba (fixed horizon)", fontsize=14, fontweight="bold")
+    ax.legend(fontsize=10)
+    ax.grid(alpha=0.3, which="both")
+    plt.tight_layout()
+    
+    png_path = out_dir / "hpc_scaling_curve.png"
+    plt.savefig(png_path, dpi=200, bbox_inches="tight")
+    plt.close()
+    print(f"Scaling curve plot saved to: {png_path}")
+    
+    return df
+
+
+# ------------------------------------------------------------------
+# HPC Multi-Horizon Benchmark: NumPy vs Numba for 1Y/3Y/5Y
+# ------------------------------------------------------------------
+def benchmark_mc_paths_multi_horizon(
+    output_dir: str = "results/step8",
+    horizons: Optional[Dict[str, int]] = None,
+    n_sims: int = 50000,
+    sigma_annual: float = 0.40,
+    mu: float = 0.01,
+    S0: float = 100.0,
+    random_seed: int = RANDOM_STATE,
+) -> pd.DataFrame:
+    """
+    Run benchmark_mc_backends() for multiple horizons (1Y/3Y/5Y)
+    and return a concatenated DataFrame with an extra 'horizon'
+    and 'n_steps' column.
+    
+    Parameters
+    ----------
+    output_dir : str
+        Output directory for results
+    horizons : dict[str, int] | None
+        Dictionary mapping horizon labels to number of steps.
+        If None, defaults to {"1Y": 12, "3Y": 36, "5Y": 60}
+    n_sims : int
+        Number of Monte Carlo simulations per horizon
+    sigma_annual : float
+        Annual volatility
+    mu : float
+        Drift parameter
+    S0 : float
+        Initial stock price
+    random_seed : int
+        Random seed for reproducibility
+    
+    Returns
+    -------
+    pd.DataFrame
+        Combined DataFrame with columns: backend, time_sec, speedup_vs_baseline,
+        horizon, n_steps
+    """
+    if horizons is None:
+        horizons = {"1Y": 12, "3Y": 36, "5Y": 60}
+    
+    out_dir = Path(output_dir)
+    out_dir.mkdir(parents=True, exist_ok=True)
+    
+    all_dfs = []
+    
+    print(f"\n{'='*60}")
+    print(f"Starting Multi-Horizon HPC Benchmark")
+    print(f"Horizons: {list(horizons.keys())}")
+    print(f"Simulations per horizon: {n_sims:,}")
+    print(f"{'='*60}\n")
+    
+    for horizon_label, n_steps in horizons.items():
+        print(f"\n--- Benchmarking {horizon_label} ({n_steps} steps) ---")
+        
+        # Call existing benchmark_mc_backends for this horizon
+        df = benchmark_mc_backends(
+            output_dir=output_dir,
+            n_sims=n_sims,
+            horizon_steps=n_steps,
+            steps_per_year=12,
+            sigma_annual=sigma_annual,
+            mu=mu,
+            S0=S0,
+            random_seed=random_seed,
+        )
+        
+        # Add horizon and n_steps columns
+        df["horizon"] = horizon_label
+        df["n_steps"] = n_steps
+        
+        all_dfs.append(df)
+    
+    # Concatenate all DataFrames
+    combined_df = pd.concat(all_dfs, ignore_index=True)
+    
+    # Save combined results
+    csv_path = out_dir / "hpc_benchmark_paths_1y_3y_5y.csv"
+    combined_df.to_csv(csv_path, index=False)
+    print(f"\n{'='*60}")
+    print(f"Multi-horizon benchmark written to: {csv_path}")
+    print(f"{'='*60}\n")
+    print(combined_df)
+    
+    return combined_df
+
+
+# ------------------------------------------------------------------
 # HPC Part B Benchmark: Scenario-level concurrency
 # - Compares sequential vs ThreadPoolExecutor-based execution
 #   across all macro scenarios
@@ -1362,6 +1598,157 @@ def run_step8_hpc(
         output_dir=output_dir,
         n_sims=n_sims,
     )
+
+
+# ------------------------------------------------------------------
+# HPC Summary: Combine all benchmark results (1Y/3Y/5Y)
+# ------------------------------------------------------------------
+def build_hpc_summary_1y_3y_5y(
+    output_dir: str = "results/step8",
+    paths_csv: str = "hpc_benchmark_paths_1y_3y_5y.csv",
+    mpi_csv: str = "hpc_benchmark_mpi.csv",
+    openmp_csv: str = "hpc_benchmark_openmp.csv",
+) -> pd.DataFrame:
+    """
+    Build a 1Y / 3Y / 5Y summary table combining:
+    - NumPy vs Numba (from paths benchmark)
+    - MPI (from mpi CSV)
+    - OpenMP (from C CSV)
+    
+    Returns a compact table with one row per horizon:
+    ['horizon', 'n_steps', 'baseline_time', 'best_parallel_time', 'speedup']
+    
+    Parameters
+    ----------
+    output_dir : str
+        Directory containing all benchmark CSV files
+    paths_csv : str
+        Filename for NumPy/Numba benchmark results
+    mpi_csv : str
+        Filename for MPI benchmark results
+    openmp_csv : str
+        Filename for OpenMP benchmark results
+    
+    Returns
+    -------
+    pd.DataFrame
+        Summary table with one row per horizon
+    """
+    out_dir = Path(output_dir)
+    
+    # Map n_steps to horizon labels
+    n_steps_to_horizon = {12: "1Y", 36: "3Y", 60: "5Y"}
+    horizons = ["1Y", "3Y", "5Y"]
+    n_steps_list = [12, 36, 60]
+    
+    summary_rows = []
+    
+    # Load paths CSV (NumPy vs Numba)
+    paths_df = None
+    paths_path = out_dir / paths_csv
+    if paths_path.exists():
+        paths_df = pd.read_csv(paths_path)
+        print(f"✓ Loaded paths benchmark: {paths_path}")
+    else:
+        print(f"⚠ Paths benchmark not found: {paths_path}")
+    
+    # Load MPI CSV
+    mpi_df = None
+    mpi_path = out_dir / mpi_csv
+    if mpi_path.exists():
+        mpi_df = pd.read_csv(mpi_path)
+        print(f"✓ Loaded MPI benchmark: {mpi_path}")
+    else:
+        print(f"⚠ MPI benchmark not found: {mpi_path}")
+    
+    # Load OpenMP CSV
+    openmp_df = None
+    openmp_path = out_dir / openmp_csv
+    if openmp_path.exists():
+        openmp_df = pd.read_csv(openmp_path)
+        print(f"✓ Loaded OpenMP benchmark: {openmp_path}")
+    else:
+        print(f"⚠ OpenMP benchmark not found: {openmp_path}")
+    
+    # Process each horizon
+    for horizon, n_steps in zip(horizons, n_steps_list):
+        baseline_time = None
+        parallel_times = {}
+        
+        # Get baseline time from paths benchmark
+        if paths_df is not None:
+            baseline_row = paths_df[
+                (paths_df["horizon"] == horizon) & 
+                (paths_df["backend"] == "baseline_numpy")
+            ]
+            if not baseline_row.empty:
+                baseline_time = baseline_row["time_sec"].iloc[0]
+        
+        # Get Numba parallel time
+        if paths_df is not None:
+            numba_row = paths_df[
+                (paths_df["horizon"] == horizon) & 
+                (paths_df["backend"] == "numba_parallel")
+            ]
+            if not numba_row.empty:
+                parallel_times["numba"] = numba_row["time_sec"].iloc[0]
+        
+        # Get MPI time
+        if mpi_df is not None:
+            mpi_row = mpi_df[
+                (mpi_df["n_steps"] == n_steps) &
+                (mpi_df["backend"] == "mpi_python") &
+                (mpi_df["mode"] == "mpi_parallel")
+            ]
+            if not mpi_row.empty:
+                # Take the most recent run if multiple exist
+                parallel_times["mpi"] = mpi_row["time_sec"].iloc[-1]
+        
+        # Get OpenMP parallel time
+        if openmp_df is not None:
+            openmp_row = openmp_df[
+                (openmp_df["n_steps"] == n_steps) &
+                (openmp_df["backend"] == "openmp_c") &
+                (openmp_df["mode"] == "openmp_parallel")
+            ]
+            if not openmp_row.empty:
+                # Take the most recent run if multiple exist
+                parallel_times["openmp"] = openmp_row["time_sec"].iloc[-1]
+        
+        # Find best parallel time
+        best_parallel_time = None
+        best_backend = None
+        if parallel_times:
+            best_backend = min(parallel_times, key=parallel_times.get)
+            best_parallel_time = parallel_times[best_backend]
+        
+        # Calculate speedup
+        speedup = None
+        if baseline_time is not None and best_parallel_time is not None:
+            speedup = baseline_time / best_parallel_time
+        
+        summary_rows.append({
+            "horizon": horizon,
+            "n_steps": n_steps,
+            "baseline_time": baseline_time,
+            "best_parallel_time": best_parallel_time,
+            "best_backend": best_backend,
+            "speedup": speedup,
+        })
+    
+    # Create summary DataFrame
+    summary_df = pd.DataFrame(summary_rows)
+    
+    # Save summary
+    summary_path = out_dir / "hpc_benchmark_summary_1y_3y_5y.csv"
+    summary_df.to_csv(summary_path, index=False)
+    
+    print(f"\n{'='*60}")
+    print(f"HPC Summary written to: {summary_path}")
+    print(f"{'='*60}\n")
+    print(summary_df.to_string(index=False))
+    
+    return summary_df
 
 
 # ============================================================================
@@ -1937,10 +2324,43 @@ if __name__ == "__main__":
     parser.add_argument("--model-path", default=None, help="Path to champion model")
     parser.add_argument("--scaler-path", default=None, help="Path to feature scaler")
     parser.add_argument("--multi-horizon", action="store_true", help="Run multi-horizon driver-aware MC")
+    parser.add_argument("--hpc-multi-horizon", action="store_true", 
+                       help="Run HPC multi-horizon benchmark (1Y/3Y/5Y) for NumPy vs Numba")
+    parser.add_argument("--hpc-summary", action="store_true",
+                       help="Build HPC summary table combining all benchmark results")
+    parser.add_argument(
+        "--scaling-curve",
+        action="store_true",
+        help="Run NumPy vs Numba scaling benchmark (Step 8 HPC).",
+    )
     
     args = parser.parse_args()
     
-    if args.multi_horizon:
+    if args.scaling_curve:
+        # Run only the scaling benchmark and exit
+        benchmark_scaling_curve(
+            output_dir="results/step8",
+        )
+        print("\n" + "="*60)
+        print("HPC Scaling Benchmark Complete!")
+        print("="*60)
+    elif args.hpc_multi_horizon:
+        # Run multi-horizon HPC benchmark
+        results = benchmark_mc_paths_multi_horizon(
+            output_dir="results/step8",
+            n_sims=args.n if args.n >= 10000 else 50000,
+            random_seed=RANDOM_STATE,
+        )
+        print("\n" + "="*60)
+        print("HPC Multi-Horizon Benchmark Complete!")
+        print("="*60)
+    elif args.hpc_summary:
+        # Build HPC summary
+        summary = build_hpc_summary_1y_3y_5y(output_dir="results/step8")
+        print("\n" + "="*60)
+        print("HPC Summary Complete!")
+        print("="*60)
+    elif args.multi_horizon:
         # Run new multi-horizon driver-aware Monte Carlo engine
         results = run_driver_aware_mc_multi_horizon(
             ticker=args.ticker,
@@ -1969,3 +2389,5 @@ if __name__ == "__main__":
     # Usage Examples:
     # python3 -m finmc_tech.simulation.scenario_mc --ticker NVDA --h 6 --n 50 --output-dir results/step7_sanity
     # python3 -m finmc_tech.simulation.scenario_mc --ticker NVDA --multi-horizon --n 10000
+    # python3 -m finmc_tech.simulation.scenario_mc --hpc-multi-horizon --n 50000
+    # python3 -m finmc_tech.simulation.scenario_mc --hpc-summary
