@@ -386,7 +386,13 @@ def aggregate_by_category(
     logger.info("Aggregating importance by category")
     
     categories = ['Firm', 'Macro', 'Interaction']
-    horizons = sorted(importance_dict.keys())
+    # Sort horizons in the correct order: 1y, 3y, 5y, 10y (not alphabetical)
+    horizon_order = ['1y', '3y', '5y', '10y']
+    horizons = [h for h in horizon_order if h in importance_dict.keys()]
+    # Add any remaining horizons that might not be in the standard list
+    for h in importance_dict.keys():
+        if h not in horizons:
+            horizons.append(h)
     
     category_df = pd.DataFrame(index=categories, columns=horizons)
     
@@ -429,8 +435,18 @@ def plot_category_heatmap(
         logger.warning("No data for heatmap")
         return
     
-    # Rename columns for display
+    # Rename columns for display and ensure correct order
     display_df = category_df.copy()
+    # Ensure columns are in the correct order: 1Y, 3Y, 5Y, 10Y
+    horizon_order = ['1y', '3y', '5y', '10y']
+    existing_horizons = [h for h in horizon_order if h in display_df.columns]
+    # Add any remaining horizons
+    for h in display_df.columns:
+        if h not in existing_horizons:
+            existing_horizons.append(h)
+    # Reorder columns
+    display_df = display_df[existing_horizons]
+    # Rename for display
     display_df.columns = [f"{h.replace('y', 'Y')}" for h in display_df.columns]
     
     # Plot

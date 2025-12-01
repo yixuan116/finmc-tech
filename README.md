@@ -1248,10 +1248,16 @@ All models use the same configurations as `train_models.py` for consistency:
 ![RF Feature Importance by Category Across Horizons](outputs/feature_importance/plots/importance_categories_rf_3cat.png)
 *Heatmap showing feature importance aggregated by category (Firm, Macro, Interaction) across different prediction horizons. Reveals how the relative importance of feature types shifts as prediction horizons extend.*
 
-**Key Findings:**
-- **Firm Features:** Peak importance at 3Y horizon (68.1%), indicating fundamentals are most predictive for mid-term forecasts
-- **Macro Features:** Highest importance at 1Y (32.5%) and 10Y (27.6%), but minimal at 3Y (3.3%) and 5Y (5.6%)
-- **Interaction Features:** Overwhelmingly dominant at 5Y horizon (79.2%), showing that macro × firm interactions are critical for medium-term predictions. Also important at 1Y (44.9%) and 10Y (44.6%)
+**Key Findings (ordered by horizon: 1Y, 3Y, 5Y, 10Y):**
+- **Firm Features:** 
+  - 1Y: 22.6% | 3Y: 68.1% (peak) | 5Y: 15.2% | 10Y: 27.8%
+  - Peak importance at 3Y horizon, indicating fundamentals are most predictive for mid-term forecasts
+- **Macro Features:**
+  - 1Y: 32.5% (peak) | 3Y: 3.3% (lowest) | 5Y: 5.6% | 10Y: 27.6%
+  - Highest importance at 1Y and 10Y, but minimal at 3Y and 5Y
+- **Interaction Features:**
+  - 1Y: 44.9% | 3Y: 28.6% | 5Y: 79.2% (peak) | 10Y: 44.6%
+  - Overwhelmingly dominant at 5Y horizon, showing that macro × firm interactions are critical for medium-term predictions
 
 **Interpretation:** The evolution of feature importance across horizons reveals a clear pattern:
 - **Short-term (1Y):** Macro and interaction features dominate, reflecting market sentiment and discount-rate effects
