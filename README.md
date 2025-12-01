@@ -121,7 +121,7 @@ python finmc_tech/simulation/scenario_mc.py --ticker NVDA --h 12 --n 500
 #### Analysis Figures
 
 **1. Revenue YoY Growth vs Future 12M Return**
-![YoY vs Return](outputs/figs/general/yoy_vs_return.png)
+![YoY vs Return](outputs/figs/yoy_vs_return.png)
 
 **Purpose**: Examines the relationship between revenue year-over-year growth and future stock returns.
 
@@ -132,7 +132,7 @@ python finmc_tech/simulation/scenario_mc.py --ticker NVDA --h 12 --n 500
 ---
 
 **2. Revenue Acceleration vs Future 12M Return**
-![Acceleration vs Return](outputs/figs/general/accel_vs_return.png)
+![Acceleration vs Return](outputs/figs/accel_vs_return.png)
 
 **Purpose**: Analyzes how changes in revenue growth momentum (acceleration) relate to future returns.
 
@@ -143,7 +143,7 @@ python finmc_tech/simulation/scenario_mc.py --ticker NVDA --h 12 --n 500
 ---
 
 **3. Rolling Correlation: Revenue YoY vs Future Returns**
-![Rolling Correlation](outputs/figs/general/rolling_corr.png)
+![Rolling Correlation](outputs/figs/rolling_corr.png)
 
 **Purpose**: Tracks the time-varying strength of the relationship between revenue growth and future returns.
 
@@ -154,7 +154,7 @@ python finmc_tech/simulation/scenario_mc.py --ticker NVDA --h 12 --n 500
 ---
 
 **4. RandomForest Feature Importance (Return Head)**
-![RF Feature Importance](outputs/figs/general/rf_feature_importance.png)
+![RF Feature Importance](outputs/figs/rf_feature_importance.png)
 
 **Purpose**: Identifies which features are most important for predicting future returns in the RandomForest model.
 
@@ -165,7 +165,7 @@ python finmc_tech/simulation/scenario_mc.py --ticker NVDA --h 12 --n 500
 ---
 
 **5. Return Head Predictions vs Actual - RandomForest (Test Set)**
-![RF Return: Pred vs Actual](outputs/figs/general/pred_vs_actual_return_rf.png)
+![RF Return: Pred vs Actual](outputs/figs/pred_vs_actual_return_rf.png)
 
 **Purpose**: Evaluates the out-of-sample performance of the RandomForest return head model by comparing predicted vs actual future returns over time.
 
@@ -176,7 +176,7 @@ python finmc_tech/simulation/scenario_mc.py --ticker NVDA --h 12 --n 500
 ---
 
 **5b. Return Head Predictions vs Actual - KNN (Test Set)**
-![KNN Return: Pred vs Actual](outputs/figs/general/knn_pred_vs_actual.png)
+![KNN Return: Pred vs Actual](outputs/figs/knn_pred_vs_actual.png)
 
 **Purpose**: Evaluates the out-of-sample performance of the KNN return head model by comparing predicted vs actual future returns over time.
 
@@ -187,7 +187,7 @@ python finmc_tech/simulation/scenario_mc.py --ticker NVDA --h 12 --n 500
 ---
 
 **6. Indirect Price Predictions vs Actual (from Return Head)**
-![Price (Indirect from Return)](outputs/figs/general/pred_vs_actual_price_indirect.png)
+![Price (Indirect from Return)](outputs/figs/pred_vs_actual_price_indirect.png)
 
 **Purpose**: Assesses price prediction accuracy using the indirect route: converting return predictions to price predictions via `price_hat = current_price × (1 + return_hat)`.
 
@@ -198,7 +198,7 @@ python finmc_tech/simulation/scenario_mc.py --ticker NVDA --h 12 --n 500
 ---
 
 **7. Direct Price Predictions vs Actual (from Price Head)**
-![Price (Direct Head)](outputs/figs/general/pred_vs_actual_price_direct.png)
+![Price (Direct Head)](outputs/figs/pred_vs_actual_price_direct.png)
 
 **Purpose**: Evaluates price prediction accuracy using the direct route: predicting log(price) directly from features.
 
@@ -209,7 +209,7 @@ python finmc_tech/simulation/scenario_mc.py --ticker NVDA --h 12 --n 500
 ---
 
 **8. Return Head Calibration Plot**
-![Calibration Return](outputs/figs/general/calibration_return.png)
+![Calibration Return](outputs/figs/calibration_return.png)
 
 **Purpose**: Assesses whether the model's predictions are well-calibrated (i.e., whether predicted values systematically match actual values).
 
@@ -223,7 +223,7 @@ python finmc_tech/simulation/scenario_mc.py --ticker NVDA --h 12 --n 500
 ---
 
 **9. Return Head Residuals Over Time**
-![Residuals Return](outputs/figs/general/residuals_return.png)
+![Residuals Return](outputs/figs/residuals_return.png)
 
 **Purpose**: Analyzes prediction errors (residuals) over time to detect patterns, biases, and heteroscedasticity.
 
@@ -405,6 +405,178 @@ This provides a complete baseline for financial return prediction prior to HPC-b
 | **Random Forest** | Nonlinear trees | Threshold effects, discrete state shifts | Captures "effect only matters under low VIX", "momentum only works in stable macro". High interpretability. |
 | **XGBoost** | Gradient-boosted trees | Hierarchical nonlinearities, complex interactions | Industry-standard model for tabular financial data; strongest performer for macro × micro signals. |
 | **Neural Network (MLP)** | Smooth nonlinear approximator | Differentiable curves, soft thresholds | Provides non-tree nonlinear structure; useful contrast to tree-based models. Not expected to dominate, but completes the spectrum. |
+
+---
+
+### **Mathematical Formulations**
+
+This section provides the mathematical foundations for each model used in the unified evaluation.
+
+#### **1. Linear Regression**
+
+**Objective Function:**
+```
+minimize: L(β) = ||y - Xβ||²
+```
+
+**Solution:**
+```
+β̂ = (XᵀX)⁻¹Xᵀy
+```
+
+**Prediction:**
+```
+ŷ = Xβ̂
+```
+
+Where:
+- `y ∈ ℝⁿ`: target vector (n samples)
+- `X ∈ ℝⁿˣᵖ`: feature matrix (n samples × p features)
+- `β ∈ ℝᵖ`: coefficient vector
+- `β̂`: estimated coefficients (Ordinary Least Squares)
+
+---
+
+#### **2. Ridge Regression (L2 Regularization)**
+
+**Objective Function:**
+```
+minimize: L(β) = ||y - Xβ||² + α||β||²
+```
+
+**Solution:**
+```
+β̂ = (XᵀX + αI)⁻¹Xᵀy
+```
+
+**Prediction:**
+```
+ŷ = Xβ̂
+```
+
+Where:
+- `α > 0`: regularization strength (L2 penalty)
+- `I`: identity matrix
+- `||β||² = Σⱼ βⱼ²`: L2 norm of coefficients (shrinkage penalty)
+
+**Key Property:** Ridge shrinks coefficients toward zero but never exactly to zero, handling multicollinearity by stabilizing the inverse of `XᵀX`.
+
+---
+
+#### **3. Random Forest**
+
+**Ensemble Prediction:**
+```
+ŷ = (1/B) Σᵦ₌₁ᴮ Tᵦ(x)
+```
+
+**Individual Tree:**
+```
+Tᵦ(x) = Σₘ₌₁ᴹ cₘ · I(x ∈ Rₘ)
+```
+
+**Training Objective (per tree):**
+```
+minimize: Σᵢ₌₁ⁿ (yᵢ - T(xᵢ))²
+```
+
+Where:
+- `B`: number of trees (bootstrap samples)
+- `Tᵦ(x)`: prediction from tree b
+- `Rₘ`: m-th leaf region (rectangular partition of feature space)
+- `cₘ`: constant prediction value for region Rₘ (mean of y in that region)
+- `I(·)`: indicator function
+
+**Key Property:** Each tree is trained on a bootstrap sample with random feature subset selection at each split, providing variance reduction through averaging.
+
+---
+
+#### **4. XGBoost (Gradient Boosting)**
+
+**Additive Model:**
+```
+ŷ = Σₜ₌₁ᵀ fₜ(x)
+```
+
+**Objective Function:**
+```
+minimize: L = Σᵢ₌₁ⁿ l(yᵢ, ŷᵢ) + Σₜ₌₁ᵀ Ω(fₜ)
+```
+
+**Loss Function (MSE):**
+```
+l(yᵢ, ŷᵢ) = (yᵢ - ŷᵢ)²
+```
+
+**Regularization:**
+```
+Ω(fₜ) = γT + (1/2)λ||w||²
+```
+
+**Tree Construction (greedy):**
+```
+fₜ(x) = argmin Σᵢ₌₁ⁿ [gᵢfₜ(xᵢ) + (1/2)hᵢfₜ²(xᵢ)] + Ω(fₜ)
+```
+
+Where:
+- `fₜ(x)`: t-th tree (weak learner)
+- `gᵢ = ∂l/∂ŷᵢ`: first-order gradient
+- `hᵢ = ∂²l/∂ŷᵢ²`: second-order gradient (Hessian)
+- `T`: number of leaves in tree
+- `w`: leaf weights
+- `γ, λ`: regularization parameters
+
+**Key Property:** XGBoost uses second-order Taylor expansion of the loss function and builds trees greedily to minimize the regularized objective, providing strong performance on tabular data.
+
+---
+
+#### **5. Neural Network (Multi-Layer Perceptron)**
+
+**Forward Propagation:**
+
+**Layer 1 (Input → Hidden 1):**
+```
+z₁ = W₁x + b₁
+a₁ = σ(z₁)
+```
+
+**Layer 2 (Hidden 1 → Hidden 2):**
+```
+z₂ = W₂a₁ + b₂
+a₂ = σ(z₂)
+```
+
+**Layer 3 (Hidden 2 → Output):**
+```
+ŷ = W₃a₂ + b₃
+```
+
+**Loss Function (MSE):**
+```
+L = (1/n) Σᵢ₌₁ⁿ (yᵢ - ŷᵢ)²
+```
+
+**Backpropagation (Gradient Descent):**
+```
+Wₖ ← Wₖ - η · ∂L/∂Wₖ
+bₖ ← bₖ - η · ∂L/∂bₖ
+```
+
+Where:
+- `x ∈ ℝᵖ`: input feature vector
+- `Wₖ`: weight matrix for layer k
+- `bₖ`: bias vector for layer k
+- `σ(·)`: activation function (e.g., ReLU: `σ(z) = max(0, z)`)
+- `η`: learning rate
+- `n`: number of samples
+
+**Architecture (as configured):**
+- Input layer: p features (75 features)
+- Hidden layer 1: 64 neurons
+- Hidden layer 2: 32 neurons
+- Output layer: 1 neuron (regression)
+
+**Key Property:** Neural networks learn smooth, differentiable nonlinear transformations through composition of linear transformations and nonlinear activations, providing a different inductive bias than tree-based models.
 
 ---
 
@@ -1052,6 +1224,12 @@ All models use the same configurations as `train_models.py` for consistency:
 ![Unified Model Comparison - R²](outputs/feature_importance/plots/unified_model_comparison_r2.png)
 *Unified model comparison across horizons using fixed time-point splits. Higher R² is better (though all values are negative). Green bars indicate champion models for each horizon.*
 
+![Unified Model Comparison - MAE](outputs/feature_importance/plots/unified_model_comparison_mae.png)
+*Unified model comparison: MAE (Mean Absolute Error) across horizons. Lower MAE is better. Green bars indicate champion models for each horizon.*
+
+![Unified Model Comparison - RMSE](outputs/feature_importance/plots/unified_model_comparison_rmse.png)
+*Unified model comparison: RMSE (Root Mean Squared Error) across horizons. Lower RMSE is better. Green bars indicate champion models for each horizon.*
+
 **Data Files:**
 - `outputs/feature_importance/results/unified_model_comparison.csv` - Complete unified evaluation results
 
@@ -1373,7 +1551,7 @@ Step 8 implements a scenario engine that:
 
 #### Fan Chart Overlay
 
-![Fan Chart Overlay](results/step7/fan_chart_overlay.png)
+![Fan Chart Overlay](outputs/fan_chart_overlay.png)
 
 **Interpretation**: All scenarios plotted together show:
 - **Baseline** (black): Current macro regime → median path
@@ -1384,7 +1562,7 @@ Step 8 implements a scenario engine that:
 
 #### Distribution Shift Example: Rate Cut vs Rate Spike
 
-![Distribution Shift: Rate Cut](results/step7/distribution_shift_rate_cut.png)
+![Distribution Shift: Rate Cut](outputs/distribution_shift_rate_cut.png)
 
 **Interpretation**: 
 - **Rate Cut** shifts distribution right (higher terminal prices)
@@ -2437,131 +2615,12 @@ The Monte Carlo engine now features:
 
 ---
 
-### **8.3.1 HPC Acceleration Strategy**
-
-The Step 7–8 engine can be viewed as a three-dimensional simulation problem:
-
-- **Scenario dimension** – a small number of macro narratives  
-  (e.g., `baseline`, `rate_cut`, `rate_spike`, `vix_crash`, `vix_spike`, or  
-  `base`, `macro_stress`, `fundamental_stress`, `ai_bull` in the multi-horizon engine).
-
-- **Path dimension** – a large number of simulated price trajectories  
-  (e.g., 10k–500k Monte Carlo paths).
-
-- **Time-step dimension** – monthly steps along each path  
-  (1Y = 12, 3Y = 36, 5Y = 60, 10Y = 120).
-
-From an HPC perspective:
-
-- The **time dimension must remain sequential**.  
-  Each step depends on the previous one (`S_{t+1}` depends on `S_t`),  
-  so we keep the time axis as a forward recursion to preserve the path-dependent  
-  financial structure.
-
-- The **path dimension is the main throughput axis**.  
-  This is where we scale up to 10k–500k simulations and apply data parallelism:
-
-  - A **NumPy vectorized baseline** (`run_driver_aware_mc_fast`) computes all paths
-    via matrix operations and `cumprod` over the time axis.
-
-  - A **Numba-parallel kernel** (`mc_numba_parallel`) uses `@njit(parallel=True)`
-    and `prange` to distribute paths across CPU cores: one path (or batch of paths)
-    per core where possible.
-
-- The **scenario dimension is parallelized at a coarse granularity**.  
-  Multiple macro scenarios are executed concurrently using `ThreadPoolExecutor`:
-
-  - Each worker runs a full scenario via `_run_single_scenario_task`
-    (shock → drift prediction → Monte Carlo → summary).
-
-  - This corresponds to a task-level / rank-level decomposition, similar in spirit
-    to an MPI setup where each rank owns a scenario or slice of the workload.
-
-Putting it together:
-
-- **Within a scenario**, we accelerate Monte Carlo by parallelizing across paths  
-  (NumPy vs Numba; see `benchmark_mc_backends`, `benchmark_scaling_curve`,
-  and `benchmark_mc_paths_multi_horizon`).
-
-- **Across scenarios**, we accelerate the overall risk engine by running macro
-  scenarios concurrently (see `benchmark_scenario_concurrency`).
-
-- **Along the time axis**, we keep the forward recursion sequential to maintain
-  the financial meaning of path-dependent dynamics.
-
-This design makes it explicit that the project is not "just a faster loop," but a
-structured HPC treatment of a `scenario × paths × steps` simulation problem with
-clear mapping between financial structure and parallelization strategy.
-
-#### **Benchmark Results**
-
-**Multi-Horizon Performance (50K simulations per horizon):**
-
-| Horizon | Backend | Time (sec) | Speedup |
-|---------|---------|------------|---------|
-| **1Y (12 steps)** | NumPy baseline | 0.0124 | 1.00× |
-| | Numba parallel | 0.0038 | **3.22×** |
-| **3Y (36 steps)** | NumPy baseline | 0.0358 | 1.00× |
-| | Numba parallel | 0.0097 | **3.70×** |
-| **5Y (60 steps)** | NumPy baseline | 0.0617 | 1.00× |
-| | Numba parallel | 0.0160 | **3.85×** |
-
-**Scaling Performance (3Y horizon, varying simulation counts):**
-
-| Simulations | NumPy (sec) | Numba (sec) | Speedup |
-|-------------|-------------|-------------|---------|
-| 10,000 | 0.0234 | 0.0097 | **2.40×** |
-| 50,000 | 0.0885 | 0.0211 | **4.19×** |
-| 100,000 | 0.2011 | 0.0428 | **4.70×** |
-| 200,000 | 0.4250 | 0.0739 | **5.75×** |
-| 500,000 | 1.6995 | 0.1554 | **10.94×** |
-
-**Key Insights:**
-- Numba parallelization achieves **3.2–3.9× speedup** across all horizons
-- Speedup increases with simulation count (from 2.4× at 10K to **10.9× at 500K**)
-- Longer horizons show slightly better speedup (3.85× for 5Y vs 3.22× for 1Y)
-- Demonstrates strong scaling: the more paths we simulate, the greater the parallel advantage
-
-**Cross-Platform HPC Comparison:**
-
-| Backend | Horizon | Simulations | Time (sec) | Speedup | Notes |
-|---------|---------|-------------|------------|---------|-------|
-| **NumPy** (baseline) | 1Y | 50K | 0.0124 | 1.00× | Vectorized, single-threaded |
-| **Numba** (parallel) | 1Y | 50K | 0.0038 | **3.22×** | Multi-core, shared memory |
-| **OpenMP C** (parallel) | 1Y | 1M | 0.078 | **3.02×** | Native threads, C implementation |
-| **MPI** (4 ranks) | 1Y | 1M | 0.214 | - | Distributed memory, 4 processes |
-| **NumPy** (baseline) | 3Y | 50K | 0.0358 | 1.00× | Vectorized, single-threaded |
-| **Numba** (parallel) | 3Y | 50K | 0.0097 | **3.70×** | Multi-core, shared memory |
-| **OpenMP C** (parallel) | 3Y | 1M | 0.226 | **3.19×** | Native threads, C implementation |
-| **MPI** (4 ranks) | 3Y | 1M | 0.604 | - | Distributed memory, 4 processes |
-| **NumPy** (baseline) | 5Y | 50K | 0.0617 | 1.00× | Vectorized, single-threaded |
-| **Numba** (parallel) | 5Y | 50K | 0.0160 | **3.85×** | Multi-core, shared memory |
-| **OpenMP C** (parallel) | 5Y | 1M | 0.387 | **3.02×** | Native threads, C implementation |
-| **MPI** (4 ranks) | 5Y | 1M | 1.520 | - | Distributed memory, 4 processes |
-
-*Note: NumPy/Numba benchmarks use 50K simulations, while OpenMP/MPI use 1M simulations. Speedup values for OpenMP are relative to its own sequential baseline. All parallel implementations demonstrate significant performance gains over sequential execution.*
-
----
-
 ### **8.4 HPC Extensions: Parallel, Concurrency, OpenMP, MPI**
 
 This project goes beyond standard Python vectorization and demonstrates the four fundamental HPC paradigms discussed in class:
 **parallelism, concurrency, shared-memory OpenMP, and distributed-memory MPI.**
 
 All implementations use the *same Monte Carlo kernel structure*, allowing direct comparison across architectures.
-
-#### **HPC Code Distribution Summary**
-
-All HPC implementations for Step 8 benchmarks are organized in three files:
-
-| HPC Paradigm | Implementation | Location |
-|--------------|----------------|----------|
-| **Path-level Parallelism** | Numba (`@njit(parallel=True)` + `prange`) | `scenario_mc.py` |
-| **Scenario-level Concurrency** | ThreadPoolExecutor | `scenario_mc.py` |
-| **Distributed Memory** | MPI (`mpi4py`) | `mpi_mc_demo.py` |
-| **Shared Memory** | OpenMP (`#pragma omp parallel for`) | `openmp_mc_demo.c` |
-
-**Note:** The `src/parallel/executor.py` file (using `joblib.Parallel`) exists but is not part of the current HPC benchmark workflow. All Step 8 HPC benchmarks are implemented in the three files listed above.
 
 ---
 

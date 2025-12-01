@@ -457,7 +457,7 @@ def run_driver_aware_mc_fast(
     
     # Vectorized: compute all steps in one shot via cumprod
     # rets shape: (n_sims, horizon_steps)
-    rets = mu_seq.reshape(1, -1) + sigma_step * Z
+    rets = mu_seq.reshape(1, -1) + sigma_step * Z #(n_sims, horizon_steps)
     
     # Clip extreme returns to prevent negative prices
     rets = np.clip(rets, -0.99, None)

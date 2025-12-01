@@ -434,6 +434,82 @@ def plot_unified_results(results_df: pd.DataFrame, output_dir: Path):
     plt.savefig(r2_path, dpi=300, bbox_inches='tight')
     plt.close()
     logger.info(f"Saved: {r2_path}")
+    
+    # Plot MAE comparison
+    fig, axes = plt.subplots(2, 2, figsize=(16, 12))
+    axes = axes.flatten()
+    
+    for idx, horizon in enumerate(horizons):
+        if idx >= len(axes):
+            break
+        
+        ax = axes[idx]
+        horizon_df = results_df[results_df['horizon'] == horizon]
+        
+        if len(horizon_df) == 0:
+            continue
+        
+        # Sort by MAE (ascending - lower is better)
+        horizon_df = horizon_df.sort_values('mae', ascending=True)
+        
+        bars = ax.bar(horizon_df['model'], horizon_df['mae'], color='steelblue', alpha=0.7)
+        ax.set_title(f'{horizon} - MAE Comparison (Unified Evaluation)', fontsize=12, fontweight='bold')
+        ax.set_xlabel('Model', fontsize=10)
+        ax.set_ylabel('MAE', fontsize=10)
+        ax.tick_params(axis='x', rotation=45)
+        ax.grid(axis='y', alpha=0.3)
+        
+        # Highlight best (lowest MAE)
+        best_idx = horizon_df['mae'].idxmin()
+        bars[horizon_df.index.get_loc(best_idx)].set_color('green')
+        bars[horizon_df.index.get_loc(best_idx)].set_alpha(1.0)
+    
+    plt.suptitle('Unified Model Comparison: MAE Across Horizons\n(Same Time Split: Train<2020, Test>2022)', 
+                 fontsize=14, fontweight='bold', y=0.995)
+    plt.tight_layout()
+    
+    mae_path = output_dir / 'unified_model_comparison_mae.png'
+    plt.savefig(mae_path, dpi=300, bbox_inches='tight')
+    plt.close()
+    logger.info(f"Saved: {mae_path}")
+    
+    # Plot RMSE comparison
+    fig, axes = plt.subplots(2, 2, figsize=(16, 12))
+    axes = axes.flatten()
+    
+    for idx, horizon in enumerate(horizons):
+        if idx >= len(axes):
+            break
+        
+        ax = axes[idx]
+        horizon_df = results_df[results_df['horizon'] == horizon]
+        
+        if len(horizon_df) == 0:
+            continue
+        
+        # Sort by RMSE (ascending - lower is better)
+        horizon_df = horizon_df.sort_values('rmse', ascending=True)
+        
+        bars = ax.bar(horizon_df['model'], horizon_df['rmse'], color='mediumpurple', alpha=0.7)
+        ax.set_title(f'{horizon} - RMSE Comparison (Unified Evaluation)', fontsize=12, fontweight='bold')
+        ax.set_xlabel('Model', fontsize=10)
+        ax.set_ylabel('RMSE', fontsize=10)
+        ax.tick_params(axis='x', rotation=45)
+        ax.grid(axis='y', alpha=0.3)
+        
+        # Highlight best (lowest RMSE)
+        best_idx = horizon_df['rmse'].idxmin()
+        bars[horizon_df.index.get_loc(best_idx)].set_color('green')
+        bars[horizon_df.index.get_loc(best_idx)].set_alpha(1.0)
+    
+    plt.suptitle('Unified Model Comparison: RMSE Across Horizons\n(Same Time Split: Train<2020, Test>2022)', 
+                 fontsize=14, fontweight='bold', y=0.995)
+    plt.tight_layout()
+    
+    rmse_path = output_dir / 'unified_model_comparison_rmse.png'
+    plt.savefig(rmse_path, dpi=300, bbox_inches='tight')
+    plt.close()
+    logger.info(f"Saved: {rmse_path}")
 
 
 # =============================================
