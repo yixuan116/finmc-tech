@@ -281,6 +281,54 @@ The feature engineering pipeline follows Gu-Kelly-Xiu (2020) RFS methodology, co
      - `c_i,t`: Firm characteristics (10 micro features)
      - `⊗`: Kronecker product → 4 × 10 = 40 interaction terms
 
+   **Visualization: Interaction Features Generation**
+
+   ![Interaction Features Diagram](docs/interaction_features_diagram.png)
+   *High-level flow diagram showing how Macro × Firm features generate Interaction features*
+
+   ![Interaction Features Matrix](docs/interaction_features_matrix_diagram.png)
+   *Matrix representation of the Kronecker product structure: 4 Macro features × 10 Firm features = 40 Interaction features*
+
+   **High-Level Structure:**
+   ```
+   MACRO FEATURES (4)  ×  FIRM FEATURES (10)  =  INTERACTION FEATURES (40)
+   ──────────────────────────────────────────────────────────────────────
+   vix_level           rev_yoy          →  ix_vix_level__rev_yoy
+   tnx_yield           price_returns_12m →  ix_tnx_yield__price_returns_12m
+   vix_change_3m       price_volatility →  ix_vix_change_3m__price_volatility
+   tnx_change_3m       rev_accel         →  ix_tnx_change_3m__rev_accel
+   ...                 ...               →  ... (All 40 combinations)
+   ```
+
+   **Matrix Representation:**
+   ```
+           Macro (4 features)
+           ┌─────┬─────┬─────┬─────┐
+           │ vix │ tnx │ vix │ tnx │
+           │_lev │_yld │_chg │_chg │
+           └─────┴─────┴─────┴─────┘
+   Firm    │     │     │     │     │
+   (10)    │  ×  │  ×  │  ×  │  ×  │
+           │     │     │     │     │
+           └─────┴─────┴─────┴─────┘
+              ↓     ↓     ↓     ↓
+           ┌─────┬─────┬─────┬─────┐
+           │ ix_ │ ix_ │ ix_ │ ix_ │
+           │ ... │ ... │ ... │ ... │
+           │(10) │(10) │(10) │(10) │
+           └─────┴─────┴─────┴─────┘
+            Total: 4 × 10 = 40 Interaction Features
+   ```
+
+   **Example: How One Interaction is Created**
+   ```
+   vix_level (Macro)  ×  rev_yoy (Firm)  =  ix_vix_level__rev_yoy (Interaction)
+        │                    │                         │
+        │                    │                         │
+     [0.25]              [0.15]                   [0.0375]
+    (VIX=25)         (Revenue +15%)          (State-dependent effect)
+   ```
+
 4. **Time Features (4 features)**:
    - `quarter`, `month`, `year`, `days_since_start`
 
