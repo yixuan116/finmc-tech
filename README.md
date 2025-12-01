@@ -121,7 +121,7 @@ python finmc_tech/simulation/scenario_mc.py --ticker NVDA --h 12 --n 500
 #### Analysis Figures
 
 **1. Revenue YoY Growth vs Future 12M Return**
-![YoY vs Return](outputs/figs/yoy_vs_return.png)
+![YoY vs Return](outputs/figs/general/yoy_vs_return.png)
 
 **Purpose**: Examines the relationship between revenue year-over-year growth and future stock returns.
 
@@ -132,7 +132,7 @@ python finmc_tech/simulation/scenario_mc.py --ticker NVDA --h 12 --n 500
 ---
 
 **2. Revenue Acceleration vs Future 12M Return**
-![Acceleration vs Return](outputs/figs/accel_vs_return.png)
+![Acceleration vs Return](outputs/figs/general/accel_vs_return.png)
 
 **Purpose**: Analyzes how changes in revenue growth momentum (acceleration) relate to future returns.
 
@@ -143,7 +143,7 @@ python finmc_tech/simulation/scenario_mc.py --ticker NVDA --h 12 --n 500
 ---
 
 **3. Rolling Correlation: Revenue YoY vs Future Returns**
-![Rolling Correlation](outputs/figs/rolling_corr.png)
+![Rolling Correlation](outputs/figs/general/rolling_corr.png)
 
 **Purpose**: Tracks the time-varying strength of the relationship between revenue growth and future returns.
 
@@ -154,7 +154,7 @@ python finmc_tech/simulation/scenario_mc.py --ticker NVDA --h 12 --n 500
 ---
 
 **4. RandomForest Feature Importance (Return Head)**
-![RF Feature Importance](outputs/figs/rf_feature_importance.png)
+![RF Feature Importance](outputs/figs/general/rf_feature_importance.png)
 
 **Purpose**: Identifies which features are most important for predicting future returns in the RandomForest model.
 
@@ -165,7 +165,7 @@ python finmc_tech/simulation/scenario_mc.py --ticker NVDA --h 12 --n 500
 ---
 
 **5. Return Head Predictions vs Actual - RandomForest (Test Set)**
-![RF Return: Pred vs Actual](outputs/figs/pred_vs_actual_return_rf.png)
+![RF Return: Pred vs Actual](outputs/figs/general/pred_vs_actual_return_rf.png)
 
 **Purpose**: Evaluates the out-of-sample performance of the RandomForest return head model by comparing predicted vs actual future returns over time.
 
@@ -176,7 +176,7 @@ python finmc_tech/simulation/scenario_mc.py --ticker NVDA --h 12 --n 500
 ---
 
 **5b. Return Head Predictions vs Actual - KNN (Test Set)**
-![KNN Return: Pred vs Actual](outputs/figs/knn_pred_vs_actual.png)
+![KNN Return: Pred vs Actual](outputs/figs/general/knn_pred_vs_actual.png)
 
 **Purpose**: Evaluates the out-of-sample performance of the KNN return head model by comparing predicted vs actual future returns over time.
 
@@ -187,7 +187,7 @@ python finmc_tech/simulation/scenario_mc.py --ticker NVDA --h 12 --n 500
 ---
 
 **6. Indirect Price Predictions vs Actual (from Return Head)**
-![Price (Indirect from Return)](outputs/figs/pred_vs_actual_price_indirect.png)
+![Price (Indirect from Return)](outputs/figs/general/pred_vs_actual_price_indirect.png)
 
 **Purpose**: Assesses price prediction accuracy using the indirect route: converting return predictions to price predictions via `price_hat = current_price × (1 + return_hat)`.
 
@@ -198,7 +198,7 @@ python finmc_tech/simulation/scenario_mc.py --ticker NVDA --h 12 --n 500
 ---
 
 **7. Direct Price Predictions vs Actual (from Price Head)**
-![Price (Direct Head)](outputs/figs/pred_vs_actual_price_direct.png)
+![Price (Direct Head)](outputs/figs/general/pred_vs_actual_price_direct.png)
 
 **Purpose**: Evaluates price prediction accuracy using the direct route: predicting log(price) directly from features.
 
@@ -209,7 +209,7 @@ python finmc_tech/simulation/scenario_mc.py --ticker NVDA --h 12 --n 500
 ---
 
 **8. Return Head Calibration Plot**
-![Calibration Return](outputs/figs/calibration_return.png)
+![Calibration Return](outputs/figs/general/calibration_return.png)
 
 **Purpose**: Assesses whether the model's predictions are well-calibrated (i.e., whether predicted values systematically match actual values).
 
@@ -223,7 +223,7 @@ python finmc_tech/simulation/scenario_mc.py --ticker NVDA --h 12 --n 500
 ---
 
 **9. Return Head Residuals Over Time**
-![Residuals Return](outputs/figs/residuals_return.png)
+![Residuals Return](outputs/figs/general/residuals_return.png)
 
 **Purpose**: Analyzes prediction errors (residuals) over time to detect patterns, biases, and heteroscedasticity.
 
@@ -1268,7 +1268,7 @@ Step 8 implements a scenario engine that:
 
 #### Fan Chart Overlay
 
-![Fan Chart Overlay](outputs/fan_chart_overlay.png)
+![Fan Chart Overlay](results/step7/fan_chart_overlay.png)
 
 **Interpretation**: All scenarios plotted together show:
 - **Baseline** (black): Current macro regime → median path
@@ -1279,7 +1279,7 @@ Step 8 implements a scenario engine that:
 
 #### Distribution Shift Example: Rate Cut vs Rate Spike
 
-![Distribution Shift: Rate Cut](outputs/distribution_shift_rate_cut.png)
+![Distribution Shift: Rate Cut](results/step7/distribution_shift_rate_cut.png)
 
 **Interpretation**: 
 - **Rate Cut** shifts distribution right (higher terminal prices)

@@ -204,7 +204,7 @@ int main(int argc, char *argv[]) {
         // This mirrors the Numba `@njit(parallel=True)` + `prange` pattern in Python.
         #pragma omp parallel for
         for (int i = 0; i < n_sims; ++i) {
-            // Each thread needs its own random state ideally, 
+            // Each thread needs its own random state ideally, each i = 1 path
             // but for this simple demo we use thread-unsafe rand() with caution 
             // or assume thread-safe implementation (e.g. glibc with locks).
             // For high-performance, use reentrant rand_r or C++ <random>.
