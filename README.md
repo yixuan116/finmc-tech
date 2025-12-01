@@ -969,6 +969,111 @@ python3 scripts/champion_model_comparison.py \
   --output-dir outputs/feature_importance
 ```
 
+---
+
+### 🔬Step 3 4 Unified Model Evaluation (Strict Time-Based Split)
+
+To ensure fair and realistic model comparison, we conducted a **unified evaluation** using consistent time-based splits across all horizons. This evaluation addresses potential data leakage and temporal bias issues present in simple 80/20 splits.
+
+#### Dataset Overview
+
+**Data Source:** `data/processed/nvda_features_extended_v2.csv`
+- **Total Samples:** 71 quarterly observations
+- **Features:** 75 features (19 Firm-level, 4 Macro, 52 Interaction features)
+- **Target Variables:**
+  - `ret_1y`: 65 non-null values (12-month forward returns)
+  - `ret_3y`: 57 non-null values (36-month forward returns)
+  - `ret_5y`: 50 non-null values (60-month forward returns)
+  - `ret_10y`: 30 non-null values (120-month forward returns)
+
+**Data Period:** Quarterly data spanning multiple years, with target variables computed as forward-looking returns from each observation point.
+
+#### Methodology: Fixed Time-Point Splits
+
+This evaluation uses **fixed time-point splits** that align with the evaluation methodology in `train_models.py`. This ensures:
+
+1. **No Future Data Leakage:** Test sets contain only data from periods strictly after training periods
+2. **Realistic Evaluation:** Models are evaluated on truly "future" data, simulating real-world deployment
+3. **Consistent Methodology:** Same evaluation approach as the original champion model selection
+
+**Time Split Configuration:**
+
+| Horizon | Training Set | Test Set | Rationale |
+|---------|--------------|----------|-----------|
+| **1Y** | < 2020-12-31 | > 2022-12-31 | Ensures 1-year forward returns in test set are from post-2022 period |
+| **3Y** | < 2018-12-31 | > 2020-12-31 | 3-year forward returns require earlier test split to ensure sufficient data |
+| **5Y** | < 2016-12-31 | > 2018-12-31 | 5-year forward returns require even earlier split for data availability |
+| **10Y** | < 2012-12-31 | > 2014-12-31 | 10-year forward returns require earliest split due to limited long-term data |
+
+**Why This Approach?**
+
+1. **Temporal Validity:** For time-series financial data, using fixed time-point splits ensures that models are evaluated on data that would actually be available in a real-world forecasting scenario. A simple 80/20 split may inadvertently include training data that temporally overlaps with test predictions.
+
+2. **Prevents Data Leakage:** Long-horizon targets (e.g., 10Y returns) computed from early observations might overlap with short-horizon targets from later observations. Fixed time-point splits eliminate this risk.
+
+3. **Consistent with Production:** In production, models trained on historical data are used to predict future returns. The fixed time-point split mimics this scenario more accurately than random or proportional splits.
+
+4. **Fair Comparison:** By using the same split methodology as `train_models.py`, we ensure that model comparisons are based on identical evaluation criteria, making results directly comparable to the original champion model selection.
+
+#### Model Configurations
+
+All models use the same configurations as `train_models.py` for consistency:
+
+- **RandomForest:** `n_estimators=500, max_depth=None, random_state=42`
+- **XGBoost:** `n_estimators=500, learning_rate=0.05, max_depth=5, random_state=42`
+- **NeuralNetwork:** `hidden_layer_sizes=(64, 32), max_iter=500, random_state=42` (with StandardScaler)
+- **Linear/Ridge/ElasticNet:** Standard sklearn configurations with regularization
+
+#### Unified Evaluation Results
+
+**Champion Models by Horizon (Test Set R²):**
+
+| Horizon | Champion Model | R² | MAE | RMSE | Test Samples |
+|---------|---------------|-----|-----|------|--------------|
+| **1Y** | **RandomForest** | **-5.24** | 0.81 | 0.90 | 7 |
+| **3Y** | **NeuralNetwork** | **-2.06** | 0.33 | 0.38 | 7 |
+| **5Y** | **RandomForest** | **-5.17** | 0.47 | 0.51 | 7 |
+| **10Y** | **NeuralNetwork** | **-30.17** | 1.14 | 1.47 | 3 |
+
+**Overall Champion:** **RandomForest** (Average R² = -17.97)
+
+**Key Findings:**
+
+1. **RandomForest Dominance:** RandomForest is the champion for 1Y and 5Y horizons, and achieves the best average R² across all horizons, confirming its status as the overall best model.
+
+2. **NeuralNetwork Specialization:** NeuralNetwork performs best for 3Y and 10Y horizons, but shows significant performance degradation in 1Y and 5Y horizons, indicating horizon-specific optimization may be needed.
+
+3. **Stricter Evaluation:** All models show worse R² values compared to the 80/20 split evaluation, which is expected given the stricter temporal constraints. However, these results are more realistic and representative of true out-of-sample performance.
+
+4. **Small Test Sets:** Limited test set sizes (especially for 10Y with only 3 samples) indicate the challenges of long-horizon forecasting with limited historical data.
+
+**Visualization:**
+
+![Unified Model Comparison - R²](outputs/feature_importance/plots/unified_model_comparison_r2.png)
+*Unified model comparison across horizons using fixed time-point splits. Higher R² is better (though all values are negative). Green bars indicate champion models for each horizon.*
+
+**Data Files:**
+- `outputs/feature_importance/results/unified_model_comparison.csv` - Complete unified evaluation results
+
+**Analysis Script:**
+- `scripts/unified_model_evaluation.py` - Performs unified evaluation with fixed time-point splits
+
+**Commands:**
+```bash
+# Run unified model evaluation
+python3 scripts/unified_model_evaluation.py \
+  --features-csv data/processed/nvda_features_extended_v2.csv \
+  --output-dir outputs/feature_importance
+```
+
+**Comparison with Initial Evaluation:**
+
+The unified evaluation reveals important differences from the initial 80/20 split evaluation:
+
+- **More Conservative Results:** All models show worse R² values, reflecting the stricter evaluation methodology
+- **Different Champions:** NeuralNetwork emerges as champion for 3Y and 10Y in unified evaluation, while RandomForest remains champion for 1Y and 5Y
+- **Higher Confidence:** Results from unified evaluation are more reliable for production deployment decisions, as they better simulate real-world forecasting scenarios
+
 ### 📝 Analysis Scripts
 
 The analysis was performed using:

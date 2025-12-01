@@ -1,7 +1,7 @@
 """
 Champion Model Comparison Across Multiple Model Families and Horizons
 
-This script compares multiple models (Linear, Ridge, Lasso, RF, XGB) across
+This script compares multiple models (Linear, Ridge, ElasticNet, RF, XGB, NeuralNetwork) across
 different horizons (1Y, 3Y, 5Y, 10Y) to identify the champion model for each horizon.
 """
 
@@ -16,7 +16,9 @@ import numpy as np
 import pandas as pd
 import seaborn as sns
 from sklearn.ensemble import RandomForestRegressor
-from sklearn.linear_model import ElasticNet, Lasso, LinearRegression, Ridge
+from sklearn.linear_model import ElasticNet, LinearRegression, Ridge
+from sklearn.neural_network import MLPRegressor
+from sklearn.preprocessing import StandardScaler
 from sklearn.metrics import mean_absolute_error, mean_squared_error, r2_score
 import xgboost as xgb
 
@@ -100,7 +102,6 @@ def get_models():
     models = {
         'Linear': LinearRegression(),
         'Ridge': Ridge(alpha=1.0, random_state=42),
-        'Lasso': Lasso(alpha=0.1, random_state=42, max_iter=1000),
         'ElasticNet': ElasticNet(alpha=0.1, l1_ratio=0.5, random_state=42, max_iter=1000),
         'RandomForest': RandomForestRegressor(
             n_estimators=100,
@@ -118,6 +119,17 @@ def get_models():
             random_state=42,
             n_jobs=-1
         ),
+        'NeuralNetwork': MLPRegressor(
+            hidden_layer_sizes=(64, 32),
+            activation='relu',
+            solver='adam',
+            alpha=0.01,
+            learning_rate='adaptive',
+            max_iter=500,
+            random_state=42,
+            early_stopping=True,
+            validation_fraction=0.1
+        ),
     }
     
     return models
@@ -132,7 +144,8 @@ def evaluate_model(
     X_train: pd.DataFrame,
     y_train: pd.Series,
     X_test: pd.DataFrame,
-    y_test: pd.Series
+    y_test: pd.Series,
+    model_name: str = None
 ) -> Dict[str, float]:
     """
     Train a model and evaluate on test set.
@@ -140,6 +153,18 @@ def evaluate_model(
     Returns:
         Dictionary with 'mae', 'rmse', 'r2'
     """
+    # Neural Network requires feature scaling
+    if model_name == 'NeuralNetwork':
+        scaler = StandardScaler()
+        X_train_scaled = scaler.fit_transform(X_train)
+        X_test_scaled = scaler.transform(X_test)
+        
+        # Train
+        model.fit(X_train_scaled, y_train)
+        
+        # Predict
+        y_pred = model.predict(X_test_scaled)
+    else:
     # Train
     model.fit(X_train, y_train)
     
@@ -197,7 +222,7 @@ def compare_models_across_horizons(
                 logger.info(f"  Training {model_name}...")
                 
                 try:
-                    metrics = evaluate_model(model, X_train, y_train, X_test, y_test)
+                    metrics = evaluate_model(model, X_train, y_train, X_test, y_test, model_name=model_name)
                     
                     results.append({
                         'model': model_name,
