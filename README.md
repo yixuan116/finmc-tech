@@ -1230,6 +1230,35 @@ All models use the same configurations as `train_models.py` for consistency:
 ![Unified Model Comparison - RMSE](outputs/feature_importance/plots/unified_model_comparison_rmse.png)
 *Unified model comparison: RMSE (Root Mean Squared Error) across horizons. Lower RMSE is better. Green bars indicate champion models for each horizon.*
 
+#### Step 5 Feature Importance Analysis Across Horizons
+
+**RF Top-20 Feature Importance Across Horizons:**
+
+![RF Top-20 Feature Importance Across Horizons](outputs/feature_importance/plots/rf_top20_feature_matrix.png)
+*Heatmap showing the top 20 most important features for Random Forest model across 1Y, 3Y, 5Y, and 10Y prediction horizons. Color intensity represents feature importance percentage. Higher values (darker red) indicate greater predictive power for that horizon.*
+
+**Key Observations:**
+- **1Y Horizon:** `tnx_yield` (31.3%) dominates, indicating macro factors are critical for short-term predictions
+- **3Y Horizon:** Firm fundamentals (`fcf_ttm` 17.1%, `ocf_ttm` 15.0%) become dominant, with time features (`days_since_start` 13.9%, `year` 12.8%) also important
+- **5Y Horizon:** Interaction feature `ix_tnx_yield_price_volatility` (69.6%) overwhelmingly dominates, showing that macro × price interactions are key for medium-term forecasts
+- **10Y Horizon:** `tnx_yield` (27.2%) returns as the top feature, with `days_since_start` (14.8%) and interaction features gaining importance
+
+**RF Feature Importance by Category Across Horizons:**
+
+![RF Feature Importance by Category Across Horizons](outputs/feature_importance/plots/importance_categories_rf_3cat.png)
+*Heatmap showing feature importance aggregated by category (Firm, Macro, Interaction) across different prediction horizons. Reveals how the relative importance of feature types shifts as prediction horizons extend.*
+
+**Key Findings:**
+- **Firm Features:** Peak importance at 3Y horizon (68.1%), indicating fundamentals are most predictive for mid-term forecasts
+- **Macro Features:** Highest importance at 1Y (32.5%) and 10Y (27.6%), but minimal at 3Y (3.3%) and 5Y (5.6%)
+- **Interaction Features:** Overwhelmingly dominant at 5Y horizon (79.2%), showing that macro × firm interactions are critical for medium-term predictions. Also important at 1Y (44.9%) and 10Y (44.6%)
+
+**Interpretation:** The evolution of feature importance across horizons reveals a clear pattern:
+- **Short-term (1Y):** Macro and interaction features dominate, reflecting market sentiment and discount-rate effects
+- **Mid-term (3Y):** Firm fundamentals become primary drivers as business fundamentals take precedence
+- **Medium-term (5Y):** Interaction features dominate, capturing regime-dependent relationships between macro conditions and firm characteristics
+- **Long-term (10Y):** Macro factors regain importance alongside time trends, reflecting long-term discount-rate and structural regime effects
+
 **Data Files:**
 - `outputs/feature_importance/results/unified_model_comparison.csv` - Complete unified evaluation results
 
