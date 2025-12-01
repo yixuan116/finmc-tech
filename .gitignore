@@ -62,6 +62,7 @@ docs/_build/
 !results/*union_heatmap.png
 !results/feature_importance_heatmap*.png
 !results/step5/*.png
+!docs/interaction_features*.png
 results/
 *.png
 *.jpg
