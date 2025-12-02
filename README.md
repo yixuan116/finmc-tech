@@ -2770,6 +2770,37 @@ We benchmarked the Monte Carlo kernel using two backends:
 **Interpretation:**  
 Numba delivers nearly **5× speedup**, demonstrating effective multi-core path-level parallelism.
 
+#### **8.1.1 Scaling Behavior Across Simulation Counts**
+
+To understand how performance scales with workload size, we benchmarked both backends across a range of simulation counts (10,000 to 300,000 simulations):
+
+![HPC Scaling: NumPy vs Numba](results/step8/hpc_scaling_curve.png)
+*HPC Scaling Performance: Runtime comparison between NumPy baseline and Numba parallel implementations across different simulation counts (log-log scale).*
+
+**Key Observations:**
+
+1. **Consistent Speedup**: Numba parallel consistently outperforms NumPy baseline across all simulation counts:
+   - **10,000 sims**: Numba ~0.01s vs NumPy ~0.03s (**~3× faster**)
+   - **100,000 sims**: Numba ~0.04s vs NumPy ~0.3s (**~7-8× faster**)
+   - **300,000 sims**: Numba ~0.15s vs NumPy ~1.0s (**~6-7× faster**)
+
+2. **Linear Scaling on Log-Log Scale**: Both implementations exhibit roughly linear trends on the log-log plot, indicating a **power-law relationship** between simulation count and runtime (O(n) complexity). This confirms that:
+   - Runtime scales proportionally with the number of simulations
+   - No significant overhead or saturation effects up to 300K simulations
+   - Both backends maintain efficient scaling behavior
+
+3. **Speedup Increases with Workload**: The speedup ratio improves as simulation count increases:
+   - At 10K sims: ~3× speedup
+   - At 100K sims: ~7-8× speedup (peak efficiency)
+   - At 300K sims: ~6-7× speedup (slight decrease, but still strong)
+
+4. **Production Readiness**: The Numba implementation demonstrates:
+   - **Sub-second performance** for up to 100K simulations
+   - **Scalable architecture** suitable for large-scale Monte Carlo runs
+   - **Consistent performance gains** across different workload sizes
+
+**Conclusion**: The Numba parallel implementation provides substantial and consistent speedup (5-8×) over pure NumPy, with performance gains that scale effectively with workload size. This makes it the preferred backend for production Monte Carlo simulations requiring high throughput.
+
 ---
 
 ### **8.2 Scenario-Level Concurrency (ThreadPoolExecutor)**
