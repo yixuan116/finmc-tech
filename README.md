@@ -1581,6 +1581,118 @@ But with NVDA-specific structure + business interpretation.
 
 ---
 
+### 7.5 Multi-Horizon Scenario Families for Monte Carlo Simulation
+
+Step 7's economic narrative framework translates directly into **driver-aware scenario families** used in Step 8's Monte Carlo engine. These scenarios apply **horizon-specific shocks** to feature categories (Macro, Firm, Interaction) based on each horizon's feature importance weights.
+
+#### Scenario Architecture
+
+The Monte Carlo engine implements **4 scenario families** that modify shock components by category:
+
+| Scenario Family | Macro Shock | Firm Shock | Interaction Shock | Economic Interpretation |
+|----------------|-------------|------------|-------------------|------------------------|
+| **Base** | 0 (baseline) | 0 (baseline) | 0 (baseline) | Normal market conditions, no regime shift |
+| **Macro Stress** | **+1.5σ** | 0 (baseline) | 0 (baseline) | Rate/VIX spike, discount rate expansion |
+| **Fundamental Stress** | 0 (baseline) | **+1.5σ** | 0 (baseline) | Company-level deterioration (cash flow, revenue) |
+| **AI Bull** | **-1.0σ** | 0 (baseline) | **+1.5σ** | Rate cut + AI beta amplification via interactions |
+
+**Hard-coded multipliers** (defined in `scenario_mc.py`):
+- `MACRO_SCALE_STRESS = +1.5`
+- `FIRM_SCALE_STRESS = +1.5`
+- `MACRO_SCALE_BULL_CUT = -1.0` (negative ⇒ rate cut)
+- `INTERACTION_SCALE_BULL = +1.5`
+
+#### Feature Categories and Specific Features
+
+Each scenario family targets specific feature categories:
+
+##### **Macro Features** (affected by Macro Stress and AI Bull scenarios):
+- `tnx_yield` — 10-year Treasury yield
+- `tnx_change_3m` — 3-month change in TNX yield
+- `vix_level` — VIX index level
+- `vix_change_3m` — 3-month change in VIX
+
+**Macro Stress** adds +1.5σ to the Macro shock component, simulating:
+- Interest rate spikes (TNX ↑)
+- Volatility regime shifts (VIX ↑)
+- Discount rate expansion → lower valuation multiples
+
+**AI Bull** subtracts 1.0σ from Macro (rate cut), simulating:
+- Interest rate cuts (TNX ↓)
+- Calmer volatility regime (VIX ↓)
+- Discount rate compression → higher valuation multiples
+
+##### **Firm Features** (affected by Fundamental Stress scenario):
+- `fcf_ttm` — Free cash flow (trailing twelve months)
+- `ocf_ttm` — Operating cash flow (TTM)
+- `capex_ttm` — Capital expenditures (TTM)
+- `revenue`, `rev_yoy`, `rev_qoq`, `rev_accel` — Revenue fundamentals
+- `price_volatility` — Price volatility
+- `price_returns_12m`, `price_returns_6m` — Price momentum
+- `price_ma_4q`, `price_to_ma_4q` — Price trend indicators
+
+**Fundamental Stress** adds +1.5σ to the Firm shock component, simulating:
+- Cash flow deterioration (FCF/OCF ↓)
+- Revenue growth slowdown (rev_yoy ↓, rev_accel ↓)
+- Price momentum breakdown (returns ↓, volatility ↑)
+
+##### **Interaction Features** (affected by AI Bull scenario):
+- `ix_tnx_yield__price_volatility` — TNX × Price volatility
+- `ix_tnx_yield__fcf_ttm` — TNX × Free cash flow
+- `ix_tnx_yield__capex_ttm` — TNX × Capital expenditures
+- `ix_tnx_yield__price_returns_12m` — TNX × 12M returns
+- `ix_vix_level__ocf_ttm` — VIX × Operating cash flow
+- `ix_vix_level__fcf_ttm` — VIX × Free cash flow
+- `ix_vix_change_3m__price_returns_12m` — VIX change × 12M returns
+- `ix_vix_level__price_returns_6m` — VIX × 6M returns
+- `ix_tnx_change_3m__rev_accel` — TNX change × Revenue acceleration
+- `ix_vix_change_3m__rev_accel` — VIX change × Revenue acceleration
+- And 42+ other interaction features (macro × firm combinations)
+
+**AI Bull** adds +1.5σ to the Interaction shock component, simulating:
+- **Macro tailwinds** (rate cuts) **amplified by AI beta** via macro × firm interactions
+- When rates fall, interaction features (`ix_tnx_yield__*`) boost returns more than standalone macro
+- Captures the "AI supercycle" effect: macro relief + sector-specific amplification
+
+#### Horizon-Specific Weighting
+
+**Critical**: Each horizon (1Y, 3Y, 5Y, 10Y) uses **different feature importance weights** to compute category-level shocks:
+
+1. **Load feature importance** for the horizon (from Step 5/6 analysis)
+2. **Aggregate importance by category**:
+   - `weights["Macro"]` = sum of importance for all Macro features
+   - `weights["Firm"]` = sum of importance for all Firm features
+   - `weights["Interaction"]` = sum of importance for all Interaction features
+3. **Normalize weights** to sum to 1.0
+4. **Apply scenario multipliers** to category shocks:
+   ```
+   shock_total = weights["Macro"] × eps_macro + 
+                 weights["Firm"] × eps_firm + 
+                 weights["Interaction"] × eps_interaction
+   ```
+
+**Example**: 
+- **1Y horizon**: Macro weight ≈ 31%, Firm ≈ 17%, Interaction ≈ 21%
+  - Macro Stress has **strong impact** (high Macro weight)
+- **3Y horizon**: Firm weight ≈ 64%, Macro ≈ 1%, Interaction ≈ 20%
+  - Fundamental Stress has **strong impact** (high Firm weight)
+- **5Y horizon**: Interaction weight ≈ 75%, Firm ≈ 15%, Macro ≈ 5%
+  - AI Bull has **strong impact** (high Interaction weight)
+
+#### Why This Matters
+
+This architecture ensures that:
+- **Scenarios are economically meaningful**: They target the features that actually drive returns at each horizon
+- **Horizon-specific sensitivity**: A Macro Stress scenario hurts 1Y forecasts more than 5Y forecasts (because Macro importance is higher at 1Y)
+- **Regime-dependent effects**: AI Bull scenario amplifies interaction effects, capturing how macro relief + AI beta combine in long-duration tech stocks
+
+**Connection to Step 7**: These scenarios operationalize Step 7's economic narrative:
+- **Macro Stress** → "NVDA is priced on macro regime" (short horizon)
+- **Fundamental Stress** → "Business delivers NVDA in medium-term" (mid horizon)
+- **AI Bull** → "Macro tailwinds + AI beta amplification" (long horizon, interaction-driven)
+
+---
+
 ## Step 8 — Scenario-Based Monte Carlo Forecasting
 
 After Step 7 translates ML drivers into economic narratives, Step 8 builds a **driver-aware Monte Carlo forecasting engine** that injects Step 5's key drivers (TNX, VIX, interactions) into scenario-based price path simulations.
