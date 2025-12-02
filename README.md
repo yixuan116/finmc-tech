@@ -2932,7 +2932,47 @@ mpirun -n 4 python mpi_mc_demo.py
 
 ---
 
-#### **8.4.5 HPC Concept Map (How Everything Fits Together)**
+#### **8.4.5 Comprehensive HPC Backend Comparison**
+
+To provide a unified view of all HPC backends across different time horizons, we benchmarked NumPy, Numba, MPI, and OpenMP implementations:
+
+![HPC Benchmark Comparison](results/step8/hpc_benchmark_comparison.png)
+*Comprehensive HPC backend comparison: Runtime (left) and Speedup (right) across 1Y, 3Y, and 5Y horizons. Note: NumPy/Numba benchmarks used 50K simulations, while MPI/OpenMP used 1M simulations (not directly comparable).*
+
+**Key Observations:**
+
+1. **Runtime Performance (Left Chart):**
+   - **Numba Parallel** consistently achieves the lowest runtime across all horizons:
+     - 1Y: 0.004s (vs NumPy 0.012s)
+     - 3Y: 0.010s (vs NumPy 0.036s)
+     - 5Y: 0.016s (vs NumPy 0.062s)
+   - **NumPy Baseline** is the second fastest
+   - **OpenMP C** and **MPI (4 ranks)** show significantly higher runtimes, with MPI being the slowest
+
+2. **Speedup Analysis (Right Chart):**
+   - **Numba Parallel** provides substantial speedup (3.22× to 3.85×) over NumPy Baseline:
+     - Speedup increases slightly with longer horizons (3.22× at 1Y → 3.85× at 5Y)
+     - Demonstrates consistent performance gains across all workloads
+   - **MPI (4 ranks)** and **OpenMP C** show speedup < 1.0× (slower than NumPy):
+     - MPI: 0.04×-0.06× (significantly slower)
+     - OpenMP C: ~0.16× (about 6× slower than NumPy)
+
+3. **Important Caveat:**
+   - **NumPy/Numba benchmarks**: 50K simulations per horizon
+   - **MPI/OpenMP benchmarks**: 1M simulations per horizon (20× larger workload)
+   - **Times are not directly comparable** due to different simulation counts
+   - MPI/OpenMP runtimes reflect a much larger computational workload
+
+4. **Interpretation:**
+   - **Numba Parallel** is the optimal choice for Python-based Monte Carlo simulations in the 50K-100K range
+   - **MPI and OpenMP** may be designed for larger-scale problems (1M+ simulations) where their overhead becomes justified
+   - The performance gap suggests that for typical Monte Carlo workloads (50K-100K sims), Numba's shared-memory parallelism is more efficient than distributed-memory (MPI) or low-level C (OpenMP) approaches
+
+**Conclusion**: For production Monte Carlo simulations in the 50K-100K range, **Numba Parallel** provides the best balance of performance, ease of use, and Python integration, delivering 3-4× speedup over pure NumPy while maintaining code simplicity.
+
+---
+
+#### **8.4.6 HPC Concept Map (How Everything Fits Together)**
 
 ```text
                 ┌──────────────────────────┐
@@ -2956,7 +2996,7 @@ OpenMP #pragma omp      Scenario-level tasks        Rank-level reduction
 
 ---
 
-#### **8.4.6 Why These HPC Extensions Matter**
+#### **8.4.7 Why These HPC Extensions Matter**
 
 These demos are not required for the forecasting engine to run. Instead, they demonstrate:
 
