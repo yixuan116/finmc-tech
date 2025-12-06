@@ -1160,14 +1160,7 @@ This section compares multiple model families (Linear, Ridge, Lasso, ElasticNet,
 - **Data Split:** Time-based 80/20 split (first 80% for training, last 20% for testing)
 - **Features:** Extended feature set from `nvda_features_extended_v2.csv` (includes cash flow features)
 
-**Champion Model Summary (Based on R²):**
-
-| Horizon | Champion Model | R² | MAE | RMSE |
-|---------|---------------|-----|-----|------|
-| **1Y** | **NeuralNetwork** | **-1.15** | 0.66 | 0.84 |
-| **3Y** | **RandomForest** | **-1.82** | 0.45 | 0.50 |
-| **5Y** | **XGBoost** | **-2.33** | 0.65 | 0.74 |
-| **10Y** | **ElasticNet** | **-7.02** | 0.59 | 0.61 |
+**Champion Model Summary:** See detailed results in [Unified Model Evaluation](#step-3-4-unified-model-evaluation-strict-time-based-split) section below.
 
 **Overall Champion:** **RandomForest** (stable, interpretable drivers)
 
@@ -1175,8 +1168,9 @@ This section compares multiple model families (Linear, Ridge, Lasso, ElasticNet,
 - **RandomForest** is selected as the overall champion despite not being the R² champion for all horizons, because:
   1. **Interpretability**: RF provides direct, interpretable feature importance scores essential for economic modeling
   2. **Stability**: RF performs consistently well across horizons (champion for 3Y, very close to champion for 1Y and 5Y with only 0.02 R² difference)
-  3. **Practical Performance**: RF achieves the best balance between predictive performance and interpretability
-  4. **Economic Modeling Requirements**: Neural Networks, while achieving best R² for 1Y, are too noisy and non-interpretable for economic modeling
+  3. **Overfitting Concerns**: While XGBoost achieves slightly better test R² for 5Y (-2.33 vs -2.35, only 0.02 difference), it shows severe overfitting on training set (R² = 1.0000), indicating poor generalization. RF maintains better train-test consistency.
+  4. **Practical Performance**: RF achieves the best balance between predictive performance and interpretability
+  5. **Economic Modeling Requirements**: Neural Networks and XGBoost, while achieving best R² for some horizons, are less interpretable and show overfitting issues that make them less suitable for economic modeling
 | **5Y** | RandomForest<br>(0.6117) | XGBoost<br>(0.7427) | XGBoost<br>(-2.3342) | ⚠️ Different |
 | **10Y** | ElasticNet<br>(0.5916) | ElasticNet<br>(0.6134) | ElasticNet<br>(-7.0162) | ✓ Consistent |
 
