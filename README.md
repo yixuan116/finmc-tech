@@ -713,26 +713,28 @@ Sequence models (LSTM/GRU) come later when the project transitions from tabular 
 
 ### NVDA vs AMD Model Performance Comparison (Training Set)
 
-**Note**: AMD analysis uses training set evaluation (no test split yet). NVDA training set results are shown for fair comparison.
+**Note**: This comparison uses **1-year forward return** (`future_12m_return`) as the target variable for both companies. AMD analysis uses training set evaluation (no test split yet). NVDA training set results are shown for fair comparison. **NVDA results use V2 data (includes cash flow features)**.
 
 | Model | NVDA MAE | NVDA RMSE | NVDA R² | NVDA MAPE | AMD MAE | AMD RMSE | AMD R² | AMD MAPE |
 |-------|----------|-----------|---------|-----------|---------|----------|--------|----------|
-| **Linear** | 0.3492 | 0.4341 | 0.6747 | 794.77% | 0.4585 | 0.6389 | 0.5389 | 226.91% |
-| **Ridge** | 0.4832 | 0.6165 | 0.3439 | 789.00% | 0.5887 | 0.8113 | 0.2565 | 263.95% |
-| **RF** | **0.1973** | **0.2540** | **0.8886** | **323.93%** | **0.1846** | **0.2567** | **0.9256** | **72.44%** |
-| **XGB** | 0.0003 | 0.0004 | 1.0000 ⚠️ | 0.22% | 0.0004 | 0.0005 | 1.0000 ⚠️ | 0.21% |
-| **NN** | 0.0391 | 0.0878 | 0.9867 ⚠️ | 19.41% | 0.0252 | 0.0510 | 0.9971 ⚠️ | 9.13% |
+| **Linear** | 0.2267 | 0.3043 | 0.8401 | 581.87% | 0.4585 | 0.6389 | 0.5389 | 226.91% |
+| **Ridge** | 0.4541 | 0.5906 | 0.3978 | 681.00% | 0.5887 | 0.8113 | 0.2565 | 263.95% |
+| **RF** | **0.1999** | **0.2487** | **0.8932** | **291.28%** | **0.1846** | **0.2567** | **0.9256** | **72.44%** |
+| **XGB** | 0.0003 | 0.0004 | 1.0000 ⚠️ | 0.43% | 0.0004 | 0.0005 | 1.0000 ⚠️ | 0.21% |
+| **NN** | 0.0274 | 0.0483 | 0.9960 ⚠️ | 84.82% | 0.0252 | 0.0510 | 0.9971 ⚠️ | 9.13% |
 
-**⚠️ Warning**: XGB and NN show severe overfitting (R² ≈ 1.0) on training set. RF is the most reasonable model for both companies.
+**⚠️ Warning**: XGB and NN show severe overfitting (R² ≈ 1.0) on training set. While XGB achieves perfect training R² (1.0000), it performs worse on test set (R² = -1.07) compared to RF (R² = -0.42), confirming overfitting. **RF is the most reasonable model for both companies** due to better generalization and interpretability.
 
 **Best Model**:
-- **NVDA**: RF (R² = 0.8886 on training set, R² = -0.42 on test set with V2 features)
-- **AMD**: RF (R² = 0.9256 on training set)
+- **NVDA**: **RF** (R² = 0.8932 on training set with V2 features, R² = -0.42 on test set with V2 features including cash flow)
+- **AMD**: **RF** (R² = 0.9256 on training set)
+
+**Robustness Check Conclusion**: RF is the best model for both NVDA and AMD in the 1-year forward return prediction task. While XGB and NN achieve perfect training R² (1.0000), they show severe overfitting and perform worse on test set. RF provides the best balance of training performance (0.89-0.93 R²) and generalization ability.
 
 **Key Observations**:
 - **RF is the champion for both companies**: Best balance of accuracy and generalization potential
 - **AMD RF performs slightly better** than NVDA RF on training set (0.9256 vs 0.8886)
-- **AMD has better sample/feature ratio**: 184/42 = 4.38 vs NVDA 71/71 = 1.00, reducing overfitting risk
+- **AMD has better sample/feature ratio**: 184/42 = 4.38 vs NVDA 71/76 = 0.93 (V2 with cash flow features), reducing overfitting risk
 - **Both companies show severe overfitting** with XGB and NN when evaluated on training set
 - **Linear models perform worse on AMD** (R² = 0.5389) than NVDA (R² = 0.6747), suggesting AMD has more non-linear relationships
 
@@ -1843,12 +1845,12 @@ This section provides a comprehensive summary of the AMD analysis following the 
 |-----------|------|-----|-------|
 | **DATA** |
 | Sample Size | 71 | 184 | AMD has 2.6× more samples |
-| Feature Count | 71 | 42 | NVDA has 1.7× more features |
+| Feature Count | 76 | 42 | NVDA has 1.8× more features (V2 with cash flow) |
 | Time Period | 2008-01-28 to 2025-07-28 | 1980-03-31 to 2025-11-18 | AMD has longer history (45.6 vs 17.5 years) |
 | Time Span | 17.5 years | 45.6 years | - |
 | Data Frequency | Quarterly | Quarterly | Same |
 | **FEATURES** |
-| Total Features | 71 | 42 | - |
+| Total Features | 76 | 42 | NVDA V2 includes cash flow features |
 | Price Features | ~36 | ~28 | - |
 | Macro Features | ~44 | ~14 | NVDA has more macro features |
 | Time Features | 4 | 4 | Same |
@@ -1862,8 +1864,8 @@ This section provides a comprehensive summary of the AMD analysis following the 
 | NN Performance | 0.9867 ⚠️ | 0.9971 ⚠️ | Severe overfitting |
 | Linear Performance | 0.6747 | 0.5389 | NVDA better |
 | **TIME WINDOW** |
-| Sample/Feature Ratio | 1.00 | 4.38 | AMD better (but both risky) |
-| Overfitting Risk | **EXTREME** | **HIGH** | NVDA: 1 sample/feature |
+| Sample/Feature Ratio | 0.93 | 4.38 | AMD better (but both risky) |
+| Overfitting Risk | **EXTREME** | **HIGH** | NVDA: 0.93 sample/feature (V2 with 76 features) |
 | Train/Test Split | ❌ No | ❌ No | **CRITICAL: Both need this** |
 | **RISK ASSESSMENT** |
 | Overfitting Status | ⚠️ Severe | ⚠️ Severe | XGB R²=1.0, NN R²>0.98 |
@@ -1899,7 +1901,7 @@ AMD uses the same feature engineering pipeline as NVDA:
 
 **Key Observations**:
 - **AMD RF performs slightly better** than NVDA RF on training set (0.9256 vs 0.8886)
-- **AMD has better sample/feature ratio**: 184/42 = 4.38 vs NVDA 71/71 = 1.00, reducing overfitting risk
+- **AMD has better sample/feature ratio**: 184/42 = 4.38 vs NVDA 71/76 = 0.93 (V2 with cash flow features), reducing overfitting risk
 - **Both companies show severe overfitting** with XGB and NN when evaluated on training set
 - **Linear models perform worse on AMD** (R² = 0.5389) than NVDA (R² = 0.6747), suggesting AMD has more non-linear relationships
 

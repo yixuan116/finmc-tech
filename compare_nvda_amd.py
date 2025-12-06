@@ -47,9 +47,9 @@ from xgboost import XGBRegressor
 # Configuration
 # ---------------------------------------------------------------------------
 
-NVDA_PATH = Path("data/processed/nvda_features_extended.csv")
+NVDA_PATH = Path("data/processed/nvda_features_extended_v2.csv")
 AMD_PATH = Path("data/processed/amd_features_extended.csv")
-TARGET_COL = "future_12m_return"  # Monthly return target
+TARGET_COL = "future_12m_return"  # 12-month (1-year) forward return target
 OUTPUT_DIR = Path("results")
 TOP_K = 20
 
