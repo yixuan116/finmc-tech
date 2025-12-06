@@ -398,6 +398,59 @@ def predict_conditional_drift(
     return mu_seq
 
 
+def predict_horizon_return(
+    model: Any,
+    scaler: StandardScaler,
+    X_one: pd.DataFrame,
+) -> float:
+    """
+    Predict horizon total simple return using a horizon-specific champion model.
+
+    Assumptions:
+    - The model was trained with a target of the form:
+        y = (P_{t+h} / P_t) - 1
+      i.e., total simple return over the horizon.
+    - We only need a single scalar prediction for the current feature row.
+
+    Parameters
+    ----------
+    model : Any
+        Trained horizon-specific model (RF/XGB/ElasticNet, etc.).
+    scaler : StandardScaler
+        Fitted scaler for this horizon.
+    X_one : pd.DataFrame
+        Single-row feature DataFrame (e.g., X_last).
+
+    Returns
+    -------
+    float
+        Predicted horizon total simple return (mu_horizon).
+    """
+    # Enforce the same feature order as during training
+    if hasattr(scaler, "feature_names_in_"):
+        feat_order = list(scaler.feature_names_in_)
+    else:
+        # Fallback: use current columns order
+        feat_order = list(X_one.columns)
+
+    X_current = pd.DataFrame(index=X_one.index, columns=feat_order, dtype=float)
+    missing = []
+
+    for f in feat_order:
+        if f in X_one.columns:
+            X_current[f] = pd.to_numeric(X_one[f], errors="coerce").fillna(0.0).astype(float)
+        else:
+            X_current[f] = 0.0
+            missing.append(f)
+
+    if missing:
+        print(f"⚠ Missing {len(missing)} features for horizon model; filled with 0.0")
+
+    X_scaled = scaler.transform(X_current.values)
+    mu_horizon = float(model.predict(X_scaled)[0])
+    return mu_horizon
+
+
 # ------------------------------------------------------------------
 # Baseline Monte Carlo engine (NumPy, vectorized)
 # - Single-process, vectorized over all paths using NumPy/BLAS
@@ -688,7 +741,7 @@ def _run_single_scenario_task(
         "mu_seq": mu_seq,
     }
 
-
+#1 year horizon
 def run_scenario_forecast(
     ticker: str = "NVDA",
     horizon_months: int = DEFAULT_HORIZON_MONTHS,
@@ -1763,6 +1816,26 @@ HORIZON_STEPS = {
     "10Y": 120  # 120 monthly steps
 }
 
+# Horizon-specific champion model and scaler paths
+HORIZON_MODEL_PATHS = {
+    "1Y": {
+        "model": "models/champion_model_1y.pkl",
+        "scaler": "models/feature_scaler_1y.pkl",
+    },
+    "3Y": {
+        "model": "models/champion_model_3y.pkl",
+        "scaler": "models/feature_scaler_3y.pkl",
+    },
+    "5Y": {
+        "model": "models/champion_model_5y.pkl",
+        "scaler": "models/feature_scaler_5y.pkl",
+    },
+    "10Y": {
+        "model": "models/champion_model_10y.pkl",
+        "scaler": "models/feature_scaler_10y.pkl",
+    },
+}
+
 # Scenario scale factors
 MACRO_SCALE_STRESS = 1.5
 FIRM_SCALE_STRESS = 1.5
@@ -2220,6 +2293,19 @@ def run_driver_aware_mc_multi_horizon(
     
     steps_per_year = 12  # Always use monthly steps
     
+    # Pre-load horizon-specific models (if available)
+    horizon_models: Dict[str, Tuple[Any, StandardScaler]] = {}
+    for h_name, paths in HORIZON_MODEL_PATHS.items():
+        m_path = Path(paths["model"])
+        s_path = Path(paths["scaler"])
+        if m_path.exists() and s_path.exists():
+            print(f"Loading {h_name} model from {m_path} and scaler from {s_path} ...")
+            model_h = joblib.load(m_path)
+            scaler_h = joblib.load(s_path)
+            horizon_models[h_name] = (model_h, scaler_h)
+        else:
+            print(f"⚠ Horizon {h_name}: model or scaler not found at {m_path} / {s_path}; will fall back to historical drift.")
+    
     # Horizons configuration - use HORIZON_STEPS mapping
     all_results = {}
     scenario_summary_rows = []
@@ -2233,7 +2319,7 @@ def run_driver_aware_mc_multi_horizon(
     print(f"{'='*80}\n")
     
     for horizon_name in ["1Y", "3Y", "5Y", "10Y"]:
-        horizon_steps = HORIZON_STEPS[horizon_name]
+        horizon_steps = HORIZON_STEPS[horizon_name] #12/36/60/120 months
         print(f"\nProcessing {horizon_name} ({horizon_steps} monthly steps)...")
         
         # Load feature importance
@@ -2242,17 +2328,24 @@ def run_driver_aware_mc_multi_horizon(
         # Build shock table
         shock_table = build_shock_table(importance_dict, history_df, horizon_name)
         
-        # For now, use a simple mu estimate (in production, load from champion model)
-        # Estimate from historical returns
-        if "adj_close" in history_df.columns:
-            returns = history_df["adj_close"].pct_change().dropna()
-            mu_annual = returns.mean() * steps_per_year
+        # Determine horizon drift (mu_horizon):
+        # 1) Prefer horizon-specific ML model if available;
+        # 2) Otherwise, fall back to historical-mean-based drift.
+        if horizon_name in horizon_models:
+            model_h, scaler_h = horizon_models[horizon_name]
+            mu_horizon = predict_horizon_return(model_h, scaler_h, X_last)
+            print(f"  ML-based horizon drift (mu_horizon) for {horizon_name}: {mu_horizon:.2%}")
         else:
-            mu_annual = 0.10  # Default 10% annual return
-        
-        # Calculate horizon months from steps (monthly steps)
-        horizon_months = horizon_steps
-        mu_horizon = mu_annual * (horizon_months / 12.0)
+            # Fallback: reuse the original historical-mean construction
+            if "adj_close" in history_df.columns:
+                returns = history_df["adj_close"].pct_change().dropna()
+                mu_annual = returns.mean() * steps_per_year  # annualized from monthly mean
+            else:
+                mu_annual = 0.10  # Default 10% annual return
+
+            horizon_months = horizon_steps  # monthly steps
+            mu_horizon = mu_annual * (horizon_months / 12.0)
+            print(f"  Historical-mean horizon drift (mu_horizon) for {horizon_name}: {mu_horizon:.2%}")
         
         # Run scenarios
         scenarios = run_scenarios(
