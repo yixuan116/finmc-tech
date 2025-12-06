@@ -831,7 +831,7 @@ def main():
     parser.add_argument(
         '--firm-features',
         type=Path,
-        default=Path('data/processed/nvda_features_extended.csv'),
+        default=Path('data/processed/nvda_features_extended_v2.csv'),
         help='Path to firm features CSV'
     )
     parser.add_argument(

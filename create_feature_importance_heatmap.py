@@ -578,7 +578,7 @@ if __name__ == "__main__":
     parser.add_argument(
         "--data_path",
         type=str,
-        default="data/processed/nvda_features_extended.csv",
+        default="data/processed/nvda_features_extended_v2.csv",
         help="Path to feature CSV file",
     )
     parser.add_argument(

@@ -127,7 +127,7 @@ if __name__ == "__main__":
     scaler, model = load_scaler_and_model()
     
     # 2. Example: Load the same data format used for training
-    data_path = Path("data/processed/nvda_features_extended.csv")
+    data_path = Path("data/processed/nvda_features_extended_v2.csv")
     if data_path.exists():
         print(f"\n2. Loading data from: {data_path}")
         df = pd.read_csv(data_path)

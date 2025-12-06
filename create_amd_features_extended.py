@@ -235,8 +235,10 @@ def main():
     print("Validating Column Structure")
     print("=" * 80)
 
-    # Load NVDA to compare structure
-    nvda_path = Path("data/processed/nvda_features_extended.csv")
+    # Load NVDA to compare structure (using v2 as reference)
+    # Note: If AMD hasn't been upgraded to v2 yet, this validation will show
+    # missing columns (cash flow features and their interactions)
+    nvda_path = Path("data/processed/nvda_features_extended_v2.csv")
     if nvda_path.exists():
         nvda_df = pd.read_csv(nvda_path, nrows=1)
         nvda_cols = set(nvda_df.columns)

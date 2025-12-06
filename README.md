@@ -733,10 +733,10 @@ Sequence models (LSTM/GRU) come later when the project transitions from tabular 
 
 **Key Observations**:
 - **RF is the champion for both companies**: Best balance of accuracy and generalization potential
-- **AMD RF performs slightly better** than NVDA RF on training set (0.9256 vs 0.8886)
+- **AMD RF performs slightly better** than NVDA RF on training set (0.9256 vs 0.8932)
 - **AMD has better sample/feature ratio**: 184/42 = 4.38 vs NVDA 71/76 = 0.93 (V2 with cash flow features), reducing overfitting risk
 - **Both companies show severe overfitting** with XGB and NN when evaluated on training set
-- **Linear models perform worse on AMD** (R² = 0.5389) than NVDA (R² = 0.6747), suggesting AMD has more non-linear relationships
+- **Linear models perform worse on AMD** (R² = 0.5389) than NVDA (R² = 0.8401), suggesting AMD has more non-linear relationships
 
 ---
 
@@ -1285,8 +1285,9 @@ All models use the same configurations as `train_models.py` for consistency:
 - **RandomForest** is selected as the overall champion despite not being the R² champion for all horizons, because:
   1. **Interpretability**: RF provides direct, interpretable feature importance scores essential for economic modeling
   2. **Stability**: RF performs consistently well across horizons (champion for 3Y, very close to champion for 1Y and 5Y with only 0.02 R² difference)
-  3. **Practical Performance**: RF achieves the best balance between predictive performance and interpretability
-  4. **Economic Modeling Requirements**: Neural Networks, while achieving best R² for 1Y, are too noisy and non-interpretable for economic modeling
+  3. **Overfitting Concerns**: While XGBoost achieves slightly better test R² for 5Y (-2.33 vs -2.35, only 0.02 difference), it shows severe overfitting on training set (R² = 1.0000), indicating poor generalization. RF maintains better train-test consistency.
+  4. **Practical Performance**: RF achieves the best balance between predictive performance and interpretability
+  5. **Economic Modeling Requirements**: Neural Networks and XGBoost, while achieving best R² for some horizons, are less interpretable and show overfitting issues that make them less suitable for economic modeling
 
 **Key Findings:**
 
@@ -1859,10 +1860,10 @@ This section provides a comprehensive summary of the AMD analysis following the 
 | Common Features | - | - | 21 features |
 | **MODELS** |
 | Models Used | 5 (Linear, Ridge, RF, XGB, NN) | 5 (Linear, Ridge, RF, XGB, NN) | Same pipeline |
-| **Best Model** | **RF (R²=0.8886)** | **RF (R²=0.9256)** | **Most reasonable (no overfitting)** |
+| **Best Model** | **RF (R²=0.8932)** | **RF (R²=0.9256)** | **Most reasonable (no overfitting)** |
 | XGB Performance | 1.0000 ⚠️ | 1.0000 ⚠️ | Severe overfitting |
-| NN Performance | 0.9867 ⚠️ | 0.9971 ⚠️ | Severe overfitting |
-| Linear Performance | 0.6747 | 0.5389 | NVDA better |
+| NN Performance | 0.9960 ⚠️ | 0.9971 ⚠️ | Severe overfitting |
+| Linear Performance | 0.8401 | 0.5389 | NVDA better |
 | **TIME WINDOW** |
 | Sample/Feature Ratio | 0.93 | 4.38 | AMD better (but both risky) |
 | Overfitting Risk | **EXTREME** | **HIGH** | NVDA: 0.93 sample/feature (V2 with 76 features) |
@@ -1900,10 +1901,10 @@ AMD uses the same feature engineering pipeline as NVDA:
 **Best Reasonable Model**: Random Forest (R² = 0.9256 on training set)
 
 **Key Observations**:
-- **AMD RF performs slightly better** than NVDA RF on training set (0.9256 vs 0.8886)
+- **AMD RF performs slightly better** than NVDA RF on training set (0.9256 vs 0.8932)
 - **AMD has better sample/feature ratio**: 184/42 = 4.38 vs NVDA 71/76 = 0.93 (V2 with cash flow features), reducing overfitting risk
 - **Both companies show severe overfitting** with XGB and NN when evaluated on training set
-- **Linear models perform worse on AMD** (R² = 0.5389) than NVDA (R² = 0.6747), suggesting AMD has more non-linear relationships
+- **Linear models perform worse on AMD** (R² = 0.5389) than NVDA (R² = 0.8401), suggesting AMD has more non-linear relationships
 
 ### AMD Time Window & Risk Assessment
 
@@ -1967,7 +1968,7 @@ AMD uses the same feature engineering pipeline as NVDA:
 **Feature Importance Heatmap** (Cross-Model Comparison):
 
 ![Feature Importance Heatmap](results/feature_importance_heatmap.png)
-*Feature Importance Across Models (Similar to Gu-Kelly-Xiu 2020 Figure 5): Heatmap showing normalized feature importance across Linear, Ridge, RF, XGB, and NN models (63 features × 5 models). Darker blue indicates higher importance. Visualization shows top 50 features by average importance; full data (all 63 features) available in `feature_importance_heatmap.csv`.*
+*Feature Importance Across Models (Similar to Gu-Kelly-Xiu 2020 Figure 5): Heatmap showing normalized feature importance across Linear, Ridge, RF, XGB, and NN models (76 features × 5 models). Darker blue indicates higher importance. Visualization shows top 50 features by average importance; full data (all 76 features) available in `feature_importance_heatmap.csv`.*
 
 **⚠️ Data Leakage Prevention**: The code **automatically excludes** data leakage features that contain future information. Two features are excluded:
 
@@ -1979,10 +1980,10 @@ These features are excluded because they contain information from the target var
 **Current Status**: 
 - ✅ **Code automatically excludes** data leakage features in `train_models.py` and `create_feature_importance_heatmap.py`
 - ⚠️ **Previously saved models** (in `models/`) were trained with leakage features included—these should be re-trained
-- ⚠️ **Current heatmap** shows 63 features (includes leakage)—should be re-generated with 61 legitimate features
+- ⚠️ **Current heatmap** shows 76 features (V2 with cash flow features)—should be re-generated to exclude any data leakage features if present
 
 **Feature Count**:
-- Total features in dataset: 63
+- Total features in dataset: 76 (V2 with cash flow features)
 - Data leakage features excluded: 2 (`future_12m_price`, `future_12m_logprice`)
 - **Legitimate features for modeling: 61**
 
@@ -2554,9 +2555,9 @@ This ensures efficient data loading and avoids unnecessary API calls.
 
 | Model | MAE | RMSE | R² | MAPE |
 |-------|-----|------|----|----|
-| XGB | 0.0003 | 0.0004 | 1.0000 | 0.22% |
-| NN | 0.0391 | 0.0878 | 0.9867 | 19.41% |
-| RF | 0.1973 | 0.2540 | 0.8886 | 323.93% |
+| XGB | 0.0003 | 0.0004 | 1.0000 | 0.43% |
+| NN | 0.0274 | 0.0483 | 0.9960 | 84.82% |
+| RF | 0.1999 | 0.2487 | 0.8932 | 291.28% |
 
 **AMD:**
 

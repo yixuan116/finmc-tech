@@ -65,7 +65,7 @@ def parse_args() -> argparse.Namespace:
         "--data_path",
         type=str,
         required=True,
-        help="Path to engineered features CSV (e.g., data/processed/nvda_features_extended.csv)",
+        help="Path to engineered features CSV (e.g., data/processed/nvda_features_extended_v2.csv)",
     )
     parser.add_argument(
         "--target_column",
