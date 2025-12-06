@@ -46,7 +46,7 @@ from train_models import (
 # Configuration
 # ---------------------------------------------------------------------------
 
-DEFAULT_DATA_PATH = "data/processed/nvda_features_extended.csv"
+DEFAULT_DATA_PATH = "data/processed/nvda_features_extended_v2.csv"
 DEFAULT_TARGET_COL = "return_next_month"
 DEFAULT_MODEL_PATH = "models/champion_model.pkl"
 DEFAULT_SCALER_PATH = "models/feature_scaler.pkl"

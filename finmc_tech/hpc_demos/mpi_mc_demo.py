@@ -43,6 +43,7 @@ HORIZONS = {
     "1Y": 12,
     "3Y": 36,
     "5Y": 60,
+    "10Y": 120,
 }
 
 def run_mc_paths(n_sims, n_steps, mu, sigma, s0, steps_per_year=12):
@@ -55,14 +56,14 @@ def run_mc_paths(n_sims, n_steps, mu, sigma, s0, steps_per_year=12):
     
     # Vectorized implementation for efficiency within rank
     # (or could be looped to match C demo structure exactly)
-    paths = np.zeros((n_sims, n_steps + 1))
-    paths[:, 0] = s0
+    paths = np.zeros((n_sims, n_steps + 1)) #the terminal prices will be stored in the last column
+    paths[:, 0] = s0 #initial price
     
-    Z = rng.standard_normal((n_sims, n_steps))
+    Z = rng.standard_normal((n_sims, n_steps)) #the random increments will be stored in the last column
     
     # Calculate all steps
     rets = mu + sigma_step * Z
-    rets = np.clip(rets, -0.99, None)
+    rets = np.clip(rets, -0.99, None) #clip the returns to avoid extreme values
     
     # Cumulative product
     paths[:, 1:] = s0 * np.cumprod(1.0 + rets, axis=1)
@@ -91,17 +92,17 @@ def run_single_mpi_benchmark(n_steps: int, total_sims: int, output_dir: Path) ->
     """
     comm = MPI.COMM_WORLD
     rank = comm.Get_rank() #path simulation rank
-    size = comm.Get_size()
+    size = comm.Get_size() #number of ranks
     
     # Calculate local workload
-    local_n_sims = total_sims // size
-    # Add remainder to last rank
+    local_n_sims = total_sims // size #distribute the simulations evenly across all ranks
+    # Add remainder to last rank, if cannot be evenly distributed
     if rank == size - 1:
         local_n_sims += total_sims % size
     
     # Sync before timing
-    comm.Barrier()
-    t0 = MPI.Wtime()
+    comm.Barrier() #wait for all ranks to reach this point
+    t0 = MPI.Wtime() #start timing
     
     # [HPC-MPI] Parallel Monte Carlo execution: each rank simulates `local_n_sims` paths.
     local_terminals = run_mc_paths(local_n_sims, n_steps, MU, SIGMA, S0, STEPS_PER_YEAR)
@@ -110,12 +111,12 @@ def run_single_mpi_benchmark(n_steps: int, total_sims: int, output_dir: Path) ->
     comm.Barrier()
     t1 = MPI.Wtime()
     
-    local_time = t1 - t0
+    local_time = t1 - t0 #local time is the time taken by the current rank
     
-    # Gather max time (the effective parallel runtime)
+    # Gather max time (the effective parallel runtime), return to rank 0
     max_time = comm.reduce(local_time, op=MPI.MAX, root=0)
     
-    if rank == 0: #the master rank
+    if rank == 0: #the master rank check if the file exists and append the result to the file
         csv_path = output_dir / "hpc_benchmark_mpi.csv"
         file_exists = csv_path.exists()
         
@@ -124,11 +125,11 @@ def run_single_mpi_benchmark(n_steps: int, total_sims: int, output_dir: Path) ->
         with open(csv_path, mode='a', newline='') as f:
             writer = csv.writer(f)
             if not file_exists:
-                writer.writerow(["backend", "mode", "n_sims", "n_steps", "n_ranks", "time_sec"])
+                writer.writerow(["backend", "mode", "n_sims", "n_steps", "n_ranks", "time_sec"]) #write the header if the file does not exist
             
-            writer.writerow(["mpi_python", "mpi_parallel", total_sims, n_steps, size, max_time])
+            writer.writerow(["mpi_python", "mpi_parallel", total_sims, n_steps, size, max_time]) #write the result to the file
     
-    return max_time if rank == 0 else 0.0
+    return max_time if rank == 0 else 0.0 #return the max time to the master rank
 
 def main():
     # Parse command line arguments
@@ -146,7 +147,7 @@ def main():
     )
     parser.add_argument(
         "--multi-horizon", action="store_true",
-        help="Run benchmarks for all horizons (1Y, 3Y, 5Y)"
+        help="Run benchmarks for all horizons (1Y, 3Y, 5Y, 10Y)"
     )
     
     # Only rank 0 parses arguments, then broadcasts to others
@@ -154,7 +155,7 @@ def main():
     rank = comm.Get_rank()
     size = comm.Get_size()
     
-    if rank == 0:
+    if rank == 0: #only the master rank parses the arguments
         args = parser.parse_args()
         n_steps = args.steps
         total_sims = args.sims
@@ -165,12 +166,12 @@ def main():
         multi_horizon = None
     
     # Broadcast parameters to all ranks
-    n_steps = comm.bcast(n_steps, root=0)
+    n_steps = comm.bcast(n_steps, root=0) #root process: rank 0 broadcasts the parameters to all ranks
     total_sims = comm.bcast(total_sims, root=0)
     multi_horizon = comm.bcast(multi_horizon, root=0)
     
     output_dir = Path("results/step8")
-    output_dir.mkdir(parents=True, exist_ok=True)
+    output_dir.mkdir(parents=True, exist_ok=True) #create the output directory if it does not exist
     
     if multi_horizon:
         # Run benchmarks for all horizons
@@ -179,13 +180,13 @@ def main():
             print(f"Total Sims: {total_sims}")
             print(f"Horizons: {list(HORIZONS.keys())}\n")
         
-        for horizon_label, horizon_steps in HORIZONS.items():
-            if rank == 0:
+        for horizon_label, horizon_steps in HORIZONS.items(): #loop through all horizons
+            if rank == 0: #start,only the master rank prints the progress
                 print(f"--- Running {horizon_label} ({horizon_steps} steps) ---")
             
-            max_time = run_single_mpi_benchmark(horizon_steps, total_sims, output_dir)
+            max_time = run_single_mpi_benchmark(horizon_steps, total_sims, output_dir) #run the benchmark for the current horizon
             
-            if rank == 0:
+            if rank == 0: #end, only the master rank prints the result
                 print(f"✓ {horizon_label} finished in {max_time:.4f} seconds\n")
         
         if rank == 0:
@@ -207,7 +208,7 @@ def main():
             print(f"Starting MPI Monte Carlo Demo with {size} ranks...")
             print(f"Total Sims: {total_sims}, Steps: {n_steps} ({horizon_label})")
         
-        max_time = run_single_mpi_benchmark(n_steps, total_sims, output_dir)
+        max_time = run_single_mpi_benchmark(n_steps, total_sims, output_dir) #run the benchmark for the current horizon
         
         if rank == 0:
             print(f"✓ MPI Parallel finished in {max_time:.4f} seconds")

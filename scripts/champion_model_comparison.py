@@ -165,11 +165,11 @@ def evaluate_model(
         # Predict
         y_pred = model.predict(X_test_scaled)
     else:
-    # Train
-    model.fit(X_train, y_train)
-    
-    # Predict
-    y_pred = model.predict(X_test)
+        # Train
+        model.fit(X_train, y_train)
+        
+        # Predict
+        y_pred = model.predict(X_test)
     
     # Compute metrics
     mae = mean_absolute_error(y_test, y_pred)

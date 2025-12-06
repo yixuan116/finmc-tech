@@ -44,7 +44,7 @@ warnings.filterwarnings("ignore")
 
 # Default paths
 DEFAULT_DATA_PATHS = [
-    "data/processed/nvda_features_extended.csv",
+    "data/processed/nvda_features_extended_v2.csv",
     "data/processed/NVDA_revenue_features.csv",
 ]
 DEFAULT_MODEL_PATH = "models/champion_model.pkl"
@@ -53,7 +53,7 @@ DEFAULT_N_SIMS = 500 #test for simulation
 DEFAULT_HORIZON_MONTHS = 12
 RANDOM_STATE = 42
 
-
+#part 2: load latest features
 def load_latest_features(ticker: str = "NVDA") -> Tuple[pd.DataFrame, float, pd.DatetimeIndex, Dict]:
     """
     Load latest features from processed data files.

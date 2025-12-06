@@ -149,7 +149,7 @@ def step5_cmd(args):
     from finmc_tech.step5_key_drivers import run_step5
     
     run_step5(
-        data_path=getattr(args, 'data_path', "data/processed/nvda_features_extended.csv"),
+        data_path=getattr(args, 'data_path', "data/processed/nvda_features_extended_v2.csv"),
         target_column=getattr(args, 'target_column', "return_next_month"),
         model_path=getattr(args, 'model_path', "models/champion_model.pkl"),
         scaler_path=getattr(args, 'scaler_path', "models/feature_scaler.pkl"),
@@ -315,7 +315,7 @@ def main():
         "step5",
         help="Extract key drivers from champion RF model (Step 5)",
     )
-    step5_parser.add_argument("--data-path", default="data/processed/nvda_features_extended.csv",
+    step5_parser.add_argument("--data-path", default="data/processed/nvda_features_extended_v2.csv",
                              help="Path to feature CSV")
     step5_parser.add_argument("--target-column", default="return_next_month",
                              help="Target column name")
