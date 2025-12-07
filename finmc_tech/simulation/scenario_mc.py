@@ -498,7 +498,7 @@ def run_driver_aware_mc_fast(
     """
     rng = np.random.default_rng(seed)
     
-    # Convert annualized sigma to per-step sigma
+    # Convert annualized sigma to per-step sigma, align with literature G–K–X, σ_step = σ_annual / √steps_per_year
     sigma_step = sigma_annual / np.sqrt(steps_per_year)
     
     # Initialize paths
@@ -719,7 +719,7 @@ def _run_single_scenario_task(
     # Apply shock
     X_shocked = apply_shock(X_last, shock_spec)
     
-    # Predict conditional drift
+    # Predict conditional drift, same as literature G–K–X addictive prediction error model
     mu_seq = predict_conditional_drift(model, scaler, X_shocked, horizon_steps)
     
     # Run MC (using fast vectorized version to avoid tqdm in threads)
@@ -2192,6 +2192,43 @@ def plot_fan_chart_multi_horizon(
     print(f"✓ Saved: {output_path}")
 
 
+def plot_price_paths_multi_horizon(
+    horizon_label: str,
+    scenario_label: str,
+    price_paths: np.ndarray,
+    current_price: float,
+    output_path: Path,
+    n_sample_paths: int = 20,
+) -> None:
+    """Plot sample price paths for a single scenario - multi-horizon version."""
+    fig, ax = plt.subplots(figsize=(10, 6))
+    
+    n_steps = price_paths.shape[1] - 1
+    time_axis = np.arange(n_steps + 1)
+    
+    # Plot a subset of paths
+    n_plot = min(n_sample_paths, price_paths.shape[0])
+    for i in range(n_plot):
+        ax.plot(time_axis, price_paths[i, :], alpha=0.3, linewidth=0.8, color="steelblue")
+    
+    # Add S0 reference line
+    ax.axhline(current_price, linestyle="--", linewidth=2, color="red", label=f"S0 = ${current_price:.2f}")
+    
+    ax.set_xlabel("Step (month)", fontsize=12)
+    ax.set_ylabel("Price ($)", fontsize=12)
+    ax.set_title(
+        f"Sample Price Paths: {horizon_label} - {scenario_label.replace('_', ' ').title()}",
+        fontsize=14, fontweight="bold"
+    )
+    ax.legend(fontsize=10)
+    ax.grid(True, alpha=0.3)
+    
+    plt.tight_layout()
+    plt.savefig(output_path, dpi=200, bbox_inches="tight")
+    plt.close()
+    print(f"✓ Saved: {output_path}")
+
+
 def plot_terminal_distribution(
     horizon_label: str,
     scenario_label: str,
@@ -2254,6 +2291,51 @@ def plot_terminal_distribution(
     plt.savefig(output_path, dpi=200, bbox_inches="tight")
     plt.close()
     print(f"✓ Saved: {output_path}")
+
+
+def debug_print_horizon_drifts(
+    ticker: str = "NVDA",
+    random_seed: int = 42,
+) -> None:
+    """
+    Debug utility: for the latest feature row X_last, load each horizon model
+    (1Y, 3Y, 5Y, 10Y) and print:
+      - μ_horizon^(h): model-predicted total simple return over the horizon
+      - μ_step^(h): per-month drift used in the Monte Carlo (μ_horizon / horizon_steps)
+    This makes the difference across horizons fully explicit in numeric terms.
+    """
+    # Load latest features
+    X_last, S0, dates, freq_info = load_latest_features(ticker)
+    
+    print(f"Debug horizon drifts for {ticker} (S0 = {S0:.2f}, date = {X_last.index[0].date()})")
+    print("=" * 80)
+    
+    # Iterate over all horizons
+    for horizon in ["1Y", "3Y", "5Y", "10Y"]:
+        m_path = Path(HORIZON_MODEL_PATHS[horizon]["model"])
+        s_path = Path(HORIZON_MODEL_PATHS[horizon]["scaler"])
+        
+        if not m_path.exists() or not s_path.exists():
+            print(f"[{horizon}] model/scaler not found at {m_path} / {s_path} (fallback not shown here).")
+            continue
+        
+        # Load model and scaler
+        model = joblib.load(m_path)
+        scaler = joblib.load(s_path)
+        
+        # Predict horizon return
+        mu_horizon = predict_horizon_return(model, scaler, X_last)
+        
+        # Get horizon steps
+        steps = HORIZON_STEPS[horizon]
+        
+        # Compute per-step drift
+        mu_step = mu_horizon / steps
+        
+        # Print formatted output
+        print(f"[{horizon}] μ_horizon = {mu_horizon:.4f} "
+              f"({mu_horizon*100:.2f}% total), "
+              f"μ_step = {mu_step:.6f} ({mu_step*100:.3f}% per step, steps = {steps})")
 
 
 def run_driver_aware_mc_multi_horizon(
@@ -2358,6 +2440,13 @@ def run_driver_aware_mc_multi_horizon(
             paths = result["paths"]
             terminals = result["terminals"]
             
+            # Plot price paths (sample trajectories)
+            plot_price_paths_multi_horizon(
+                horizon_name, scenario_label, paths, S0,
+                output_path / f"{horizon_name.lower()}_{scenario_label}_paths.png",
+                n_sample_paths=20,
+            )
+            
             # Plot fan chart
             plot_fan_chart_multi_horizon(
                 horizon_name, scenario_label, paths, S0,
@@ -2426,10 +2515,21 @@ if __name__ == "__main__":
         action="store_true",
         help="Run NumPy vs Numba scaling benchmark (Step 8 HPC).",
     )
+    parser.add_argument(
+        "--debug-horizon-drifts",
+        action="store_true",
+        help="Print horizon-specific μ_horizon and μ_step for 1Y/3Y/5Y/10Y."
+    )
     
     args = parser.parse_args()
     
-    if args.scaling_curve:
+    if args.debug_horizon_drifts:
+        debug_print_horizon_drifts(ticker=args.ticker, random_seed=RANDOM_STATE)
+        print("\n" + "="*60)
+        print("Horizon drift debug complete.")
+        print("="*60)
+        exit(0)
+    elif args.scaling_curve:
         # Run only the scaling benchmark and exit
         benchmark_scaling_curve(
             output_dir="results/step8",
