@@ -2032,6 +2032,7 @@ def simulate_paths(
     n_paths: int = 10000,
     random_seed: int = 42,
     steps_per_year: int = 12,
+    sigma_residual_step: float = 0.02,
 ) -> Tuple[np.ndarray, np.ndarray]:
     """
     Simulate price paths using driver-aware shocks for a specific scenario.
@@ -2095,9 +2096,8 @@ def simulate_paths(
              weights["Firm"] * eps_firm +
              weights["Interaction"] * eps_interaction)
         
-        # Idiosyncratic error (from champion model residual volatility)
-        sigma_residual = sigma_firm_step  # Use firm sigma as proxy
-        epsilon = rng.normal(0, sigma_residual)
+        # === GKX-style additive residual noise ===
+        epsilon = rng.normal(0, sigma_residual_step)
         
         # Return for this step
         return_step = mu_step + S + epsilon
@@ -2122,6 +2122,7 @@ def run_scenarios(
     n_paths: int = 10000,
     random_seed: int = 42,
     steps_per_year: int = 12,
+    sigma_residual_step: float = 0.02,
 ) -> Dict[str, Dict[str, Any]]:
     """
     Run 4 scenario families: base, macro_stress, fundamental_stress, ai_bull.
@@ -2135,7 +2136,8 @@ def run_scenarios(
         
         paths, terminals = simulate_paths(
             S0, mu_horizon, shock_table, horizon_steps, scenario_label,
-            history_df, n_paths, scenario_seed, steps_per_year
+            history_df, n_paths, scenario_seed, steps_per_year,
+            sigma_residual_step=sigma_residual_step
         )
         
         scenarios[scenario_label] = {
@@ -2327,7 +2329,7 @@ def debug_print_horizon_drifts(
         mu_horizon = predict_horizon_return(model, scaler, X_last)
         
         # Get horizon steps
-        steps = HORIZON_STEPS[horizon]
+        steps = HORIZON_STEPS[horizon] #1y=12, 3y=36, 5y=60, 10y=120
         
         # Compute per-step drift
         mu_step = mu_horizon / steps
@@ -2429,10 +2431,19 @@ def run_driver_aware_mc_multi_horizon(
             mu_horizon = mu_annual * (horizon_months / 12.0)
             print(f"  Historical-mean horizon drift (mu_horizon) for {horizon_name}: {mu_horizon:.2%}")
         
+        # === Residual noise estimation (GKX-style additive error term) ===
+        if "adj_close" in history_df.columns:
+            hist_returns = history_df["adj_close"].pct_change().dropna()
+            sigma_residual_annual = hist_returns.std() * np.sqrt(12)   # annualized
+        else:
+            sigma_residual_annual = 0.40   # fallback
+        sigma_residual_step = sigma_residual_annual / np.sqrt(12)
+        
         # Run scenarios
         scenarios = run_scenarios(
             S0, mu_horizon, shock_table, horizon_steps, history_df,
-            n_paths, random_seed, steps_per_year
+            n_paths, random_seed, steps_per_year,
+            sigma_residual_step=sigma_residual_step
         )
         
         # Generate plots and summary for each scenario
