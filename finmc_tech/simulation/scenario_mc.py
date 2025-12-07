@@ -2194,6 +2194,64 @@ def plot_fan_chart_multi_horizon(
     print(f"✓ Saved: {output_path}")
 
 
+def plot_fan_chart_combined_baseline(
+    all_results: Dict[str, Dict],
+    S0: float,
+    output_path: Path,
+) -> None:
+    """
+    Plot combined 2x2 fan chart for baseline scenario across all horizons (1Y, 3Y, 5Y, 10Y).
+    This creates a single figure with 4 subplots showing baseline fan charts for each horizon.
+    """
+    fig, axes = plt.subplots(2, 2, figsize=(16, 12))
+    axes = axes.flatten()
+    
+    horizons = ["1Y", "3Y", "5Y", "10Y"]
+    
+    for idx, horizon_name in enumerate(horizons):
+        if horizon_name not in all_results:
+            continue
+            
+        ax = axes[idx]
+        horizon_data = all_results[horizon_name]
+        
+        # Get baseline scenario paths
+        if "scenarios" not in horizon_data or "base" not in horizon_data["scenarios"]:
+            continue
+            
+        paths = horizon_data["scenarios"]["base"]["paths"]
+        n_steps = paths.shape[1] - 1
+        time_steps = np.arange(n_steps + 1)
+        
+        # Convert price paths to percentage returns
+        return_paths = (paths / S0 - 1) * 100
+        
+        # Compute percentiles
+        p5 = np.percentile(return_paths, 5, axis=0)
+        p25 = np.percentile(return_paths, 25, axis=0)
+        p50 = np.percentile(return_paths, 50, axis=0)
+        p75 = np.percentile(return_paths, 75, axis=0)
+        p95 = np.percentile(return_paths, 95, axis=0)
+        
+        # Fill between percentiles
+        ax.fill_between(time_steps, p5, p95, alpha=0.2, color="blue", label="90% CI")
+        ax.fill_between(time_steps, p25, p75, alpha=0.3, color="blue", label="50% CI")
+        ax.plot(time_steps, p50, color="darkblue", linewidth=2, label="Median")
+        ax.axhline(0, color="black", linestyle=":", linewidth=2, label="Current Price (0%)")
+        
+        ax.set_xlabel("Months Ahead", fontsize=11)
+        ax.set_ylabel("Total Return (%)", fontsize=11)
+        ax.set_title(f"Fan Chart: {horizon_name} - Base", fontsize=12, fontweight="bold")
+        ax.legend(loc="best", fontsize=9)
+        ax.grid(alpha=0.3)
+    
+    plt.suptitle("7. Monte Carlo Forecasting - Baseline", fontsize=16, fontweight="bold", y=0.995)
+    plt.tight_layout(rect=[0, 0, 1, 0.98])
+    plt.savefig(output_path, dpi=200, bbox_inches="tight")
+    plt.close()
+    print(f"✓ Saved: {output_path}")
+
+
 def plot_price_paths_multi_horizon(
     horizon_label: str,
     scenario_label: str,
@@ -2497,6 +2555,12 @@ def run_driver_aware_mc_multi_horizon(
         index=False
     )
     print(f"\n✓ Saved scenario summary: {output_path / 'scenario_summary.csv'}")
+    
+    # Generate combined baseline fan chart (2x2 grid)
+    plot_fan_chart_combined_baseline(
+        all_results, S0,
+        output_path / "fan_chart_combined_baseline.png"
+    )
     
     print(f"\n{'='*80}")
     print(f"All horizons complete!")
