@@ -506,7 +506,7 @@ def run_driver_aware_mc_fast(
     paths[:, 0] = S0
     
     # Generate random shocks
-    Z = rng.standard_normal((n_sims, horizon_steps))
+    Z = rng.standard_normal((n_sims, horizon_steps)) 
     
     # Vectorized: compute all steps in one shot via cumprod
     # rets shape: (n_sims, horizon_steps)
@@ -1431,7 +1431,7 @@ def benchmark_mc_paths_multi_horizon(
         horizon, n_steps
     """
     if horizons is None:
-        horizons = {"1Y": 12, "3Y": 36, "5Y": 60}
+        horizons = {"1Y": 12, "3Y": 36, "5Y": 60, "10Y": 120}
     
     out_dir = Path(output_dir)
     out_dir.mkdir(parents=True, exist_ok=True)
@@ -1469,7 +1469,7 @@ def benchmark_mc_paths_multi_horizon(
     combined_df = pd.concat(all_dfs, ignore_index=True)
     
     # Save combined results
-    csv_path = out_dir / "hpc_benchmark_paths_1y_3y_5y.csv"
+    csv_path = out_dir / "hpc_benchmark_paths_1y_3y_5y_10y.csv"
     combined_df.to_csv(csv_path, index=False)
     print(f"\n{'='*60}")
     print(f"Multi-horizon benchmark written to: {csv_path}")
@@ -1666,14 +1666,14 @@ def run_step8_hpc(
 # ------------------------------------------------------------------
 # HPC Summary: Combine all benchmark results (1Y/3Y/5Y)
 # ------------------------------------------------------------------
-def build_hpc_summary_1y_3y_5y(
+def build_hpc_summary_1y_3y_5y_10y(
     output_dir: str = "results/step8",
-    paths_csv: str = "hpc_benchmark_paths_1y_3y_5y.csv",
+    paths_csv: str = "hpc_benchmark_paths_1y_3y_5y_10y.csv",
     mpi_csv: str = "hpc_benchmark_mpi.csv",
     openmp_csv: str = "hpc_benchmark_openmp.csv",
 ) -> pd.DataFrame:
     """
-    Build a 1Y / 3Y / 5Y summary table combining:
+    Build a 1Y / 3Y / 5Y / 10Y summary table combining:
     - NumPy vs Numba (from paths benchmark)
     - MPI (from mpi CSV)
     - OpenMP (from C CSV)
@@ -1700,9 +1700,9 @@ def build_hpc_summary_1y_3y_5y(
     out_dir = Path(output_dir)
     
     # Map n_steps to horizon labels
-    n_steps_to_horizon = {12: "1Y", 36: "3Y", 60: "5Y"}
-    horizons = ["1Y", "3Y", "5Y"]
-    n_steps_list = [12, 36, 60]
+    n_steps_to_horizon = {12: "1Y", 36: "3Y", 60: "5Y", 120: "10Y"}
+    horizons = ["1Y", "3Y", "5Y", "10Y"]
+    n_steps_list = [12, 36, 60, 120]
     
     summary_rows = []
     
@@ -1803,7 +1803,7 @@ def build_hpc_summary_1y_3y_5y(
     summary_df = pd.DataFrame(summary_rows)
     
     # Save summary
-    summary_path = out_dir / "hpc_benchmark_summary_1y_3y_5y.csv"
+    summary_path = out_dir / "hpc_benchmark_summary_1y_3y_5y_10y.csv"
     summary_df.to_csv(summary_path, index=False)
     
     print(f"\n{'='*60}")
@@ -2633,8 +2633,8 @@ if __name__ == "__main__":
         print("HPC Multi-Horizon Benchmark Complete!")
         print("="*60)
     elif args.hpc_summary:
-        # Build HPC summary
-        summary = build_hpc_summary_1y_3y_5y(output_dir="results/step8")
+        # Build HPC summary (1Y/3Y/5Y/10Y)
+        summary = build_hpc_summary_1y_3y_5y_10y(output_dir="results/step8")
         print("\n" + "="*60)
         print("HPC Summary Complete!")
         print("="*60)
