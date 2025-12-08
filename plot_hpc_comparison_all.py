@@ -7,11 +7,11 @@ import numpy as np
 def load_data():
     base_dir = Path("results/step8")
     
-    # 1. NumPy vs Numba (now 100k sims by default)
+    # 1. NumPy vs Numba (now 1M sims by default)
     df_paths = pd.read_csv(base_dir / "hpc_benchmark_paths_1y_3y_5y_10y.csv")
     if "n_sims" not in df_paths.columns:
-        # Fallback if n_sims column missing, but code was updated to use 100k
-        df_paths["n_sims"] = 100000 
+        # Fallback if n_sims column missing, but code was updated to use 1M
+        df_paths["n_sims"] = 1000000 
     
     # 2. MPI
     df_mpi = pd.read_csv(base_dir / "hpc_benchmark_mpi.csv")
@@ -29,8 +29,8 @@ def process_data(df_paths, df_mpi, df_openmp):
     data = []
     
     # --- Process NumPy/Numba ---
-    # Filter for 100k simulations only
-    df_paths = df_paths[df_paths["n_sims"] == 100000]
+    # Filter for 1M simulations only
+    df_paths = df_paths[df_paths["n_sims"] == 1000000]
     
     for _, row in df_paths.iterrows():
         backend = row["backend"]
@@ -54,9 +54,9 @@ def process_data(df_paths, df_mpi, df_openmp):
         })
         
     # --- Process MPI ---
-    # Filter for 100k sims only
+    # Filter for 1M sims only
     if not df_mpi.empty:
-        df_mpi = df_mpi[df_mpi["n_sims"] == 100000]
+        df_mpi = df_mpi[df_mpi["n_sims"] == 1000000]
         # Sort and keep last unique entry per horizon
         df_mpi = df_mpi.sort_values("n_steps")
         df_mpi_dedup = df_mpi.drop_duplicates(subset=["n_steps"], keep="last")
@@ -74,11 +74,11 @@ def process_data(df_paths, df_mpi, df_openmp):
             })
 
     # --- Process OpenMP ---
-    # Filter for 100k sims only
+    # Filter for 1M sims only
     if not df_openmp.empty:
         df_openmp = df_openmp[
             (df_openmp["mode"] == "openmp_parallel") & 
-            (df_openmp["n_sims"] == 100000)
+            (df_openmp["n_sims"] == 1000000)
         ]
         df_openmp_dedup = df_openmp.drop_duplicates(subset=["n_steps"], keep="last")
         
@@ -219,7 +219,7 @@ def plot_combined_benchmark(df):
 
     # Add footnote
     plt.figtext(0.5, 0.01, 
-                "Note: All benchmarks run with 100,000 simulations per horizon.\n"
+                "Note: All benchmarks run with 1,000,000 simulations per horizon.\n"
                 "Left: Actual Runtime (Log Scale). Right: Speedup factor (vs NumPy Baseline).",
                 ha="center", fontsize=9, style="italic", color="#555555")
 
@@ -227,7 +227,7 @@ def plot_combined_benchmark(df):
     # Adjust layout to make room for footnote
     plt.subplots_adjust(bottom=0.15)
     
-    output_path = "results/step8/hpc_benchmark_comparison_all.png"
+    output_path = "results/step8/hpc_benchmark_backends_1M.png"
     plt.savefig(output_path, dpi=200)
     print(f"Saved: {output_path}")
 

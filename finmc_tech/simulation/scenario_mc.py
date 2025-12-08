@@ -1158,7 +1158,7 @@ def run_step8_mc(
 # ------------------------------------------------------------------
 def benchmark_mc_backends(
     output_dir: str = "results/step8",
-    n_sims: int = 100000,
+    n_sims: int = 1000000,
     horizon_steps: int = 36,
     steps_per_year: int = 12,
     sigma_annual: float = 0.40,
@@ -1171,7 +1171,7 @@ def benchmark_mc_backends(
 
     Default configuration (when called standalone):
     - 3Y horizon = 36 monthly steps
-    - 100,000 simulation paths
+    - 1,000,000 simulation paths
 
     In the multi-horizon benchmark, horizon_steps and n_sims are overridden
     explicitly so that 1Y / 3Y / 5Y share the same per-horizon workload.
@@ -1396,7 +1396,7 @@ def benchmark_scaling_curve(
 def benchmark_mc_paths_multi_horizon(
     output_dir: str = "results/step8",
     horizons: Optional[Dict[str, int]] = None,
-    n_sims: int = 100000,
+    n_sims: int = 1000000,
     sigma_annual: float = 0.40,
     mu: float = 0.01,
     S0: float = 100.0,
@@ -2627,7 +2627,7 @@ if __name__ == "__main__":
         # Run multi-horizon HPC benchmark
         results = benchmark_mc_paths_multi_horizon(
             output_dir="results/step8",
-            n_sims=args.n if args.n >= 10000 else 100000, # Use 100k for multi-horizon
+            n_sims=args.n if args.n >= 10000 else 1000000, # Use 1M for multi-horizon
             random_seed=RANDOM_STATE,
         )
         print("\n" + "="*60)
