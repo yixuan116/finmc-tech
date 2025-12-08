@@ -1158,8 +1158,8 @@ def run_step8_mc(
 # ------------------------------------------------------------------
 def benchmark_mc_backends(
     output_dir: str = "results/step8",
-    n_sims: int = 5000,
-    horizon_steps: int = 24,
+    n_sims: int = 50000,
+    horizon_steps: int = 36,
     steps_per_year: int = 12,
     sigma_annual: float = 0.40,
     mu: float = 0.01,
@@ -1169,6 +1169,13 @@ def benchmark_mc_backends(
     """
     Benchmark baseline NumPy Monte Carlo vs Numba-parallel Monte Carlo.
 
+    Default configuration (when called standalone):
+    - 3Y horizon = 36 monthly steps
+    - 50,000 simulation paths
+
+    In the multi-horizon benchmark, horizon_steps and n_sims are overridden
+    explicitly so that 1Y / 3Y / 5Y share the same per-horizon workload.
+
     Writes results to results/step8/hpc_benchmark.csv and returns a DataFrame.
     """
     out_dir = Path(output_dir)
@@ -1177,7 +1184,10 @@ def benchmark_mc_backends(
     # Baseline: reuse the existing vectorized engine
     mu_seq = np.full(horizon_steps, mu, dtype=float)
 
-    print(f"\n--- Starting Baseline (NumPy) Benchmark ({n_sims:,} sims) ---")
+    print(
+        f"\n--- Starting Baseline (NumPy) Benchmark "
+        f"({n_sims:,} sims, {horizon_steps} steps, steps_per_year={steps_per_year}) ---"
+    )
     t0 = time.time()
     paths_base, terminals_base = run_driver_aware_mc_fast(
         S0=S0,
@@ -2616,7 +2626,7 @@ if __name__ == "__main__":
         # Run multi-horizon HPC benchmark
         results = benchmark_mc_paths_multi_horizon(
             output_dir="results/step8",
-            n_sims=args.n if args.n >= 10000 else 50000,
+            n_sims=args.n if args.n >= 10000 else 50000, # Use 50k for multi-horizon
             random_seed=RANDOM_STATE,
         )
         print("\n" + "="*60)
