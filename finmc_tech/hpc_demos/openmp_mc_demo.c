@@ -34,7 +34,7 @@
 #include <errno.h>
 
 // Default parameters matching project defaults
-#define DEFAULT_N_SIMS 1000000
+#define DEFAULT_N_SIMS 100000
 #define DEFAULT_N_STEPS 12
 #define MU 0.01
 #define SIGMA 0.40
@@ -42,9 +42,9 @@
 #define STEPS_PER_YEAR 12  // Monthly steps
 
 // Multi-horizon configuration
-#define NUM_HORIZONS 3
-static const int HORIZON_STEPS[] = {12, 36, 60};
-static const char* HORIZON_LABELS[] = {"1Y", "3Y", "5Y"};
+#define NUM_HORIZONS 4
+static const int HORIZON_STEPS[] = {12, 36, 60, 120};
+static const char* HORIZON_LABELS[] = {"1Y", "3Y", "5Y", "10Y"};
 
 // Simple Box-Muller transform for normal distribution
 double rand_normal() {
@@ -97,7 +97,7 @@ void parse_args(int argc, char *argv[], int *n_sims, int *n_steps) {
             printf("Usage: %s [--steps N] [--sims N]\n", argv[0]);
             printf("  --steps N    Number of time steps (months). Default: 12 (1Y)\n");
             printf("               Common values: 12 (1Y), 36 (3Y), 60 (5Y), 120 (10Y)\n");
-            printf("  --sims N     Total number of Monte Carlo simulations. Default: 1000000\n");
+            printf("  --sims N     Total number of Monte Carlo simulations. Default: 100000\n");
             exit(0);
         }
     }

@@ -14,6 +14,8 @@ Usage example:
     # 120 months (10Y)
     mpirun -n 4 python -m finmc_tech.hpc_demos.mpi_mc_demo --steps 120
 
+    (Default simulations: 100,000)
+
 This will append a row to results/step8/hpc_benchmark_mpi.csv
 with the measured parallel runtime.
 
@@ -31,7 +33,7 @@ import sys
 import argparse
 
 # Default parameters
-TOTAL_SIMS = 1000000  # 1e6
+TOTAL_SIMS = 100000  # 100K sims for benchmark comparability
 DEFAULT_N_STEPS = 12  # 12 months (1Y)
 MU = 0.01
 SIGMA = 0.40
