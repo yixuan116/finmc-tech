@@ -81,6 +81,49 @@ void append_csv_row(const char *filename, const char *backend, const char *mode,
     fclose(fp);
 }
 
+// Compute basic statistics for an array of terminal prices.
+//
+// Parameters:
+//   arr   : pointer to an array of length n
+//   n     : number of elements
+//   mean  : output pointer for mean
+//   std   : output pointer for standard deviation
+//   min_v : output pointer for minimum
+//   max_v : output pointer for maximum
+//
+// This is a simple O(n) pass and is intended for presentation/debug purposes.
+void compute_stats(const double *arr, int n, double *mean, double *std, double *min_v, double *max_v) {
+    if (n <= 0) {
+        *mean = 0.0;
+        *std = 0.0;
+        *min_v = 0.0;
+        *max_v = 0.0;
+        return;
+    }
+
+    double sum = 0.0;
+    double sum_sq = 0.0;
+    double mn = arr[0];
+    double mx = arr[0];
+
+    for (int i = 0; i < n; ++i) {
+        double x = arr[i];
+        sum += x;
+        sum_sq += x * x;
+        if (x < mn) mn = x;
+        if (x > mx) mx = x;
+    }
+
+    double m = sum / (double)n;
+    double var = sum_sq / (double)n - m * m;
+    if (var < 0.0) var = 0.0;  // numerical guard
+
+    *mean = m;
+    *std = sqrt(var);
+    *min_v = mn;
+    *max_v = mx;
+}
+
 // Helper function to parse command line arguments
 void parse_args(int argc, char *argv[], int *n_sims, int *n_steps) {
     *n_sims = DEFAULT_N_SIMS;
@@ -169,6 +212,8 @@ int main(int argc, char *argv[]) {
         }
         
         printf("\n=== Horizon %s (%d steps) ===\n", hz_label, n_steps);
+        long long total_updates = (long long)n_sims * (long long)n_steps;
+        printf("Total workload: %d paths × %d steps = %lld Monte Carlo updates\n", n_sims, n_steps, total_updates);
         
         // --- Sequential Run ---
         printf("\n1. Running Sequential Baseline...\n");
@@ -194,8 +239,27 @@ int main(int argc, char *argv[]) {
         double time_seq = end_seq - start_seq;
         printf("✓ Sequential finished in %.4f seconds\n", time_seq);
 
+        // Compute financial statistics for sequential terminal prices: S_T
+        double mean_seq, std_seq, min_seq, max_seq;
+        compute_stats(terminals_seq, n_sims, &mean_seq, &std_seq, &min_seq, &max_seq);
+
+        printf("\n[OpenMP C - Sequential MC Financial Result]\n");
+        printf("  Horizon: %d steps\n", n_steps);
+        printf("  Paths (n_sims): %d\n", n_sims);
+        printf("  Global workload: %d paths × %d steps = %lld Monte Carlo updates\n", n_sims, n_steps, total_updates);
+        printf("  Model: S_{t+1} = S_t * (1 + r_t),  r_t = MU + (SIGMA / sqrt(STEPS_PER_YEAR)) * eps\n");
+        printf("         MU = %.4f per step, SIGMA = %.4f per year, STEPS_PER_YEAR = %d\n", MU, SIGMA, STEPS_PER_YEAR);
+        printf("  Terminal price S_T distribution (sequential):\n");
+        printf("    mean(S_T) = %.4f\n", mean_seq);
+        printf("    std(S_T)  = %.4f\n", std_seq);
+        printf("    min(S_T)  = %.4f\n", min_seq);
+        printf("    max(S_T)  = %.4f\n\n", max_seq);
+
         // --- OpenMP Parallel Run ---
         printf("\n2. Running OpenMP Parallel...\n");
+        int n_threads = omp_get_max_threads();
+        printf("   Using OpenMP with up to %d threads (shared-memory parallelism)\n", n_threads);
+
         srand(42); // Reset seed (approximate, as threads will diverge in rand usage)
         
         double start_par = omp_get_wtime();
@@ -232,6 +296,21 @@ int main(int argc, char *argv[]) {
         double time_par = end_par - start_par;
         printf("✓ OpenMP Parallel finished in %.4f seconds\n", time_par);
         printf("  Speedup: %.2fx\n", time_seq / time_par);
+
+        // Compute financial statistics for parallel terminal prices: S_T
+        double mean_par, std_par, min_par, max_par;
+        compute_stats(terminals_par, n_sims, &mean_par, &std_par, &min_par, &max_par);
+
+        printf("\n[OpenMP C - OpenMP Parallel MC Financial Result]\n");
+        printf("  Horizon: %d steps\n", n_steps);
+        printf("  Paths (n_sims): %d\n", n_sims);
+        printf("  Global workload: %d paths × %d steps = %lld Monte Carlo updates\n", n_sims, n_steps, total_updates);
+        printf("  Terminal price S_T distribution (OpenMP parallel):\n");
+        printf("    mean(S_T) = %.4f\n", mean_par);
+        printf("    std(S_T)  = %.4f\n", std_par);
+        printf("    min(S_T)  = %.4f\n", min_par);
+        printf("    max(S_T)  = %.4f\n", max_par);
+        printf("  (These should be very close to the sequential statistics, up to Monte Carlo noise.)\n\n");
 
         // --- Save Results ---
         append_csv_row(csv_path, "openmp_c", "sequential", n_sims, n_steps, 1, time_seq);

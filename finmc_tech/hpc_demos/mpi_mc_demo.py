@@ -74,64 +74,186 @@ def run_mc_paths(n_sims, n_steps, mu, sigma, s0, steps_per_year=12):
 
 def run_single_mpi_benchmark(n_steps: int, total_sims: int, output_dir: Path) -> float:
     """
-    Run the MPI Monte Carlo benchmark for a given number of steps,
-    return the parallel runtime (max rank time).
-    Writes a row to hpc_benchmark_mpi.csv as before.
-    
+    Run the MPI Monte Carlo benchmark for a given number of steps.
+
+    This enhanced version does three things:
+    1. Each MPI rank prints a concise "work card" describing:
+       - Which global path indices it is responsible for
+       - How many simulations and MC updates it computed
+       - Its local runtime
+       - Its local terminal price S_T distribution (mean/std)
+    2. Rank 0 aggregates all local terminal prices into global statistics:
+       - mean(S_T), std(S_T), min(S_T), max(S_T)
+       - global Monte Carlo workload (total_sims × n_steps updates)
+    3. Rank 0 prints the global financial result and the effective parallel runtime,
+       then appends the runtime result to results/step8/hpc_benchmark_mpi.csv
+       using the same schema as before.
+
     Parameters
     ----------
     n_steps : int
-        Number of time steps (months)
+        Number of time steps (months).
     total_sims : int
-        Total number of Monte Carlo simulations
+        Total number of Monte Carlo simulations across all ranks.
     output_dir : Path
-        Output directory for CSV file
-    
+        Output directory for the CSV benchmark file.
+
     Returns
     -------
     float
-        Maximum parallel runtime across all ranks (seconds)
+        Maximum parallel runtime across all ranks (seconds), returned on rank 0.
+        Non-root ranks return 0.0.
     """
     comm = MPI.COMM_WORLD
-    rank = comm.Get_rank() #path simulation rank
-    size = comm.Get_size() #number of ranks
-    
-    # Calculate local workload
-    local_n_sims = total_sims // size #distribute the simulations evenly across all ranks
-    # Add remainder to last rank, if cannot be evenly distributed
+    rank = comm.Get_rank()
+    size = comm.Get_size()
+
+    # 1) Compute per-rank workload.
+    #
+    # We split `total_sims` as evenly as possible across ranks:
+    # - base_chunk = total_sims // size
+    # - remainder  = total_sims % size (assigned to the last rank)
+    base_chunk = total_sims // size
+    remainder = total_sims % size
+
+    local_n_sims = base_chunk
     if rank == size - 1:
-        local_n_sims += total_sims % size
-    
-    # Sync before timing
-    comm.Barrier() #wait for all ranks to reach this point
-    t0 = MPI.Wtime() #start timing
-    
-    # [HPC-MPI] Parallel Monte Carlo execution: each rank simulates `local_n_sims` paths.
-    local_terminals = run_mc_paths(local_n_sims, n_steps, MU, SIGMA, S0, STEPS_PER_YEAR)
-    
-    # Wait for all to finish
+        local_n_sims += remainder
+
+    # 2) Synchronize before timing, then run the Monte Carlo kernel on each rank.
+    #
+    # Only the actual MC kernel runtime is measured here; MPI reductions and printing
+    # are NOT included in the timing.
+    comm.Barrier()
+    t0 = MPI.Wtime()
+
+    # [HPC-MPI] Each rank simulates `local_n_sims` terminal prices for this horizon.
+    local_terminals = run_mc_paths(
+        local_n_sims, n_steps, MU, SIGMA, S0, STEPS_PER_YEAR
+    )
+
     comm.Barrier()
     t1 = MPI.Wtime()
-    
-    local_time = t1 - t0 #local time is the time taken by the current rank
-    
-    # Gather max time (the effective parallel runtime), return to rank 0
+    local_time = t1 - t0  # Local runtime for this rank
+
+    # 3) For interpretability: compute a conceptual global path index range
+    #    for each rank and print a concise "work card".
+    #
+    # Conceptually:
+    # - Rank 0 handles paths [0, base_chunk-1]
+    # - Rank 1 handles the next chunk, and so on.
+    # - The last rank additionally covers the remainder.
+    if rank < size - 1:
+        global_start = rank * base_chunk
+        global_end = global_start + local_n_sims
+    else:
+        global_start = rank * base_chunk
+        global_end = global_start + local_n_sims
+
+    local_mean = float(local_terminals.mean())
+    local_std = float(local_terminals.std())
+    local_updates = local_n_sims * n_steps
+
+    # Optional barrier for slightly more orderly printing (not required for correctness).
+    comm.Barrier()
+    print(
+        f"[MPI RANK {rank}] "
+        f"paths=[{global_start:,d}, {global_end - 1:,d}], "
+        f"local_n_sims={local_n_sims:,d}, "
+        f"mc_updates={local_updates:,d}, "
+        f"local_time={local_time:.4f}s, "
+        f"mean(S_T)={local_mean:.4f}, std(S_T)={local_std:.4f}"
+    )
+
+    # 4) Prepare local financial statistics for global aggregation on rank 0.
+    #
+    # We aggregate:
+    # - Count:       n
+    # - Sum:         sum(S_T)
+    # - Sum of sq.:  sum(S_T^2)
+    # - Min / Max:   min(S_T), max(S_T)
+    local_n = np.array([local_terminals.size], dtype="int64")
+    local_sum = np.array([local_terminals.sum()], dtype="float64")
+    local_sum_sq = np.array([(local_terminals ** 2).sum()], dtype="float64")
+    local_min = np.array([local_terminals.min()], dtype="float64")
+    local_max = np.array([local_terminals.max()], dtype="float64")
+
+    global_n = np.zeros_like(local_n)
+    global_sum = np.zeros_like(local_sum)
+    global_sum_sq = np.zeros_like(local_sum_sq)
+    global_min = np.zeros_like(local_min)
+    global_max = np.zeros_like(local_max)
+
+    # [HPC-MPI] Reduce local statistics to rank 0.
+    comm.Reduce(local_n, global_n, op=MPI.SUM, root=0)
+    comm.Reduce(local_sum, global_sum, op=MPI.SUM, root=0)
+    comm.Reduce(local_sum_sq, global_sum_sq, op=MPI.SUM, root=0)
+    comm.Reduce(local_min, global_min, op=MPI.MIN, root=0)
+    comm.Reduce(local_max, global_max, op=MPI.MAX, root=0)
+
+    # 5) Aggregate runtime: the effective parallel runtime is the maximum
+    #    local_time across all ranks.
     max_time = comm.reduce(local_time, op=MPI.MAX, root=0)
-    
-    if rank == 0: #the master rank check if the file exists and append the result to the file
+
+    # 6) On rank 0, compute the global financial distribution of S_T
+    #    and write the runtime benchmark to CSV as before.
+    if rank == 0:
+        # ---- 6.1 Global financial statistics for S_T ----
+        n = int(global_n[0])
+        mean_st = global_sum[0] / n
+        var_st = global_sum_sq[0] / n - mean_st ** 2
+        var_st = max(var_st, 0.0)  # Numerical guard against tiny negative values
+        std_st = float(np.sqrt(var_st))
+        min_st = float(global_min[0])
+        max_st = float(global_max[0])
+
+        total_updates = total_sims * n_steps  # Total MC updates across all ranks
+
+        print("\n[MPI MC FINANCIAL RESULT]")
+        print(f"  Horizon: {n_steps} months")
+        print(f"  Paths (total_sims): {total_sims:,d}")
+        print(
+            f"  Global workload: {total_sims:,d} paths × {n_steps} steps "
+            f"= {total_updates:,d} Monte Carlo updates"
+        )
+        print("  Model: S_{t+1} = S_t * (1 + r_t),  r_t = μ + σ_step * ε_t")
+        print(
+            f"         μ = {MU:.4f} per step, "
+            f"σ = {SIGMA:.4f} per year, "
+            f"steps_per_year = {STEPS_PER_YEAR}"
+        )
+        print("  Terminal price S_T distribution (across all ranks):")
+        print(f"    mean(S_T) = {mean_st:.4f}")
+        print(f"    std(S_T)  = {std_st:.4f}")
+        print(f"    min(S_T)  = {min_st:.4f}")
+        print(f"    max(S_T)  = {max_st:.4f}")
+        print("")
+
+        # ---- 6.2 Runtime benchmark result + CSV output ----
         csv_path = output_dir / "hpc_benchmark_mpi.csv"
         file_exists = csv_path.exists()
-        
-        # [HPC-MPI] Benchmark result: written once on rank 0 to
-        # results/step8/hpc_benchmark_mpi.csv
-        with open(csv_path, mode='a', newline='') as f:
+
+        # This preserves the original CSV schema:
+        # backend, mode, n_sims, n_steps, n_ranks, time_sec
+        with open(csv_path, mode="a", newline="") as f:
             writer = csv.writer(f)
             if not file_exists:
-                writer.writerow(["backend", "mode", "n_sims", "n_steps", "n_ranks", "time_sec"]) #write the header if the file does not exist
-            
-            writer.writerow(["mpi_python", "mpi_parallel", total_sims, n_steps, size, max_time]) #write the result to the file
-    
-    return max_time if rank == 0 else 0.0 #return the max time to the master rank
+                writer.writerow(
+                    ["backend", "mode", "n_sims", "n_steps", "n_ranks", "time_sec"]
+                )
+
+            writer.writerow(
+                ["mpi_python", "mpi_parallel", total_sims, n_steps, size, max_time]
+            )
+
+        print("[MPI MC RUNTIME]")
+        print(
+            f"  Effective parallel runtime (max rank time): {max_time:.4f} seconds"
+        )
+        print(f"  Results appended to: {csv_path}\n")
+
+    # Non-root ranks return 0.0 to keep the signature consistent.
+    return max_time if rank == 0 else 0.0
 
 def main():
     # Parse command line arguments
