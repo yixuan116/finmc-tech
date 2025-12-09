@@ -126,7 +126,7 @@ def run_single_mpi_benchmark(n_steps: int, total_sims: int, output_dir: Path) ->
     # are NOT included in the timing.
     comm.Barrier()
     t0 = MPI.Wtime()
-
+    
     # [HPC-MPI] Each rank simulates `local_n_sims` terminal prices for this horizon.
     local_terminals = run_mc_paths(
         local_n_sims, n_steps, MU, SIGMA, S0, STEPS_PER_YEAR
@@ -255,6 +255,43 @@ def run_single_mpi_benchmark(n_steps: int, total_sims: int, output_dir: Path) ->
     # Non-root ranks return 0.0 to keep the signature consistent.
     return max_time if rank == 0 else 0.0
 
+def print_total_hpc_comparison(mpi_total_time: float, n_ranks: int) -> None:
+    """
+    Print a total-runtime comparison table for all HPC backends.
+
+    The non-MPI numbers are hard-coded from the existing slide:
+    - NumPy total (4 horizons):          36.644 s
+    - OpenMP-C total (4 horizons):        6.088 s
+    - OpenMP-Horizon total (4 horizons):  1.189 s
+    - Numba total: approximately 1.2–1.3 s
+
+    Parameters
+    ----------
+    mpi_total_time : float
+        Sum of MPI runtimes across all horizons in this multi-horizon run.
+    n_ranks : int
+        Size of MPI_COMM_WORLD (number of ranks used in this MPI run).
+    """
+    NUMPY_TOTAL = 36.644
+    OMP_C_TOTAL = 6.088
+    OMP_H_TOTAL = 1.189
+    NUMBA_LOW = 1.2
+    NUMBA_HIGH = 1.3
+
+    print("\n[HPC TOTAL RUNTIME COMPARISON]")
+    print("  Total over horizons: 12m, 36m, 60m, 120m\n")
+    print(f"  NumPy (serial baseline):        {NUMPY_TOTAL:6.3f} s")
+    print(f"  OpenMP-C (path-parallel C):     {OMP_C_TOTAL:6.3f} s")
+    print(f"  OpenMP-Horizon (C):             {OMP_H_TOTAL:6.3f} s")
+    print(f"  Numba parallel (estimate):      ≈{NUMBA_LOW:.1f}–{NUMBA_HIGH:.1f} s")
+    print(f"  MPI Python (this run, {n_ranks} ranks): {mpi_total_time:6.3f} s")
+
+    if mpi_total_time > 0:
+        speedup_vs_numpy = NUMPY_TOTAL / mpi_total_time
+        print(f"\n  Speedup vs NumPy baseline: {speedup_vs_numpy:.1f}× faster")
+
+    print("")
+
 def main():
     # Parse command line arguments
     parser = argparse.ArgumentParser(
@@ -304,6 +341,8 @@ def main():
             print(f"Total Sims: {total_sims}")
             print(f"Horizons: {list(HORIZONS.keys())}\n")
         
+        mpi_total_time = 0.0
+
         for horizon_label, horizon_steps in HORIZONS.items(): #loop through all horizons
             if rank == 0: #start,only the master rank prints the progress
                 print(f"--- Running {horizon_label} ({horizon_steps} steps) ---")
@@ -311,11 +350,14 @@ def main():
             max_time = run_single_mpi_benchmark(horizon_steps, total_sims, output_dir) #run the benchmark for the current horizon
             
             if rank == 0: #end, only the master rank prints the result
+                mpi_total_time += max_time
                 print(f"✓ {horizon_label} finished in {max_time:.4f} seconds\n")
         
         if rank == 0:
             csv_path = output_dir / "hpc_benchmark_mpi.csv"
             print(f"All results appended to: {csv_path}")
+            # New: print total HPC comparison using slide numbers + MPI total
+            print_total_hpc_comparison(mpi_total_time, size)
     else:
         # Original single-horizon behavior
         if rank == 0:
