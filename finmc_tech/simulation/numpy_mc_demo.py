@@ -17,9 +17,9 @@ This file is a completely independent demo for presentation in PPT:
 import time
 import numpy as np
 
-# 1. Global configuration (direct, no import from scenario_mc)
+# 1. Global configuration
 N_SIMS = 1_000_000
-HORIZONS = [12, 36, 60, 120]  # months
+HORIZONS = [12, 36, 60, 120]  # 4 horizons: 12, 36, 60, 120 months
 
 S0 = 100.0
 MU_ANNUAL = 0.10      # 10% annual expected return
@@ -47,22 +47,22 @@ def run_numpy_baseline() -> None:
 
     t0 = time.perf_counter()
 
-    for horizon in HORIZONS:
+    for horizon in HORIZONS: # Outer loop: over horizon simulations
         # (1) Generate all shocks for current horizon, shape = (N_SIMS, horizon)
         shocks = rng.normal(0.0, 1.0, size=(N_SIMS, horizon))
 
         # (2) Run N_SIMS paths sequentially
         terminal = np.empty(N_SIMS, dtype=np.float64)
 
-        for i in range(N_SIMS):          # over simulations
+        for i in range(N_SIMS):          # Inner loop: i =1m
             price = S0
-            for t in range(horizon):     # over months
+            for t in range(horizon):     # Inner loop: t = (1,2,...120) months in each horizon
                 price *= (1.0 + MU_STEP + SIGMA_STEP * shocks[i, t])
                 total_updates += 1       # Exact update count
 
             terminal[i] = price
 
-        # (3) Summarize for each horizon (for PPT)
+        # (3) Summarize for each horizon
         mean_price = float(terminal.mean())
         p5, p50, p95 = np.percentile(terminal, [5, 50, 95])
         summaries[horizon] = (mean_price, p5, p50, p95)
@@ -76,7 +76,7 @@ def run_numpy_baseline() -> None:
         f"total_updates={total_updates} != expected={expected_updates}"
     )
 
-    # (4) Print demo results (terminal screenshot for PPT)
+    # (4) Print results
     print(f"\n[NumPy serial baseline]")
     print(f"  Paths        : {N_SIMS:,d}")
     print(f"  Horizons     : {HORIZONS} months")
