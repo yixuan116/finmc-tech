@@ -9,7 +9,6 @@ Numba-parallel Monte Carlo baseline for Step 8 HPC benchmark.
 This file mirrors numpy_mc_demo.py but replaces the
 serial double for-loop with a Numba-parallel kernel
 over simulation paths (prange).
-
 # Example: python -m finmc_tech.simulation.numba_mc_demo
 """
 
@@ -32,11 +31,11 @@ SIGMA_STEP = SIGMA_ANNUAL / np.sqrt(STEPS_PER_YEAR)
 RANDOM_SEED = 42
 
 # Runtime measured from numpy_mc_demo.py
-NUMPY_BASELINE_RUNTIME = 37.856  # seconds (based on your recent run)
+NUMPY_BASELINE_RUNTIME = 37.0  # seconds (approximate baseline)
 
 
 # === 2. Numba-parallel Monte Carlo kernel (path-level parallelism) ===
-@njit(parallel=True)
+@njit(parallel=True) # JIT compiles the Python loops into machine code
 def mc_numba_paths(
     S0: float,
     mu_step: float,
@@ -46,7 +45,6 @@ def mc_numba_paths(
 ) -> np.ndarray:
     """
     Numba-parallel Monte Carlo kernel:
-
     - Parallel over simulation paths (prange over n_sims)
     - Each thread walks one full path over `horizon_steps` months
     - Same arithmetic return model as numpy_mc_demo.py:
