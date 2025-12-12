@@ -18,13 +18,14 @@ Furthermore, the simulation engine, optimized via Numba, MPI, and OpenMP, demons
 
 ## 1. Introduction
 
-The technology sector, particularly semiconductor leaders like NVDA, exhibits unique volatility characteristics driven by innovation cycles and macroeconomic shifts. 
+Financial market analysis xxxxx (add this!!!!)
+The technology sector, particularly semiconductor leaders like Nvida, exhibits unique volatility characteristics driven by innovation cycles and macroeconomic shifts. 
 
 Traditional financial models often struggle to capture the non-linear interactions between firm fundamentals and macro factors across different time horizons. 这句再想的高级一点
 
 This paper addresses this by:
 1.  Constructing a high-dimensional feature space ($\mathbb{R}^{75}$) — comprising fundamental, macro, and interaction features — to drive Random Forest (RF) regression and Monte Carlo (MC) simulations.
-2.  Implementing a "Champion Model" selection process to identify the optimal estimator for short, mid, and long-term investment horizons.
+2.  Implementing a "Champion Model" selection process to identify the optimal drivers for short, middle, and long-term investment horizons.
 3.  Deploying a multi-level HPC architecture (integrating Numba JIT, MPI clustering, and OpenMP) to simulate future price paths under extreme scenarios.
 
 ---
@@ -76,7 +77,7 @@ Based on out-of-sample $R^2$ performance, **Random Forest** was selected as the 
 | **5Y**  | RandomForest   | -5.17      | 0.47| 0.51 | Robust long-term trend detection |
 | **10Y** | NeuralNetwork  | -30.17     | 1.14| 1.47 | Highest volatility (sparse data) |
 
-*Note: Negative $R^2$ in financial time-series forecasting indicates high regime-shift volatility in the test set (2020-2022) compared to the training mean, a common challenge in crash periods.*
+*Note: Negative R² in financial time-series forecasting indicates high regime-shift volatility in the test set (2020-2022) compared to the training mean, a common challenge in crash periods.*
 
 ---
 
@@ -544,6 +545,19 @@ This period represents a **new economic regime**.
 
 The model must demonstrate it can generalize from historical + transition regimes to an unprecedented AI-driven cycle.
 
+
+### **Industry Regime Timeline & Train/Test Splits**
+
+The model evaluation respects the structural breaks in NVIDIA's history by enforcing strict time-based splits for each forecasting horizon. This ensures that models are tested on "future" regimes that they have not seen during training.
+
+| Horizon | Training Period (End Date) | Testing Period (Start Date) | Gap (Validation/Leakage Prevention) |
+|:-------:|:--------------------------:|:---------------------------:|:-----------------------------------:|
+| **1Y**  | < 2020-12-31               | > 2022-12-31                | 2 Years (2021-2022)                 |
+| **3Y**  | < 2018-12-31               | > 2020-12-31                | 2 Years (2019-2020)                 |
+| **5Y**  | < 2016-12-31               | > 2018-12-31                | 2 Years (2017-2018)                 |
+| **10Y** | < 2012-12-31               | > 2014-12-31                | 2 Years (2013-2014)                 |
+
+*Note: A 2-year gap is enforced between training and testing windows to ensure strict out-of-sample evaluation and prevent look-ahead bias.*
 
 ### Methodology: Multi-Model Comparison Pipeline
 
