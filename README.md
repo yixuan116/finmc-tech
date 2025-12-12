@@ -32,15 +32,26 @@ This paper addresses this by:
 ## 2. Mathematical Foundation
 
 ### 2.1 Horizon Definitions
-We define the forecasting target $y_h(t)$ as the cumulative return over horizon $h$. Let $price_t$ be the quarterly adjusted close price:
+Stock price forecasting spans two dimensions — the drivers of returns and the horizons over which they evolve.
 
-$$y_h(t) = \frac{price_{t+q_h}}{price_t} - 1$$
+$$r_{t+1}^{(h)} = \mu_{step}^{(h)} + S_t^{(h)} + \epsilon_t^{(h)}$$
 
-Where $q_h$ represents the number of quarters:
-*   **1Y (Short-term):** $q=4$
-*   **3Y (Mid-term):** $q=12$
-*   **5Y (Long-term):** $q=20$
-*   **10Y (Ultra-long):** $q=40$
+In my model, I tested prices based on horizons (1y, 3y, 5y, 10y, 12 / 36 / 60 / 120 months, total 228 months).
+The price updates in each month:
+
+$$S_{t+1} = S_t \cdot (1 + r_{t+1}^{(h)})$$
+
+**1. Deterministic function output:** Calculate the monthly returns by horizon
+
+$$\hat{\mu}_t = f_h(X_{\text{firm}}, X_{\text{macro}}, X_{\text{interact}})$$
+
+**2. Scenarios & Residuals**
+
+$$S_t = w_{\text{Macro}}\epsilon_{M,t} + w_{\text{Firm}}\epsilon_{F,t} + w_{\text{Interaction}}\epsilon_{I,t}$$
+
+**Overall:** monthly returns are real-valued (continuous), each month corresponds to one dimension in $\mathbb{R}$. The theoretical state space **228 months** is $\mathbb{R}^{228}$, "exhaust all possibilities" is impossible.
+
+So, we use **Monte Carlo** to simulate the price evolution across all horizons, **1M simulations** to obtain a sufficiently rich approximation while keeping the workload computationally tractable.
 
 ### 2.2 Feature Space ($\mathbb{R}^{75}$)
 The model input $\mathbf{X}_t$ is composed of three distinct vectors:
