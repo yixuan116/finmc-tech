@@ -1,4 +1,4 @@
-# FinMC-Tech: Integrated ML & HPC Risk Modeling Framework for NVDA
+# FinMC-Tech: Integrated ML & HPC Risk Modeling Framework for NVDA 还要改！
 
 **Date:** December 12, 2025 | **Repository:** finmc-tech
 
@@ -6,18 +6,26 @@
 
 ## Abstract
 
-This technical report presents **FinMC-Tech**, a comprehensive financial modeling system designed to analyze and forecast the volatility of NVIDIA Corp (NVDA). The system integrates a robust machine learning pipeline for multi-horizon return forecasting (1Y, 3Y, 5Y, 10Y) with a high-performance Monte Carlo simulation engine. By leveraging firm-level data, macroeconomic indicators, and interaction terms, the Champion Model (Random Forest) achieves significant predictive stability. Furthermore, the simulation engine, optimized via Numba, MPI, and OpenMP, demonstrates the capability to scale to millions of simulation paths for rigorous risk assessment (VaR, CVaR).
+This technical report presents **FinMC-Tech**, 
+a comprehensive financial modeling system designed to analyze and forecast the volatility of NVIDIA Corp (NVDA). 不够，但是先不动，最后再说
+The system integrates a robust machine learning pipeline for multi-horizon return forecasting (1Y, 3Y, 5Y, 10Y) with a high-performance Monte Carlo simulation engine. 
+
+By leveraging firm-level data, macroeconomic indicators, and interaction terms, the Champion Model (Random Forest) achieves significant predictive stability. 
+
+Furthermore, the simulation engine, optimized via Numba, MPI, and OpenMP, demonstrates the capability to scale to millions of simulation paths for rigorous risk assessment (VaR, CVaR). 确定一下有用这些变量么？？？？
 
 ---
 
 ## 1. Introduction
 
-The technology sector, particularly semiconductor leaders like NVDA, exhibits unique volatility characteristics driven by innovation cycles and macroeconomic shifts. Traditional financial models often struggle to capture the non-linear interactions between firm fundamentals and macro factors across different time horizons.
+The technology sector, particularly semiconductor leaders like NVDA, exhibits unique volatility characteristics driven by innovation cycles and macroeconomic shifts. 
 
-**FinMC-Tech** addresses this by:
-1.  Constructing a high-dimensional feature space ($\mathbb{R}^{75}$) combining SEC filings, macro indicators, and cross-terms.
-2.  Implementing a "Champion Model" selection process to identify the optimal estimator for different investment horizons.
-3.  Deploying a tiered HPC architecture to simulate future price paths under extreme scenarios.
+Traditional financial models often struggle to capture the non-linear interactions between firm fundamentals and macro factors across different time horizons. 这句再想的高级一点
+
+This paper addresses this by:
+1.  Constructing a high-dimensional feature space ($\mathbb{R}^{75}$) — comprising fundamental, macro, and interaction features — to drive Random Forest (RF) regression and Monte Carlo (MC) simulations.
+2.  Implementing a "Champion Model" selection process to identify the optimal estimator for short, mid, and long-term investment horizons.
+3.  Deploying a multi-level HPC architecture (integrating Numba JIT, MPI clustering, and OpenMP) to simulate future price paths under extreme scenarios.
 
 ---
 
