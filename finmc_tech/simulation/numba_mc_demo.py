@@ -60,9 +60,9 @@ def mc_numba_paths(
     paths = np.zeros((n_sims, horizon_steps + 1))
     paths[:, 0] = S0
 
-    for i in prange(n_sims):  # data-parallel over paths
+    for i in prange(n_sims):  # outer loop: by sims 
         price = S0
-        for t in range(horizon_steps):
+        for t in range(horizon_steps): # inner loop: by months
             eps = np.random.normal()
             r_t = mu_step + sigma_step * eps
             # Optional: simplistic crash protection mirroring some logic, 
