@@ -1,7 +1,6 @@
-# FinMC-Tech: A High-Performance Multi-Horizon Risk Modeling Framework for NVDA
+# FinMC-Tech: Integrated ML & HPC Risk Modeling Framework for NVDA
 
-**Date:** December 12, 2025  
-**Repository:** finmc-tech
+**Date:** December 12, 2025 | **Repository:** finmc-tech
 
 ---
 
