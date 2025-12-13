@@ -466,6 +466,26 @@ def plot_unified_results(results_df: pd.DataFrame, output_dir: Path):
     plt.close()
     logger.info(f"Saved: {path}")
 
+    # 3. Test Set Plot (Nonlinear Only) - NEW
+    plt.figure(figsize=(10, 6))
+    test_subset = results_df[results_df['model'].isin(main_models)].copy()
+    # Remove horizons where Test R2 is all NaN
+    valid_horizons = test_subset.groupby('horizon')['r2_oos_test'].apply(lambda x: x.notna().any())
+    test_subset = test_subset[test_subset['horizon'].isin(valid_horizons[valid_horizons].index)]
+    
+    if not test_subset.empty:
+        sns.barplot(data=test_subset, x='horizon', y='r2_oos_test', hue='model', palette='magma')
+        plt.title('Test R² (Out-of-Sample) by Horizon\n(Ex Post Evaluation: 2023+)', fontsize=14, fontweight='bold')
+        plt.ylabel('Test R²_OOS', fontsize=12)
+        plt.xlabel('Horizon', fontsize=12)
+        plt.grid(axis='y', alpha=0.3)
+        plt.axhline(0, color='black', linestyle='--', linewidth=1)
+        
+        path = output_dir / 'unified_test_r2_oos_nonlinear.png'
+        plt.savefig(path, dpi=300, bbox_inches='tight')
+        plt.close()
+        logger.info(f"Saved: {path}")
+
 
 # =============================================
 # Main Function
@@ -516,6 +536,11 @@ def main():
     cols = [c for c in ['1Y', '3Y', '5Y', '10Y'] if c in val_r2_matrix.columns]
     val_r2_matrix = val_r2_matrix[cols]
     val_r2_matrix.to_csv(results_dir / 'table_val_r2_oos_matrix.csv')
+    
+    # Table A.2: Test R2 Matrix (Ex Post Evaluation)
+    test_r2_matrix = results_df.pivot(index='model', columns='horizon', values='r2_oos_test')
+    test_r2_matrix = test_r2_matrix[cols] if not test_r2_matrix.empty else test_r2_matrix
+    test_r2_matrix.to_csv(results_dir / 'table_test_r2_oos_matrix.csv')
     
     # Table B: Validation MAE Matrix
     val_mae_matrix = results_df.pivot(index='model', columns='horizon', values='mae_val')
