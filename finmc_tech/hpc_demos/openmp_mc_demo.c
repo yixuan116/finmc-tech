@@ -36,9 +36,9 @@
 // Default parameters matching project defaults
 #define DEFAULT_N_SIMS 1000000
 #define DEFAULT_N_STEPS 12
-#define MU 0.01
-#define SIGMA 0.40
-#define S0 100.0
+#define MU 0.40
+#define SIGMA 0.55
+#define S0 191.48
 #define STEPS_PER_YEAR 12  // Monthly steps
 
 // Multi-horizon configuration

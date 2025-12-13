@@ -35,9 +35,9 @@ import argparse
 # Default parameters
 TOTAL_SIMS = 1000000  # 1M sims for benchmark comparability
 DEFAULT_N_STEPS = 12  # 12 months (1Y)
-MU = 0.01
-SIGMA = 0.40
-S0 = 100.0
+MU = 0.40  # Conservative drift (approx to scenario 3Y)
+SIGMA = 0.55 # Latest estimated volatility from scenario_mc.py
+S0 = 191.48     # Latest NVDA price (2025-10-27)
 STEPS_PER_YEAR = 12  # Monthly steps
 
 # Multi-horizon configuration

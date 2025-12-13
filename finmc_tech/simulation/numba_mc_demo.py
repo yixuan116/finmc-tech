@@ -20,9 +20,9 @@ from numba import njit, prange
 N_SIMS = 1_000_000
 HORIZONS = [12, 36, 60, 120]  # months
 
-S0 = 100.0
-MU_ANNUAL = 0.10
-SIGMA_ANNUAL = 0.40
+S0 = 191.48     # Latest NVDA price (2025-10-27)
+MU_ANNUAL = 0.40  # Conservative drift (approx to scenario 3Y)
+SIGMA_ANNUAL = 0.55 # Latest estimated volatility from scenario_mc.py
 STEPS_PER_YEAR = 12
 
 MU_STEP = MU_ANNUAL / STEPS_PER_YEAR
