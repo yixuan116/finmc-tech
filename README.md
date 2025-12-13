@@ -175,31 +175,6 @@ This table maps the 4 phases and 8 steps of the analysis pipeline to their corre
 
 *(Note: Test targets for 3Y/5Y/10Y are physically impossible to observe in 2025)*
 
-### Quick Reference
-
-**To run Step 1-4 (full training pipeline):**
-```bash
-python train_models.py
-```
-
-**To run Step 5 (key drivers analysis):**
-```bash
-python -m finmc_tech.cli step5
-# or directly:
-python src/step5_key_drivers_short.py
-```
-
-**Step 6** and **Step 7** are documentation only and do not require code execution.
-
-**To run Step 8 (scenario forecasting):**
-```bash
-python -m finmc_tech.cli simulate-scenarios --ticker NVDA --h 12 --n 500
-# or directly:
-python finmc_tech/simulation/scenario_mc.py --ticker NVDA --h 12 --n 500
-```
-
-
-
 ---
 
 ## Results
