@@ -48,7 +48,7 @@ DEFAULT_DATA_PATHS = [
 ]
 DEFAULT_MODEL_PATH = "models/champion_model.pkl"
 DEFAULT_SCALER_PATH = "models/feature_scaler.pkl"
-DEFAULT_N_SIMS = 100000 # simulations paths
+DEFAULT_N_SIMS = 1000000 # simulations paths
 DEFAULT_HORIZON_MONTHS = 12
 RANDOM_STATE = 42
 

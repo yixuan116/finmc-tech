@@ -129,7 +129,7 @@ This table maps the 4 phases and 8 steps of the analysis pipeline to their corre
 | Phase | Step | Description | Main Implementation File(s) | Key Output |
 |:-----:|:----:|:------------|:---------------------------|:-----------|
 | **A. Data & Features** | **1** | Data Engineering | `src/data/create_nvda_revenue_features.py` | Cleaned data with basic financial metrics |
-| | **2** | Feature Engineering | `src/data/create_extended_features.py`<br>`scripts/add_cash_flow_features_v2.py` | `nvda_features_extended_v2.csv`<br>(Firm × Macro × Interaction) |
+| | **2** | Feature Engineering | `src/data/create_extended_features.py` (Called by Step 1)<br>`scripts/add_cash_flow_features_v2.py`<br>**Run:** `python scripts/add_cash_flow_features_v2.py` | `nvda_features_extended_v2.csv`<br>(Firm × Macro × Interaction) |
 | **B. Model Training & Selection** | **3** | Model Training | `train_models.py` | Trained models (RF, XGB, Linear, Ridge, NN) |
 | | **4** | Champion Model Selection | `scripts/unified_model_evaluation.py` | Selection of Best Model per Horizon<br>(1Y/10Y=XGB, 3Y/5Y=RF) |
 | **C. Drivers & Interpretation** | **5** | All Horizons Feature Importance | `scripts/generate_topk_feature_heatmaps.py`<br>`scripts/three_category_feature_importance.py`<br><br>**Run:** `python scripts/generate_topk_feature_heatmaps.py`<br>**Run:** `python scripts/three_category_feature_importance.py` | Top-K Heatmaps (`rf_top20_feature_matrix_paper.png`)<br>Category Heatmaps (`importance_categories_rf_3cat.png`)<br>Rankings CSV (`rf_top20_matrix.csv`)<br>(Source: `nvda_features_extended_v2.csv`) |
