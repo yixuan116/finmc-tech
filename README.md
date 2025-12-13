@@ -128,7 +128,7 @@ This table maps the 4 phases and 8 steps of the analysis pipeline to their corre
 
 | Phase | Step | Description | Main Implementation File(s) | Key Output |
 |:-----:|:----:|:------------|:---------------------------|:-----------|
-| **A. Data & Features** | **1** | Data Engineering | `src/data/create_nvda_revenue_features.py`<br>**Run:** `python3 src/data/create_nvda_revenue_features.py` | `nvda_revenue_features.csv`<br>(Basic Cleaned Data)<br>Source: `yfinance`, `NVDA_revenue.csv` |
+| **A. Data & Features** | **1** | Data Engineering | `src/data/create_nvda_revenue_features.py`<br>**Run:** `python3 src/data/create_nvda_revenue_features.py`<br>**Source:** `yfinance` (Price), `NVDA_revenue.csv` (Firm), `yfinance` (`^TNX`, `^VIX`, `SPY`) | `nvda_revenue_features.csv`<br>(Basic Cleaned Data) |
 | | **2** | Feature Engineering | `src/data/create_extended_features.py` (Called by Step 1)<br>`scripts/add_cash_flow_features_v2.py`<br>**Run:** `python3 scripts/add_cash_flow_features_v2.py` | `nvda_features_extended_v2.csv`<br>(Firm × Macro × Interaction)<br>Source: `nvda_revenue_features.csv`, `nvda_firm_fundamentals_master.json` (PDF/XBRL parsed) |
 | **B. Model Training & Selection** | **3** | Model Training | `train_models.py` | Trained models (RF, XGB, Linear, Ridge, NN) |
 | | **4** | Champion Model Selection | `scripts/unified_model_evaluation.py` | Selection of Best Model per Horizon<br>(1Y/10Y=XGB, 3Y/5Y=RF) |
