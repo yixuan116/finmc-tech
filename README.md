@@ -131,11 +131,35 @@ This table maps the 4 phases and 8 steps of the analysis pipeline to their corre
 | **A. Data & Features** | **1** | Data Engineering | `src/data/create_nvda_revenue_features.py`<br>**Run:** `python3 src/data/create_nvda_revenue_features.py`<br>**Source:** `yfinance` (Price), `NVDA_revenue.csv` (Firm), `yfinance` (`^TNX`, `^VIX`, `SPY`) | `nvda_revenue_features.csv`<br>(Data Engineering & Initial Features) |
 | | **2** | Feature Engineering | `scripts/add_cash_flow_features_v2.py` (Calls `src/data/create_extended_features.py`)<br>**Run:** `python3 scripts/add_cash_flow_features_v2.py` | `nvda_features_extended_v2.csv`<br>(**Final V2 Features**: Injects Cash Flow & Refines Interactions)<br>**Source:** `nvda_revenue_features.csv`, `nvda_firm_fundamentals_master.json` (PDF/XBRL parsed) |
 | **B. Model Training & Selection** | **3** | Model Training | `train_models.py`<br>**Run:** `python3 train_models.py` | **Files:** `models/champion_model.pkl`, `models/feature_scaler.pkl`<br>**Outcome:** 5 model families trained on Pre-2021 data (Validation 21-22) with standard hyperparameter grid. |
-| | **4** | Champion Model Selection | `scripts/unified_model_evaluation.py`<br>`compare_nvda_amd.py` (Robustness Check)<br><br>**Run:** `python3 scripts/unified_model_evaluation.py`<br>**Run:** `python3 compare_nvda_amd.py` | **Files:** `unified_model_comparison.csv`, `unified_model_comparison_r2.png`, `amd_performance.csv`<br>**Outcome:** Champion Models selected per horizon (e.g., RF for 3Y) & **AMD Robustness Check** (RF confirmed as sector-wide champion). |
+| | **4** | Champion Model Selection | `scripts/unified_model_evaluation.py`<br>`compare_nvda_amd.py` (Robustness Check)<br><br>**Run:** `python3 scripts/unified_model_evaluation.py`<br>**Run:** `python3 compare_nvda_amd.py` | **Files:** `table_champion_summary.csv`, `table_val_r2_oos_matrix.csv`, `unified_val_r2_oos_nonlinear.png`<br>**Outcome:** 1. Champion Selection (RF wins 3Y with R²=0.68).<br>2. AMD Robustness Check. |
 | **C. Drivers & Interpretation** | **5** | All Horizons Feature Importance | `scripts/generate_topk_feature_heatmaps.py`<br>`scripts/three_category_feature_importance.py`<br><br>**Run:** `python3 scripts/generate_topk_feature_heatmaps.py`<br>**Run:** `python3 scripts/three_category_feature_importance.py` | Top-K Heatmaps (`rf_top20_feature_matrix_paper.png`)<br>Category Heatmaps (`importance_categories_rf_3cat.png`)<br>Rankings CSV (`rf_top20_matrix.csv`)<br>(Source: `nvda_features_extended_v2.csv`) |
 | | **6** | Economic Interpretation | `README.md` (Analysis Section) | Narrative: "Short-term=Macro, Mid-term=Firm, Long-term=Regime" |
 | **D. Scenarios & Simulations** | **7** | Scenario-Based Monte Carlo | `finmc_tech/simulation/scenario_mc.py` | Fan Charts (`ROOT_MC_FAN_COMBINED.png`)<br>Terminal Distributions |
 | | **8** | Performance Optimization (HPC) | `finmc_tech/simulation/numba_mc_demo.py`<br>`finmc_tech/hpc_demos/mpi_mc_demo.py` | HPC Benchmarks (NumPy vs Numba/MPI/OpenMP) |
+
+### Pipeline Results Snapshot (from Step 4)
+
+**Table 1: Validation R² Matrix (OOS Benchmark)**
+*Out-of-Sample R² on Validation Set (2021-2022). Positive values indicate predictive power superior to the historical mean.*
+
+| Model | 1Y | 3Y | 5Y | 10Y |
+| :--- | :--- | :--- | :--- | :--- |
+| **RandomForest** | -0.53 | **0.68** | - | - |
+| **XGBoost** | -0.61 | 0.56 | - | - |
+| **NeuralNetwork** | **-0.51** | -3.04 | - | - |
+| **Ridge** | -16.60 | -1.84 | - | - |
+| **ElasticNet** | -3.95 | -25.93 | - | - |
+| **Linear** | -202.77 | -181.17 | - | - |
+
+*(Note: 5Y and 10Y horizons lack sufficient validation samples in the 2021-2022 window due to target availability)*
+
+**Table 2: Champion Model Summary**
+*Selected based on highest Validation R².*
+
+| Horizon | Champion Model | Validation R² | Test R² (Ex Post) | Samples (Train/Val/Test) |
+| :--- | :--- | :--- | :--- | :--- |
+| **1Y** | NeuralNetwork | -0.51 | -4.01 | 49 / 8 / 8 |
+| **3Y** | **RandomForest** | **0.68** | N/A | 49 / 8 / 0 |
 
 ### Quick Reference
 

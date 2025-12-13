@@ -1,30 +1,28 @@
 """
-Unified Model Evaluation: Consistent Evaluation Across All Horizons
+Unified Model Evaluation: Publication-Grade Protocol (Gu, Kelly, Xiu 2020)
 
-This script evaluates all models (Linear, Ridge, ElasticNet, RandomForest, XGBoost, NeuralNetwork)
-across all horizons (1Y, 3Y, 5Y, 10Y) using the SAME evaluation criteria:
-- Same time-based split (train < 2020, val 2020-2022, test > 2022)
-- Same model configurations
-- Same metrics (MAE, RMSE, R²)
-- Same feature preprocessing
+This script implements a rigorous Train/Validation/Test protocol:
+1. TRAIN (<= 2020): Parameter estimation
+2. VALIDATION (2021-2022): Hyperparameter tuning & Champion Model Selection
+3. TEST (>= 2023): Ex post performance reporting (not used for selection)
 
-This allows fair comparison and identifies the true champion model.
+Metrics:
+- R²_OOS: Computed relative to the TRAINING set mean (benchmark).
 """
 
 import argparse
 import logging
 import sys
 from pathlib import Path
-from typing import Dict, List, Tuple
+from typing import Dict, List, Tuple, Optional
 
-import joblib
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import seaborn as sns
 from sklearn.ensemble import RandomForestRegressor
 from sklearn.linear_model import ElasticNet, LinearRegression, Ridge
-from sklearn.metrics import mean_absolute_error, mean_squared_error, r2_score
+from sklearn.metrics import mean_absolute_error, mean_squared_error
 from sklearn.neural_network import MLPRegressor
 from sklearn.preprocessing import StandardScaler
 import xgboost as xgb
@@ -33,8 +31,7 @@ import xgboost as xgb
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from scripts.three_category_feature_importance import (
-    load_features, create_target_variables, prepare_features,
-    classify_feature
+    load_features, create_target_variables, prepare_features
 )
 
 logging.basicConfig(
@@ -45,6 +42,34 @@ logger = logging.getLogger(__name__)
 
 
 # =============================================
+# Code Task 2: Define Out-of-Sample R²
+# =============================================
+
+def calculate_oos_r2(y_true: np.ndarray, y_pred: np.ndarray, y_train: np.ndarray) -> float:
+    """
+    Compute Out-of-Sample R² relative to the Training Mean benchmark.
+    
+    R²_OOS = 1 - (SSE / SST)
+    where:
+      SSE = sum((y_true - y_pred)²)
+      SST = sum((y_true - mean(y_train))²)
+      
+    This penalizes models that perform worse than the historical historical mean.
+    """
+    if len(y_true) == 0:
+        return np.nan
+        
+    y_train_mean = np.mean(y_train)
+    sse = np.sum((y_true - y_pred)**2)
+    sst = np.sum((y_true - y_train_mean)**2)
+    
+    if sst == 0:
+        return 0.0
+        
+    return 1 - (sse / sst)
+
+
+# =============================================
 # (1) Data Loading & Preparation
 # =============================================
 
@@ -52,18 +77,11 @@ def load_and_prepare_data(
     csv_path: str,
     date_column: str = None
 ) -> Tuple[pd.DataFrame, pd.DataFrame, List[str]]:
-    """
-    Load features and prepare target variables.
-    
-    Returns:
-        df: Full dataframe with features and targets
-        X: Feature matrix
-        feature_cols: List of feature column names
-    """
+    """Load features and prepare target variables."""
     logger.info(f"Loading features from {csv_path}")
     df = load_features(Path(csv_path))
     
-    # Create target variables (1Y, 3Y, 5Y, 10Y)
+    # Create target variables
     horizon_quarters = {
         '1y': 4,
         '3y': 12,
@@ -80,7 +98,7 @@ def load_and_prepare_data(
         if col not in df.columns:
             df[col] = X[col]
     
-    # Auto-detect date column if not provided
+    # Auto-detect date column
     if date_column is None:
         date_candidates = ['date', 'Date', 'px_date', 'period_end', 'timestamp']
         for col in date_candidates:
@@ -92,20 +110,14 @@ def load_and_prepare_data(
         df[date_column] = pd.to_datetime(df[date_column])
         df = df.sort_values(date_column).set_index(date_column)
     else:
-        logger.warning("No date column found, using integer index")
-        df.index = pd.RangeIndex(len(df))
-    
-    logger.info(f"Loaded {len(df)} rows, {len(feature_cols)} features")
-    logger.info(f"Target variables: ret_1y ({df['ret_1y'].notna().sum()} non-null), "
-                f"ret_3y ({df['ret_3y'].notna().sum()} non-null), "
-                f"ret_5y ({df['ret_5y'].notna().sum()} non-null), "
-                f"ret_10y ({df['ret_10y'].notna().sum()} non-null)")
+        # Code Task 1 Requirement: Must be DatetimeIndex
+        raise ValueError("Publication protocol requires a strict DatetimeIndex for temporal splitting.")
     
     return df, X, feature_cols
 
 
 # =============================================
-# (2) Time-Based Split (Same as train_models.py)
+# Code Task 1: Time-Based Split Refactor
 # =============================================
 
 def time_based_split(
@@ -114,90 +126,82 @@ def time_based_split(
     target_col: str
 ) -> Tuple[pd.DataFrame, pd.Series, pd.DataFrame, pd.Series, pd.DataFrame, pd.Series]:
     """
-    Split data using adaptive time-based split:
-    - For 1Y: Train < 2020-12-31, Test > 2022-12-31 (same as train_models.py)
-    - For 3Y+: Use earlier test split to ensure test set has data
+    Implement strict calendar-based Train/Validation/Test split.
+    
+    Windows:
+    - TRAIN:      <= 2020-12-31
+    - VALIDATION: 2021-01-01 to 2022-12-31
+    - TEST:       >= 2023-01-01
     """
-    # Determine horizon from target column
-    if '1y' in target_col.lower():
-        train_end = pd.Timestamp("2020-12-31")
-        test_start = pd.Timestamp("2022-12-31")
-    elif '3y' in target_col.lower():
-        train_end = pd.Timestamp("2018-12-31")
-        test_start = pd.Timestamp("2020-12-31")
-    elif '5y' in target_col.lower():
-        train_end = pd.Timestamp("2016-12-31")
-        test_start = pd.Timestamp("2018-12-31")
-    elif '10y' in target_col.lower():
-        train_end = pd.Timestamp("2012-12-31")
-        test_start = pd.Timestamp("2014-12-31")
+    if not isinstance(df.index, pd.DatetimeIndex):
+        raise ValueError("DataFrame index must be DatetimeIndex")
+
+    # Define fixed windows
+    TRAIN_END = pd.Timestamp("2020-12-31")
+    VAL_START = pd.Timestamp("2021-01-01")
+    VAL_END = pd.Timestamp("2022-12-31")
+    TEST_START = pd.Timestamp("2023-01-01")
+
+    # Base masks
+    train_mask = df.index <= TRAIN_END
+    val_mask = (df.index >= VAL_START) & (df.index <= VAL_END)
+    test_mask = df.index >= TEST_START
+
+    # Apply target availability filter
+    # (Horizon dependence comes ONLY from whether the target exists)
+    has_target = df[target_col].notna()
+    
+    train_df = df[train_mask & has_target].copy()
+    val_df = df[val_mask & has_target].copy()
+    test_df = df[test_mask & has_target].copy()
+
+    # Logging split info
+    logger.info(f"  TRAIN : {len(train_df)} samples "
+                f"({train_df.index.min().date()} to {train_df.index.max().date()})")
+    
+    if len(val_df) > 0:
+        logger.info(f"  VAL   : {len(val_df)} samples "
+                    f"({val_df.index.min().date()} to {val_df.index.max().date()})")
     else:
-        # Default: use 80/20 split
-        train_end = None
-        test_start = None
-    
-    if isinstance(df.index, pd.DatetimeIndex) and train_end is not None:
-        train_mask = df.index < train_end + pd.Timedelta(days=1)
-        test_mask = df.index > test_start
-        val_mask = pd.Series([False] * len(df), index=df.index)  # No validation set for simplicity
+        logger.warning("  VAL   : 0 samples (Targets not available for this horizon in 2021-2022)")
+
+    if len(test_df) > 0:
+        logger.info(f"  TEST  : {len(test_df)} samples "
+                    f"({test_df.index.min().date()} to {test_df.index.max().date()})")
     else:
-        # Fallback: use 80/20 split if no datetime index or no specific dates
-        split_idx = int(len(df) * 0.8)
-        train_mask = pd.Series([True] * split_idx + [False] * (len(df) - split_idx), index=df.index)
-        val_mask = pd.Series([False] * len(df), index=df.index)
-        test_mask = ~train_mask
-        logger.warning("No datetime index found or no specific dates, using 80/20 split instead")
+        logger.warning("  TEST  : 0 samples (Targets not available for this horizon >= 2023)")
+
+    # Separate X and y
+    X_train = train_df[feature_cols]
+    y_train = train_df[target_col]
     
-    # Filter valid rows (non-null target)
-    train_df = df[train_mask & df[target_col].notna()].copy()
-    val_df = df[val_mask & df[target_col].notna()].copy()
-    test_df = df[test_mask & df[target_col].notna()].copy()
+    X_val = val_df[feature_cols] if not val_df.empty else pd.DataFrame(columns=feature_cols)
+    y_val = val_df[target_col] if not val_df.empty else pd.Series(dtype=float)
     
-    # If test set is empty, fall back to 80/20 split
-    if len(test_df) == 0:
-        logger.warning(f"Test set empty for {target_col}, falling back to 80/20 split")
-        split_idx = int(len(df) * 0.8)
-        train_mask = pd.Series([True] * split_idx + [False] * (len(df) - split_idx), index=df.index)
-        test_mask = ~train_mask
-        train_df = df[train_mask & df[target_col].notna()].copy()
-        test_df = df[test_mask & df[target_col].notna()].copy()
-        val_df = pd.DataFrame(columns=feature_cols)
-    
-    if len(train_df) == 0 or len(test_df) == 0:
-        raise ValueError(f"Time split failed for {target_col}. Train: {len(train_df)}, Test: {len(test_df)}")
-    
-    X_train = train_df[feature_cols].copy()
-    y_train = train_df[target_col].copy()
-    X_val = val_df[feature_cols].copy() if len(val_df) > 0 else pd.DataFrame(columns=feature_cols)
-    y_val = val_df[target_col].copy() if len(val_df) > 0 else pd.Series(dtype=float)
-    X_test = test_df[feature_cols].copy()
-    y_test = test_df[target_col].copy()
-    
-    logger.info(f"Split sizes for {target_col}: Train={len(X_train)}, Val={len(X_val)}, Test={len(X_test)}")
-    
+    X_test = test_df[feature_cols] if not test_df.empty else pd.DataFrame(columns=feature_cols)
+    y_test = test_df[target_col] if not test_df.empty else pd.Series(dtype=float)
+
     return X_train, y_train, X_val, y_val, X_test, y_test
 
 
 # =============================================
-# (3) Model Definitions (Same Configurations)
+# (3) Model Definitions
 # =============================================
 
 def get_models():
-    """
-    Return models with same configurations as train_models.py and champion_model_comparison.py.
-    """
+    """Return models with standard configurations."""
     models = {
         'Linear': LinearRegression(),
         'Ridge': Ridge(alpha=1.0, random_state=42),
         'ElasticNet': ElasticNet(alpha=0.1, l1_ratio=0.5, random_state=42, max_iter=1000),
         'RandomForest': RandomForestRegressor(
-            n_estimators=500,  # Same as train_models.py
-            max_depth=None,     # Same as train_models.py
+            n_estimators=500,
+            max_depth=None,
             random_state=42,
             n_jobs=-1
         ),
         'XGBoost': xgb.XGBRegressor(
-            n_estimators=500,   # Same as train_models.py
+            n_estimators=500,
             learning_rate=0.05,
             max_depth=5,
             subsample=0.8,
@@ -223,51 +227,67 @@ def get_models():
 
 
 # =============================================
-# (4) Evaluation Function
+# Code Task 3: Dual-Split Evaluation
 # =============================================
 
 def evaluate_model(
     model,
     X_train: pd.DataFrame,
     y_train: pd.Series,
+    X_val: pd.DataFrame,
+    y_val: pd.Series,
     X_test: pd.DataFrame,
     y_test: pd.Series,
-    model_name: str = None,
-    scaler: StandardScaler = None
+    model_name: str = None
 ) -> Dict[str, float]:
     """
-    Train and evaluate a model.
-    
-    Neural Network requires feature scaling.
+    Train on TRAIN only.
+    Evaluate separately on VALIDATION and TEST.
+    Return metrics for both.
     """
-    # Neural Network requires scaling
+    # 1. Scaling (fit on train, transform all)
     if model_name == 'NeuralNetwork':
-        if scaler is None:
-            scaler = StandardScaler()
-            X_train_scaled = scaler.fit_transform(X_train)
-        else:
-            X_train_scaled = scaler.transform(X_train)
-        X_test_scaled = scaler.transform(X_test)
-        
-        model.fit(X_train_scaled, y_train)
-        y_pred = model.predict(X_test_scaled)
+        scaler = StandardScaler()
+        X_train_use = scaler.fit_transform(X_train)
+        X_val_use = scaler.transform(X_val) if len(X_val) > 0 else X_val
+        X_test_use = scaler.transform(X_test) if len(X_test) > 0 else X_test
     else:
-        model.fit(X_train, y_train)
-        y_pred = model.predict(X_test)
-    
-    mae = mean_absolute_error(y_test, y_pred)
-    rmse = np.sqrt(mean_squared_error(y_test, y_pred))
-    r2 = r2_score(y_test, y_pred)
-    
-    return {
-        'mae': mae,
-        'rmse': rmse,
-        'r2': r2
-    }
+        X_train_use = X_train
+        X_val_use = X_val
+        X_test_use = X_test
+
+    # 2. Train (ONLY on training set)
+    model.fit(X_train_use, y_train)
+
+    metrics = {}
+
+    # 3. Validation Metrics
+    if len(X_val_use) > 0:
+        y_val_pred = model.predict(X_val_use)
+        metrics['mae_val'] = mean_absolute_error(y_val, y_val_pred)
+        metrics['rmse_val'] = np.sqrt(mean_squared_error(y_val, y_val_pred))
+        metrics['r2_oos_val'] = calculate_oos_r2(y_val.values, y_val_pred, y_train.values)
+    else:
+        metrics['mae_val'] = np.nan
+        metrics['rmse_val'] = np.nan
+        metrics['r2_oos_val'] = np.nan
+
+    # 4. Test Metrics
+    if len(X_test_use) > 0:
+        y_test_pred = model.predict(X_test_use)
+        metrics['mae_test'] = mean_absolute_error(y_test, y_test_pred)
+        metrics['rmse_test'] = np.sqrt(mean_squared_error(y_test, y_test_pred))
+        metrics['r2_oos_test'] = calculate_oos_r2(y_test.values, y_test_pred, y_train.values)
+    else:
+        metrics['mae_test'] = np.nan
+        metrics['rmse_test'] = np.nan
+        metrics['r2_oos_test'] = np.nan
+
+    return metrics
 
 
 # =============================================
-# (5) Main Evaluation Pipeline
+# Code Task 4: Store Metrics and Sample Sizes
 # =============================================
 
 def evaluate_all_models_across_horizons(
@@ -275,11 +295,9 @@ def evaluate_all_models_across_horizons(
     feature_cols: List[str],
     horizons: Dict[str, str]
 ) -> pd.DataFrame:
-    """
-    Evaluate all models across all horizons using unified evaluation criteria.
-    """
+    """Evaluate all models across all horizons with split tracking."""
     logger.info("=" * 80)
-    logger.info("Unified Model Evaluation Across All Horizons")
+    logger.info("Unified Model Evaluation (Train/Val/Test Protocol)")
     logger.info("=" * 80)
     
     models = get_models()
@@ -291,43 +309,52 @@ def evaluate_all_models_across_horizons(
         logger.info(f"{'='*80}")
         
         if target_col not in df.columns:
-            logger.warning(f"Target {target_col} not found, skipping {horizon_name}")
+            logger.warning(f"Target {target_col} not found, skipping.")
             continue
         
         try:
-            # Time-based split
+            # 1. Split
             X_train, y_train, X_val, y_val, X_test, y_test = time_based_split(
                 df, feature_cols, target_col
             )
             
-            # Fill NaN in features
+            # Fill NaN (Simple median fill based on train)
             numeric_cols = X_train.select_dtypes(include=[np.number]).columns
-            X_train[numeric_cols] = X_train[numeric_cols].fillna(X_train[numeric_cols].median())
-            X_test[numeric_cols] = X_test[numeric_cols].fillna(X_train[numeric_cols].median())
+            medians = X_train[numeric_cols].median()
             
-            # Create scaler for Neural Network
-            scaler = StandardScaler()
-            scaler.fit(X_train)
+            X_train = X_train.fillna(medians)
+            if len(X_val) > 0: X_val = X_val.fillna(medians)
+            if len(X_test) > 0: X_test = X_test.fillna(medians)
             
-            # Evaluate each model
+            # 2. Evaluate Models
             for model_name, model in models.items():
                 logger.info(f"  Training {model_name}...")
                 
                 try:
-                    metrics = evaluate_model(
-                        model, X_train, y_train, X_test, y_test,
-                        model_name=model_name, scaler=scaler
+                    m = evaluate_model(
+                        model, X_train, y_train, X_val, y_val, X_test, y_test, model_name
                     )
                     
                     results.append({
                         'model': model_name,
                         'horizon': horizon_name,
-                        'mae': metrics['mae'],
-                        'rmse': metrics['rmse'],
-                        'r2': metrics['r2']
+                        # Validation (Selection)
+                        'mae_val': m['mae_val'],
+                        'rmse_val': m['rmse_val'],
+                        'r2_oos_val': m['r2_oos_val'],
+                        # Test (Reporting)
+                        'mae_test': m['mae_test'],
+                        'rmse_test': m['rmse_test'],
+                        'r2_oos_test': m['r2_oos_test'],
+                        # Metadata
+                        'n_train': len(y_train),
+                        'n_val': len(y_val),
+                        'n_test': len(y_test)
                     })
                     
-                    logger.info(f"    MAE: {metrics['mae']:.4f}, RMSE: {metrics['rmse']:.4f}, R²: {metrics['r2']:.4f}")
+                    logger.info(f"    VAL  R²_OOS: {m['r2_oos_val']:.4f} | MAE: {m['mae_val']:.4f}")
+                    if not np.isnan(m['r2_oos_test']):
+                        logger.info(f"    TEST R²_OOS: {m['r2_oos_test']:.4f} | MAE: {m['mae_test']:.4f}")
                     
                 except Exception as e:
                     logger.error(f"    Error training {model_name}: {e}")
@@ -337,179 +364,107 @@ def evaluate_all_models_across_horizons(
             logger.error(f"Error processing {horizon_name}: {e}")
             continue
     
-    results_df = pd.DataFrame(results)
-    return results_df
+    return pd.DataFrame(results)
 
 
 # =============================================
-# (6) Champion Identification
+# Code Task 5: Champion Selection (Validation Only)
 # =============================================
 
-def identify_champion_models(results_df: pd.DataFrame):
+def identify_champion_models(results_df: pd.DataFrame) -> pd.DataFrame:
     """
-    Identify champion models using the same criteria as train_models.py:
-    - Best R² on test set
+    Select champions based ONLY on Validation R²_OOS.
     """
     logger.info("\n" + "=" * 80)
-    logger.info("Champion Model Identification (Based on Test R²)")
+    logger.info("Champion Model Identification")
+    logger.info("(Selected on Validation R²_OOS; Evaluated on Test)")
     logger.info("=" * 80)
     
     horizons = sorted(results_df['horizon'].unique())
+    champion_rows = []
     
     for horizon in horizons:
-        horizon_df = results_df[results_df['horizon'] == horizon]
+        horizon_df = results_df[results_df['horizon'] == horizon].copy()
+        if len(horizon_df) == 0: continue
         
-        if len(horizon_df) == 0:
+        # Filter out models with NaN validation metrics
+        valid_df = horizon_df.dropna(subset=['r2_oos_val'])
+        
+        if len(valid_df) == 0:
+            logger.warning(f"No valid validation results for {horizon}")
             continue
+
+        # Sort by Validation R2 (descending)
+        valid_df = valid_df.sort_values(['r2_oos_val', 'mae_val'], ascending=[False, True])
         
-        # Best R² (same as train_models.py)
-        best_r2 = horizon_df.loc[horizon_df['r2'].idxmax()]
+        champion = valid_df.iloc[0]
+        champion_rows.append(champion)
         
         logger.info(f"\n{horizon}:")
-        logger.info(f"  Champion: {best_r2['model']:15s} (R² = {best_r2['r2']:.4f})")
-        logger.info(f"  MAE: {best_r2['mae']:.4f}, RMSE: {best_r2['rmse']:.4f}")
+        logger.info(f"  🏆 Champion: {champion['model']:15s}")
+        logger.info(f"     VAL  R²_OOS: {champion['r2_oos_val']:8.4f} (Selection Metric)")
+        logger.info(f"     TEST R²_OOS: {champion['r2_oos_test']:8.4f} (Ex Post Eval)")
+        logger.info(f"     Samples: Train={champion['n_train']}, Val={champion['n_val']}, Test={champion['n_test']}")
         
-        # Show all models sorted by R²
-        logger.info(f"\n  All models (sorted by R²):")
-        sorted_df = horizon_df.sort_values('r2', ascending=False)
-        for _, row in sorted_df.iterrows():
-            marker = "🏆" if row['model'] == best_r2['model'] else "  "
-            logger.info(f"    {marker} {row['model']:15s} - R²: {row['r2']:8.4f}, "
-                       f"MAE: {row['mae']:.4f}, RMSE: {row['rmse']:.4f}")
-    
-    # Overall champion (best average R² across all horizons)
-    overall_champion = results_df.groupby('model')['r2'].mean().idxmax()
-    overall_r2 = results_df.groupby('model')['r2'].mean().max()
-    
-    logger.info(f"\n{'='*80}")
-    logger.info(f"Overall Champion (Best Average R²): {overall_champion} (R² = {overall_r2:.4f})")
-    logger.info(f"{'='*80}")
+        logger.info(f"\n  Leaderboard (Validation R²):")
+        for _, row in valid_df.iterrows():
+            mark = "🏆" if row['model'] == champion['model'] else "  "
+            logger.info(f"    {mark} {row['model']:15s} | Val R²: {row['r2_oos_val']:8.4f} | Test R²: {row['r2_oos_test']:8.4f}")
+
+    return pd.DataFrame(champion_rows)
 
 
 # =============================================
-# (7) Visualization
+# Code Task 7: Figures (Validation Only)
 # =============================================
 
 def plot_unified_results(results_df: pd.DataFrame, output_dir: Path):
-    """Create visualization of unified evaluation results."""
-    logger.info("\nGenerating unified comparison plots...")
+    """
+    Create visualization of Validation results.
+    Does NOT plot Test metrics to avoid confusion.
+    """
+    logger.info("\nGenerating validation plots...")
     
-    horizons = sorted(results_df['horizon'].unique())
-    models = sorted(results_df['model'].unique())
+    # Filter for Plot A (Nonlinear/Advanced)
+    main_models = ['RandomForest', 'XGBoost', 'NeuralNetwork']
     
-    # Plot R² comparison
-    fig, axes = plt.subplots(2, 2, figsize=(16, 12))
-    axes = axes.flatten()
+    # 1. Main Plot: Validation R2 (Nonlinear Models)
+    plt.figure(figsize=(10, 6))
+    subset = results_df[results_df['model'].isin(main_models)].copy()
     
-    for idx, horizon in enumerate(horizons):
-        if idx >= len(axes):
-            break
+    if not subset.empty:
+        sns.barplot(data=subset, x='horizon', y='r2_oos_val', hue='model', palette='viridis')
+        plt.title('Validation R² (Out-of-Sample) by Horizon\n(Nonlinear Models)', fontsize=14, fontweight='bold')
+        plt.ylabel('Validation R²_OOS', fontsize=12)
+        plt.xlabel('Horizon', fontsize=12)
+        plt.grid(axis='y', alpha=0.3)
+        plt.axhline(0, color='black', linestyle='--', linewidth=1)
         
-        ax = axes[idx]
-        horizon_df = results_df[results_df['horizon'] == horizon]
-        
-        if len(horizon_df) == 0:
-            continue
-        
-        # Sort by R² (descending)
-        horizon_df = horizon_df.sort_values('r2', ascending=False)
-        
-        bars = ax.bar(horizon_df['model'], horizon_df['r2'], color='coral', alpha=0.7)
-        ax.set_title(f'{horizon} - R² Comparison (Unified Evaluation)', fontsize=12, fontweight='bold')
-        ax.set_xlabel('Model', fontsize=10)
-        ax.set_ylabel('R²', fontsize=10)
-        ax.tick_params(axis='x', rotation=45)
-        ax.grid(axis='y', alpha=0.3)
-        
-        # Highlight best (highest R²)
-        best_idx = horizon_df['r2'].idxmax()
-        bars[horizon_df.index.get_loc(best_idx)].set_color('green')
-        bars[horizon_df.index.get_loc(best_idx)].set_alpha(1.0)
+        path = output_dir / 'unified_val_r2_oos_nonlinear.png'
+        plt.savefig(path, dpi=300, bbox_inches='tight')
+        plt.close()
+        logger.info(f"Saved: {path}")
+
+    # 2. Appendix Plot: Validation R2 (All Models, Clipped)
+    plt.figure(figsize=(12, 8))
+    sns.barplot(data=results_df, x='horizon', y='r2_oos_val', hue='model', palette='tab10')
     
-    plt.suptitle('Unified Model Comparison: R² Across Horizons\n(Same Time Split: Train<2020, Test>2022)', 
-                 fontsize=14, fontweight='bold', y=0.995)
-    plt.tight_layout()
+    # Dynamic clipping for readability if linear models explode
+    y_min = results_df['r2_oos_val'].min()
+    if y_min < -5:
+        plt.ylim(max(y_min, -5.0), 1.0) # Clip at -5
+        plt.title('Validation R² (Out-of-Sample) - All Models\n(Clipped at -5.0)', fontsize=14)
+    else:
+        plt.title('Validation R² (Out-of-Sample) - All Models', fontsize=14)
+        
+    plt.ylabel('Validation R²_OOS', fontsize=12)
+    plt.grid(axis='y', alpha=0.3)
+    plt.axhline(0, color='black', linestyle='--', linewidth=1)
     
-    r2_path = output_dir / 'unified_model_comparison_r2.png'
-    plt.savefig(r2_path, dpi=300, bbox_inches='tight')
+    path = output_dir / 'unified_val_r2_oos_all_clipped.png'
+    plt.savefig(path, dpi=300, bbox_inches='tight')
     plt.close()
-    logger.info(f"Saved: {r2_path}")
-    
-    # Plot MAE comparison
-    fig, axes = plt.subplots(2, 2, figsize=(16, 12))
-    axes = axes.flatten()
-    
-    for idx, horizon in enumerate(horizons):
-        if idx >= len(axes):
-            break
-        
-        ax = axes[idx]
-        horizon_df = results_df[results_df['horizon'] == horizon]
-        
-        if len(horizon_df) == 0:
-            continue
-        
-        # Sort by MAE (ascending - lower is better)
-        horizon_df = horizon_df.sort_values('mae', ascending=True)
-        
-        bars = ax.bar(horizon_df['model'], horizon_df['mae'], color='steelblue', alpha=0.7)
-        ax.set_title(f'{horizon} - MAE Comparison (Unified Evaluation)', fontsize=12, fontweight='bold')
-        ax.set_xlabel('Model', fontsize=10)
-        ax.set_ylabel('MAE', fontsize=10)
-        ax.tick_params(axis='x', rotation=45)
-        ax.grid(axis='y', alpha=0.3)
-        
-        # Highlight best (lowest MAE)
-        best_idx = horizon_df['mae'].idxmin()
-        bars[horizon_df.index.get_loc(best_idx)].set_color('green')
-        bars[horizon_df.index.get_loc(best_idx)].set_alpha(1.0)
-    
-    plt.suptitle('Unified Model Comparison: MAE Across Horizons\n(Same Time Split: Train<2020, Test>2022)', 
-                 fontsize=14, fontweight='bold', y=0.995)
-    plt.tight_layout()
-    
-    mae_path = output_dir / 'unified_model_comparison_mae.png'
-    plt.savefig(mae_path, dpi=300, bbox_inches='tight')
-    plt.close()
-    logger.info(f"Saved: {mae_path}")
-    
-    # Plot RMSE comparison
-    fig, axes = plt.subplots(2, 2, figsize=(16, 12))
-    axes = axes.flatten()
-    
-    for idx, horizon in enumerate(horizons):
-        if idx >= len(axes):
-            break
-        
-        ax = axes[idx]
-        horizon_df = results_df[results_df['horizon'] == horizon]
-        
-        if len(horizon_df) == 0:
-            continue
-        
-        # Sort by RMSE (ascending - lower is better)
-        horizon_df = horizon_df.sort_values('rmse', ascending=True)
-        
-        bars = ax.bar(horizon_df['model'], horizon_df['rmse'], color='mediumpurple', alpha=0.7)
-        ax.set_title(f'{horizon} - RMSE Comparison (Unified Evaluation)', fontsize=12, fontweight='bold')
-        ax.set_xlabel('Model', fontsize=10)
-        ax.set_ylabel('RMSE', fontsize=10)
-        ax.tick_params(axis='x', rotation=45)
-        ax.grid(axis='y', alpha=0.3)
-        
-        # Highlight best (lowest RMSE)
-        best_idx = horizon_df['rmse'].idxmin()
-        bars[horizon_df.index.get_loc(best_idx)].set_color('green')
-        bars[horizon_df.index.get_loc(best_idx)].set_alpha(1.0)
-    
-    plt.suptitle('Unified Model Comparison: RMSE Across Horizons\n(Same Time Split: Train<2020, Test>2022)', 
-                 fontsize=14, fontweight='bold', y=0.995)
-    plt.tight_layout()
-    
-    rmse_path = output_dir / 'unified_model_comparison_rmse.png'
-    plt.savefig(rmse_path, dpi=300, bbox_inches='tight')
-    plt.close()
-    logger.info(f"Saved: {rmse_path}")
+    logger.info(f"Saved: {path}")
 
 
 # =============================================
@@ -517,7 +472,7 @@ def plot_unified_results(results_df: pd.DataFrame, output_dir: Path):
 # =============================================
 
 def main():
-    parser = argparse.ArgumentParser(description='Unified model evaluation across horizons')
+    parser = argparse.ArgumentParser(description='Unified model evaluation protocol')
     parser.add_argument('--features-csv', type=str,
                        default='data/processed/nvda_features_extended_v2.csv',
                        help='Path to extended features CSV')
@@ -527,19 +482,14 @@ def main():
     
     args = parser.parse_args()
     
-    # Create output directories
+    # Directories
     output_dir = Path(args.output_dir)
     results_dir = output_dir / 'results'
     plots_dir = output_dir / 'plots'
     results_dir.mkdir(parents=True, exist_ok=True)
     plots_dir.mkdir(parents=True, exist_ok=True)
     
-    logger.info("=" * 80)
-    logger.info("Unified Model Evaluation")
-    logger.info("=" * 80)
-    
-    # Load data
-    logger.info("\n[Step 1] Loading data...")
+    # 1. Load
     df, X, feature_cols = load_and_prepare_data(args.features_csv)
     
     horizons = {
@@ -549,43 +499,44 @@ def main():
         '10Y': 'ret_10y'
     }
     
-    # Evaluate all models
-    logger.info("\n[Step 2] Evaluating all models across horizons...")
+    # 2. Evaluate
     results_df = evaluate_all_models_across_horizons(df, feature_cols, horizons)
     
-    # Save results
-    logger.info("\n[Step 3] Saving results...")
-    results_path = results_dir / 'unified_model_comparison.csv'
-    results_df.to_csv(results_path, index=False)
-    logger.info(f"Saved: {results_path}")
+    # 3. Save Raw Results
+    results_df.to_csv(results_dir / 'unified_model_comparison_raw.csv', index=False)
     
-    # Save comparison matrix (Pivot Table for R2)
-    logger.info("\n[Step 3.5] Saving comparison matrix...")
-    matrix_df = results_df.pivot(index='model', columns='horizon', values='r2')
-    # Reorder columns if possible
-    desired_order = ['1Y', '3Y', '5Y', '10Y']
-    available_cols = [c for c in desired_order if c in matrix_df.columns]
-    matrix_df = matrix_df[available_cols]
+    # 4. Identify Champions
+    champion_df = identify_champion_models(results_df)
     
-    matrix_path = results_dir / 'unified_model_comparison_matrix.csv'
-    matrix_df.to_csv(matrix_path)
-    logger.info(f"Saved: {matrix_path}")
+    # 5. Create Publication Tables (Code Task 6)
     
-    # Identify champions
-    logger.info("\n[Step 4] Identifying champion models...")
-    identify_champion_models(results_df)
+    # Table A: Validation R2 Matrix (Evidence)
+    val_r2_matrix = results_df.pivot(index='model', columns='horizon', values='r2_oos_val')
+    # Reorder columns
+    cols = [c for c in ['1Y', '3Y', '5Y', '10Y'] if c in val_r2_matrix.columns]
+    val_r2_matrix = val_r2_matrix[cols]
+    val_r2_matrix.to_csv(results_dir / 'table_val_r2_oos_matrix.csv')
     
-    # Create plots
-    logger.info("\n[Step 5] Creating visualization...")
+    # Table B: Validation MAE Matrix
+    val_mae_matrix = results_df.pivot(index='model', columns='horizon', values='mae_val')
+    val_mae_matrix = val_mae_matrix[cols]
+    val_mae_matrix.to_csv(results_dir / 'table_val_mae_matrix.csv')
+    
+    # Table C: Champion Summary (Test Evaluation)
+    cols_summary = ['horizon', 'model', 'r2_oos_val', 'r2_oos_test', 'n_train', 'n_val', 'n_test']
+    summary_export = champion_df[cols_summary].copy()
+    summary_export.columns = ['Horizon', 'Champion_Model', 'Val_R2', 'Test_R2', 'N_Train', 'N_Val', 'N_Test']
+    summary_export.to_csv(results_dir / 'table_champion_summary.csv', index=False)
+    
+    logger.info("\n" + "="*80)
+    logger.info("FINAL CHAMPION SUMMARY (Selected on Validation)")
+    logger.info("="*80)
+    print(summary_export.to_string(index=False))
+    
+    # 6. Plots
     plot_unified_results(results_df, plots_dir)
     
-    logger.info("\n" + "=" * 80)
-    logger.info("✅ Unified evaluation complete!")
-    logger.info("=" * 80)
-    logger.info(f"\nResults saved to: {results_path}")
-    logger.info(f"Plots saved to: {plots_dir}")
-
+    logger.info(f"\nOutputs saved to {output_dir}")
 
 if __name__ == '__main__':
     main()
-
