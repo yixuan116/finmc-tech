@@ -559,6 +559,18 @@ def main():
     results_df.to_csv(results_path, index=False)
     logger.info(f"Saved: {results_path}")
     
+    # Save comparison matrix (Pivot Table for R2)
+    logger.info("\n[Step 3.5] Saving comparison matrix...")
+    matrix_df = results_df.pivot(index='model', columns='horizon', values='r2')
+    # Reorder columns if possible
+    desired_order = ['1Y', '3Y', '5Y', '10Y']
+    available_cols = [c for c in desired_order if c in matrix_df.columns]
+    matrix_df = matrix_df[available_cols]
+    
+    matrix_path = results_dir / 'unified_model_comparison_matrix.csv'
+    matrix_df.to_csv(matrix_path)
+    logger.info(f"Saved: {matrix_path}")
+    
     # Identify champions
     logger.info("\n[Step 4] Identifying champion models...")
     identify_champion_models(results_df)
