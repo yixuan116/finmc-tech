@@ -117,9 +117,8 @@ FinMC-Tech successfully demonstrates that combining domain-specific feature engi
 
 `finmc-tech` is a minimal prototype for real-world stock forecasting that combines **machine learning signals** with **Monte Carlo uncertainty modeling** and **HPC-ready parallel execution**.
 
-The initial demo focuses on **NVIDIA (NVDA)** using real daily data from the Yahoo Finance API to compute returns, volatility, and rolling μ–σ parameters as inputs for simulation.
+This research paper focuses on **NVIDIA (NVDA)** using real daily data from the Yahoo Finance API to compute returns, volatility, and rolling μ–σ parameters as inputs for simulation.
 
-This project serves as the foundation for scaling to multi-asset (Magnificent 7) analysis, integrating predictive modeling, uncertainty quantification, and performance benchmarking.
 
 ---
 
@@ -2535,6 +2534,8 @@ The pipeline checks for existing data files in this order (to avoid redundant AP
 This ensures efficient data loading and avoids unnecessary API calls.
 
 # Appendix
+
+
 
 ## Overfitting Issue Analysis
 

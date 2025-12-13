@@ -527,7 +527,7 @@ def create_top_features_plot(
 def main():
     parser = argparse.ArgumentParser(description='Add cash flow features and retrain models')
     parser.add_argument('--features-csv', type=str,
-                       default='data/processed/nvda_features_extended.csv',
+                       default='outputs/nvda_revenue_features.csv',
                        help='Path to current features CSV')
     parser.add_argument('--fundamentals-json', type=str,
                        default='outputs/data/fundamentals/nvda_firm_fundamentals_master.json',

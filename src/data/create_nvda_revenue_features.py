@@ -38,8 +38,11 @@ def load_revenue_data(input_file: Optional[str] = None) -> pd.DataFrame:
     if input_file:
         file_path = Path(input_file)
     else:
-        # Try revenues_panel_nvda.csv first
-        file_path = outputs_dir / "revenues_panel_nvda.csv"
+        # Try data/raw/NVDA_revenue.csv first (Primary Raw Source)
+        file_path = Path("data/raw/NVDA_revenue.csv")
+        if not file_path.exists():
+            # Try revenues_panel_nvda.csv
+            file_path = outputs_dir / "revenues_panel_nvda.csv"
         if not file_path.exists():
             # Fall back to revenues_nvda_with_prices.csv
             file_path = outputs_dir / "revenues_nvda_with_prices.csv"
@@ -414,8 +417,8 @@ def main():
         df["form"] = df["period"].map(lambda x: "10-K" if x == "FY" else "10-Q")
         print("\n  Inferred form column from period type (FY -> 10-K, quarterly -> 10-Q)")
     
-    # Select and reorder output columns
-    output_columns = [
+    # Select and reorder output columns (Keep all columns to include macro/extended features)
+    base_columns = [
         "ticker",
         "period",
         "end_date",
@@ -429,6 +432,12 @@ def main():
         "rev_accel",
         "future_12m_return",
     ]
+    
+    # Identify other generated columns (macro, technical, interaction, time)
+    other_columns = [col for col in df.columns if col not in base_columns]
+    
+    # Combine lists: base first, then others
+    output_columns = base_columns + other_columns
     
     # Only include columns that exist
     available_columns = [col for col in output_columns if col in df.columns]

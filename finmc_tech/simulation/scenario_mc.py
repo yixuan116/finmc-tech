@@ -5,14 +5,14 @@ Step 8: Scenario-Based Risk Engine + HPC Benchmark.
 
 This module implements driver-aware Monte Carlo simulation by:
 1. Building macro scenarios aligned with Step 5 drivers (TNX/VIX + interactions)
-2. Generating conditional drift from champion models (RF/XGB/ElasticNet per horizon)
+2. Generating conditional drift from champion models (RF/XGB per horizon)
 3. Running Monte Carlo paths for multiple horizons (1Y, 3Y, 5Y, 10Y)
 4. Using driver-aware shocks based on feature importance (Firm/Macro/Interaction)
 5. Producing forecast tables, fan charts, and distribution plots
 6. Providing an HPC benchmark comparing vectorized NumPy vs Numba parallel execution
 
 Multi-Horizon Driver-Aware Monte Carlo:
-- Loads champion models for each horizon (1Y=RF, 3Y=RF, 5Y=XGB, 10Y=ElasticNet)
+- Loads champion models for each horizon (1Y=XGB, 3Y=RF, 5Y=RF, 10Y=XGB)
 - Uses feature importance from Step 6 to weight shocks by category
 - Implements 4 scenario families: BASE, MACRO_STRESS, FUNDAMENTAL_STRESS, AI_BULL
 - Generates comprehensive outputs for each horizon
@@ -45,11 +45,10 @@ warnings.filterwarnings("ignore")
 # Default paths
 DEFAULT_DATA_PATHS = [
     "data/processed/nvda_features_extended_v2.csv",
-    "data/processed/NVDA_revenue_features.csv",
 ]
 DEFAULT_MODEL_PATH = "models/champion_model.pkl"
 DEFAULT_SCALER_PATH = "models/feature_scaler.pkl"
-DEFAULT_N_SIMS = 500 #test for simulation
+DEFAULT_N_SIMS = 100000 # simulations paths
 DEFAULT_HORIZON_MONTHS = 12
 RANDOM_STATE = 42
 
@@ -2538,6 +2537,44 @@ def run_driver_aware_mc_multi_horizon(
                 horizon_name, scenario_label, terminals, S0,
                 output_path / f"{horizon_name.lower()}_{scenario_label}_terminal.png"
             )
+
+            # --- URGENT: Save critical plots to ROOT for visibility ---
+            if scenario_label == "BASE":
+                try:
+                    # Save Base case fan chart to root
+                    root_fan_path = Path.cwd() / f"ROOT_MC_FAN_{horizon_name.upper()}.png"
+                    plot_fan_chart_multi_horizon(
+                        horizon_name, scenario_label, paths, S0, root_fan_path
+                    )
+                    print(f"[URGENT] Saved Base Fan Chart to: {root_fan_path}")
+                    
+                    # Save Base case distribution to root
+                    root_dist_path = Path.cwd() / f"ROOT_MC_DIST_{horizon_name.upper()}.png"
+                    plot_terminal_distribution(
+                        horizon_name, scenario_label, terminals, S0, root_dist_path
+                    )
+                    print(f"[URGENT] Saved Base Distribution to: {root_dist_path}")
+                except Exception as e:
+                    print(f"[ERROR] Failed to save ROOT plots: {e}")
+
+            # --- URGENT: Save critical plots to ROOT for visibility ---
+            if scenario_label == "BASE":
+                try:
+                    # Save Base case fan chart to root
+                    root_fan_path = Path.cwd() / f"ROOT_MC_FAN_{horizon_name.upper()}.png"
+                    plot_fan_chart_multi_horizon(
+                        horizon_name, scenario_label, paths, S0, root_fan_path
+                    )
+                    print(f"[URGENT] Saved Base Fan Chart to: {root_fan_path}")
+                    
+                    # Save Base case distribution to root
+                    root_dist_path = Path.cwd() / f"ROOT_MC_DIST_{horizon_name.upper()}.png"
+                    plot_terminal_distribution(
+                        horizon_name, scenario_label, terminals, S0, root_dist_path
+                    )
+                    print(f"[URGENT] Saved Base Distribution to: {root_dist_path}")
+                except Exception as e:
+                    print(f"[ERROR] Failed to save ROOT plots: {e}")
             
             # Add to summary table
             scenario_summary_rows.append({

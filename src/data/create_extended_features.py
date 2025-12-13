@@ -184,44 +184,89 @@ def create_market_macro_features(df: pd.DataFrame) -> pd.DataFrame:
         print("  Warning: px_date not found, skipping market macro features")
         return df
     
-    print("  Downloading market macro data (SPY for S&P 500)...")
+    print("  Downloading market macro data (SPY, ^TNX, ^VIX)...")
     
     # Get date range
-    min_date = pd.to_datetime(df["px_date"]).min() - pd.Timedelta(days=30)
+    min_date = pd.to_datetime(df["px_date"]).min() - pd.Timedelta(days=90) # Look back further for 3m changes
     max_date = pd.to_datetime(df["px_date"]).max() + pd.Timedelta(days=30)
     
     try:
-        # Download S&P 500 data (using SPY ETF as proxy)
+        # 1. S&P 500 (SPY)
         spy = yf.Ticker("SPY")
         spy_data = spy.history(start=min_date, end=max_date)
         
-        if not spy_data.empty:
-            spy_data = spy_data.reset_index()
-            spy_data["Date"] = pd.to_datetime(spy_data["Date"]).dt.date
+        # 2. 10-Year Treasury Yield (^TNX)
+        tnx = yf.Ticker("^TNX")
+        tnx_data = tnx.history(start=min_date, end=max_date)
+        
+        # 3. VIX Index (^VIX)
+        vix = yf.Ticker("^VIX")
+        vix_data = vix.history(start=min_date, end=max_date)
+        
+        macro_features = []
+        
+        for _, row in df.iterrows():
+            px_date = pd.to_datetime(row["px_date"]).date()
             
-            # For each revenue record, find closest trading day
-            sp500_features = []
-            for _, row in df.iterrows():
-                px_date = pd.to_datetime(row["px_date"]).date()
-                
-                # Find closest date
-                closest_idx = (pd.to_datetime(spy_data["Date"]) - pd.to_datetime(px_date)).abs().idxmin()
+            # --- SPY ---
+            if not spy_data.empty:
+                spy_dates = pd.to_datetime(spy_data.index).date
+                closest_idx = np.abs(spy_dates - px_date).argmin()
                 closest_row = spy_data.iloc[closest_idx]
+                prev_row = spy_data.iloc[max(0, closest_idx-1)]
                 
-                sp500_features.append({
-                    "sp500_level": closest_row["Close"],
-                    "sp500_returns": closest_row["Close"] / spy_data.iloc[max(0, closest_idx-1)]["Close"] - 1 if closest_idx > 0 else None,
-                })
+                sp500_level = closest_row["Close"]
+                sp500_returns = sp500_level / prev_row["Close"] - 1 if closest_idx > 0 else 0.0
+            else:
+                sp500_level = np.nan
+                sp500_returns = np.nan
+                
+            # --- TNX (Yield) ---
+            if not tnx_data.empty:
+                tnx_dates = pd.to_datetime(tnx_data.index).date
+                tnx_idx = np.abs(tnx_dates - px_date).argmin()
+                tnx_yield = tnx_data.iloc[tnx_idx]["Close"]
+                
+                # Calculate 3-month change (approx 63 trading days)
+                tnx_idx_3m = max(0, tnx_idx - 63)
+                tnx_yield_3m_ago = tnx_data.iloc[tnx_idx_3m]["Close"]
+                tnx_change_3m = tnx_yield - tnx_yield_3m_ago
+            else:
+                tnx_yield = np.nan
+                tnx_change_3m = np.nan
+                
+            # --- VIX ---
+            if not vix_data.empty:
+                vix_dates = pd.to_datetime(vix_data.index).date
+                vix_idx = np.abs(vix_dates - px_date).argmin()
+                vix_level = vix_data.iloc[vix_idx]["Close"]
+                
+                # Calculate 3-month change
+                vix_idx_3m = max(0, vix_idx - 63)
+                vix_level_3m_ago = vix_data.iloc[vix_idx_3m]["Close"]
+                vix_change_3m = vix_level - vix_level_3m_ago
+            else:
+                vix_level = np.nan
+                vix_change_3m = np.nan
             
-            macro_df = pd.DataFrame(sp500_features, index=df.index)
-            df = pd.concat([df, macro_df], axis=1)
+            macro_features.append({
+                "sp500_level": sp500_level,
+                "sp500_returns": sp500_returns,
+                "tnx_yield": tnx_yield,
+                "tnx_change_3m": tnx_change_3m,
+                "vix_level": vix_level,
+                "vix_change_3m": vix_change_3m,
+            })
             
-            print("  Created market macro features: sp500_level, sp500_returns")
-        else:
-            print("  Warning: No SPY data downloaded")
+        macro_df = pd.DataFrame(macro_features, index=df.index)
+        df = pd.concat([df, macro_df], axis=1)
+        
+        print("  Created market macro features: sp500, tnx, vix")
     
     except Exception as e:
         print(f"  Warning: Could not create market macro features: {e}")
+        import traceback
+        traceback.print_exc()
     
     return df
 
@@ -306,22 +351,22 @@ def create_interaction_features(
     
     if not use_kronecker:
         # Simple mode: backward compatible with fixed interactions
-    # Revenue × VIX
-    if "rev_yoy" in df.columns and "vix_level" in df.columns:
-        df["rev_yoy_x_vix"] = df["rev_yoy"] * df["vix_level"]
-    
-    # Revenue × SP500
-    if "rev_qoq" in df.columns and "sp500_returns" in df.columns:
-        df["rev_qoq_x_sp500"] = df["rev_qoq"] * df["sp500_returns"]
-    
-    # Price momentum × volatility
-    if "price_momentum" in df.columns and "price_volatility" in df.columns:
-        df["price_momentum_x_volatility"] = df["price_momentum"] * df["price_volatility"]
-    
-    # VIX × Treasury yield
-    if "vix_level" in df.columns and "tnx_yield" in df.columns:
-        df["vix_x_tnx"] = df["vix_level"] * df["tnx_yield"]
-    
+        # Revenue × VIX
+        if "rev_yoy" in df.columns and "vix_level" in df.columns:
+            df["rev_yoy_x_vix"] = df["rev_yoy"] * df["vix_level"]
+        
+        # Revenue × SP500
+        if "rev_qoq" in df.columns and "sp500_returns" in df.columns:
+            df["rev_qoq_x_sp500"] = df["rev_qoq"] * df["sp500_returns"]
+        
+        # Price momentum × volatility
+        if "price_momentum" in df.columns and "price_volatility" in df.columns:
+            df["price_momentum_x_volatility"] = df["price_momentum"] * df["price_volatility"]
+        
+        # VIX × Treasury yield
+        if "vix_level" in df.columns and "tnx_yield" in df.columns:
+            df["vix_x_tnx"] = df["vix_level"] * df["tnx_yield"]
+        
         print("  Created simple interaction features (backward compatible)")
         return df
     

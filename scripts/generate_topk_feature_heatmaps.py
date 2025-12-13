@@ -4,6 +4,8 @@ Generate Clean Top-K Feature × Horizon Heatmaps (RF + XGB)
 This script produces professional heatmaps showing top K features across horizons.
 """
 
+import matplotlib
+matplotlib.use('Agg')
 import argparse
 import logging
 import sys
@@ -194,6 +196,13 @@ def plot_topk_heatmap(
     annot_df = df_top.copy()
     annot_df = annot_df.applymap(lambda x: f"{x:.1f}" if x >= 0.3 else "")
     
+    # Print data to console as fallback (User Request)
+    print("\n" + "="*80)
+    print(f"TOP-{top_k} FEATURES DATA TABLE (Copy to Excel/PPT)")
+    print("="*80)
+    print(df_top.to_string())
+    print("="*80 + "\n")
+
     # (5) Create the plot
     plt.figure(figsize=(10, 10))  # Square and compact
     
@@ -214,7 +223,11 @@ def plot_topk_heatmap(
     )
     
     # (6) Axes formatting
-    ax.set_title(title, fontsize=14, pad=12, fontweight='bold')
+    # Add timestamp to title to verify freshness
+    import datetime
+    ts_str = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    ax.set_title(f"{title} (New V2 Data - {ts_str})", fontsize=14, pad=12, fontweight='bold')
+    
     ax.set_xlabel("Horizon", fontsize=11, fontweight='bold')
     ax.set_ylabel("Feature", fontsize=11, fontweight='bold')
     
@@ -241,10 +254,24 @@ def plot_topk_heatmap(
     
     # (9) Save
     save_path.parent.mkdir(parents=True, exist_ok=True)
-    plt.savefig(save_path, dpi=300, bbox_inches='tight')
-    plt.close()
     
-    logger.info(f"Saved: {save_path}")
+    # Attempt 1: Save to original path
+    try:
+        plt.savefig(save_path, dpi=300, bbox_inches='tight')
+        logger.info(f"Saved: {save_path}")
+    except Exception as e:
+        logger.error(f"Failed to save to {save_path}: {e}")
+
+    # Attempt 2: Force save to CWD (Project Root)
+    try:
+        root_filename = f"ROOT_{save_path.name}"
+        root_path = Path.cwd() / root_filename
+        plt.savefig(root_path, dpi=300, bbox_inches='tight')
+        print(f"\n[URGENT] Plot saved to project root: {root_path}")
+    except Exception as e:
+        logger.error(f"Failed to save to root {root_path}: {e}")
+
+    plt.close()
 
 
 # =============================================
@@ -369,9 +396,16 @@ def main():
     args = parser.parse_args()
     
     # Create output directories
+    # Use output_dir directly if provided, don't create sub-plots folder unless needed
     output_dir = Path(args.output_dir)
-    rankings_dir = output_dir / 'rankings'
-    plots_dir = output_dir / 'plots'
+    rankings_dir = output_dir.parent / 'rankings' # Put rankings alongside plots
+    
+    # If output_dir ends in 'plots', use it directly. Otherwise create 'plots' subfolder
+    if output_dir.name == 'plots':
+        plots_dir = output_dir
+    else:
+        plots_dir = output_dir / 'plots'
+        
     rankings_dir.mkdir(parents=True, exist_ok=True)
     plots_dir.mkdir(parents=True, exist_ok=True)
     

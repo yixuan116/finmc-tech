@@ -9,6 +9,8 @@ This script:
 5. Generates heatmaps and summary reports
 """
 
+import matplotlib
+matplotlib.use('Agg')
 import argparse
 import logging
 from pathlib import Path
@@ -467,9 +469,15 @@ def plot_category_heatmap(
     
     output_path = output_dir / f'importance_categories_{model_name.lower()}_3cat.png'
     plt.savefig(output_path, dpi=150, bbox_inches='tight')
+    
+    # Also save to project root for user access
+    root_output = Path.cwd() / f'ROOT_importance_categories_{model_name.lower()}_3cat.png'
+    plt.savefig(root_output, dpi=150, bbox_inches='tight')
+    
     plt.close()
     
     logger.info(f"Saved: {output_path}")
+    logger.info(f"Saved copy to root: {root_output}")
 
 
 # =============================================
@@ -552,6 +560,21 @@ def main():
     output_dir = Path(args.output_dir)
     output_dir.mkdir(parents=True, exist_ok=True)
     
+    # Also create detailed top-features plots
+    top_k_script = Path('scripts/generate_topk_feature_heatmaps.py')
+    if top_k_script.exists():
+        import subprocess
+        logger.info("\nGenerating detailed Top-K feature heatmaps...")
+        # Use subprocess to run the script, capturing output to ensure it runs
+        result = subprocess.run(['python3', str(top_k_script), 
+                       '--features-csv', args.features_csv,
+                       '--output-dir', str(output_dir)],
+                       capture_output=True, text=True)
+        if result.returncode != 0:
+            logger.error(f"Top-K heatmap generation failed:\n{result.stderr}")
+        else:
+            logger.info("Top-K heatmaps generated successfully.")
+                       
     logger.info("=" * 80)
     logger.info("Three-Category Feature Importance Analysis")
     logger.info("=" * 80)

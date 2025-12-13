@@ -186,10 +186,11 @@ def main():
 
     # Check if output already exists
     if output_path.exists():
-        response = input(f"⚠ File {output_path} already exists. Overwrite? (y/N): ")
-        if response.lower() != "y":
-            print("Aborted. Existing file preserved.")
-            return
+        # response = input(f"⚠ File {output_path} already exists. Overwrite? (y/N): ")
+        # if response.lower() != "y":
+        #     print("Aborted. Existing file preserved.")
+        #     return
+        print(f"⚠ File {output_path} exists. Overwriting (auto-confirmed)...")
 
     # Load base data
     df = load_amd_base_data()
@@ -236,8 +237,6 @@ def main():
     print("=" * 80)
 
     # Load NVDA to compare structure (using v2 as reference)
-    # Note: If AMD hasn't been upgraded to v2 yet, this validation will show
-    # missing columns (cash flow features and their interactions)
     nvda_path = Path("data/processed/nvda_features_extended_v2.csv")
     if nvda_path.exists():
         nvda_df = pd.read_csv(nvda_path, nrows=1)

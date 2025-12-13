@@ -595,7 +595,7 @@ def extract_top20_features(
         print(f"  X shape: {X.shape}, columns: {list(X.columns[:5])}...")
 
         perm_result = permutation_importance(
-            model, X, y, n_repeats=10, random_state=42, n_jobs=-1
+            model, X, y, n_repeats=10, random_state=42, n_jobs=1
         )
         importances_vals = perm_result.importances_mean
 
