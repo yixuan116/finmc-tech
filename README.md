@@ -122,20 +122,20 @@ This research paper focuses on **NVIDIA (NVDA)** using real daily data from the 
 
 ---
 
-## Implementation Files by Step
+## Implementation Pipeline Overview
 
-This section maps each step of the analysis pipeline to its corresponding Python implementation file(s), making it easy to navigate the codebase.
+This table maps the 4 phases and 8 steps of the analysis pipeline to their corresponding implementation files and key outputs, aligning with the project presentation.
 
-| Step | Description | Main Implementation File(s) | Key Functions |
-|------|-------------|----------------------------|---------------|
-| **Step 1** | Feature Engineering | `src/data/create_nvda_revenue_features.py`<br>`src/data/create_extended_features.py`<br>`finmc_tech/features/build_features.py` | Creates revenue features, macro features, interaction features, and time features |
-| **Step 2** | Model Training & Evaluation | `train_models.py` | Trains 5 models (Linear, Ridge, RF, XGB, MLP), evaluates on test set, saves champion model |
-| **Step 3** | Model Comparison & Selection | `train_models.py` (integrated) | Compares model performance, selects champion based on test metrics |
-| **Step 4** | Champion Model Selection | `train_models.py` (integrated) | Saves champion model (`models/champion_model.pkl`) and scaler (`models/feature_scaler.pkl`) |
-| **Step 5** | Key Drivers Analysis | `src/step5_key_drivers_short.py` | Extracts MDI, Permutation, and SHAP importance; generates PDP/ICE plots |
-| **Step 6** | Driver Interpretation Across Horizons | `README.md` (documentation only) | Interprets feature importance evolution across short/mid/long-term horizons |
-| **Step 7** | Economic Narrative | `README.md` (documentation only) | Translates ML drivers into economic interpretation (no separate Python file) |
-| **Step 8** | Scenario-Based MC Forecasting | `finmc_tech/simulation/scenario_mc.py` | Builds scenarios, applies shocks, runs Monte Carlo simulations, generates forecast tables and plots |
+| Phase | Step | Description | Main Implementation File(s) | Key Output |
+|:-----:|:----:|:------------|:---------------------------|:-----------|
+| **A. Data & Features** | **1** | Data Engineering | `src/data/create_nvda_revenue_features.py` | Cleaned data with basic financial metrics |
+| | **2** | Feature Engineering | `src/data/create_extended_features.py`<br>`scripts/add_cash_flow_features_v2.py` | `nvda_features_extended_v2.csv`<br>(Firm × Macro × Interaction) |
+| **B. Model Training & Selection** | **3** | Model Training | `train_models.py` | Trained models (RF, XGB, Linear, Ridge, NN) |
+| | **4** | Champion Model Selection | `scripts/unified_model_evaluation.py` | Selection of Best Model per Horizon<br>(1Y/10Y=XGB, 3Y/5Y=RF) |
+| **C. Drivers & Interpretation** | **5** | All Horizons Feature Importance | `scripts/generate_topk_feature_heatmaps.py`<br>`scripts/three_category_feature_importance.py` | Top-K Heatmaps (`rf_top20_matrix.csv`)<br>Category Heatmaps (`importance_categories_rf_3cat.png`) |
+| | **6** | Economic Interpretation | `README.md` (Analysis Section) | Narrative: "Short-term=Macro, Mid-term=Firm, Long-term=Regime" |
+| **D. Scenarios & Simulations** | **7** | Scenario-Based Monte Carlo | `finmc_tech/simulation/scenario_mc.py` | Fan Charts (`ROOT_MC_FAN_COMBINED.png`)<br>Terminal Distributions |
+| | **8** | Performance Optimization (HPC) | `finmc_tech/simulation/numba_mc_demo.py`<br>`finmc_tech/hpc_demos/mpi_mc_demo.py` | HPC Benchmarks (NumPy vs Numba/MPI/OpenMP) |
 
 ### Quick Reference
 
