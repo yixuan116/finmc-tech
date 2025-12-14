@@ -287,7 +287,7 @@ We compared four implementations:
 4.  **Numba Parallel**: JIT-compiled parallel loop (shared memory, Python-native).
 
 
-![HPC Benchmark Summary](results/step8/hpc_benchmark_summary.png)
+![HPC Benchmark Comparison](results/step8/hpc_benchmark_comparison_all.png)
 
 *Figure 8.1: Runtime and Speedup comparison for 228M Monte Carlo updates.*
 
