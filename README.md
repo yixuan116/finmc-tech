@@ -189,6 +189,7 @@ This table maps the 4 phases and 8 steps of the analysis pipeline to their corre
 
 *Key Insight: While generally negative, tree-based models achieve positive OOS R² at the 3Y horizon, confirming the generalizability of the 3-Year predictive signal in the semiconductor sector.*
 
+
 ### Step 5: Key Drivers & Feature Importance Analysis
 
 **Objective**: To interpret the "Black Box" of the Champion Model (Random Forest) and understand the economic rationale behind its predictions across different time horizons.
@@ -214,9 +215,6 @@ This table maps the 4 phases and 8 steps of the analysis pipeline to their corre
 1.  **Interest Rates (`tnx_yield`)**: The #1 driver for 1Y returns (18.6%). High rates compress valuations for long-duration assets like NVDA.
 2.  **Cash Flow (`fcf_ttm` / `ocf_ttm`)**: The #1 driver for 3Y returns (14.8%). This validates the V2 feature engineering—profitability is the ultimate anchor for mid-term value.
 3.  **Macro-Firm Interactions**: Features like `ix_tnx_yield__price_volatility` highlight that volatility regimes conditional on interest rates are critical for long-term risk assessment.
-
-**Economic Conclusion**:
-NVDA is not just a "growth stock"; it is a **macro-sensitive duration asset**. Short-term movements are dictated by the Fed (Rates), while mid-term returns are dictated by the Firm (Cash Flow).
 
 ### Step 6: Economic Interpretation (Why It Happens)
 
