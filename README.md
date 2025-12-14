@@ -189,6 +189,35 @@ This table maps the 4 phases and 8 steps of the analysis pipeline to their corre
 
 *Key Insight: While generally negative, tree-based models achieve positive OOS R² at the 3Y horizon, confirming the generalizability of the 3-Year predictive signal in the semiconductor sector.*
 
+### Step 5: Key Drivers & Feature Importance Analysis
+
+**Objective**: To interpret the "Black Box" of the Champion Model (Random Forest) and understand the economic rationale behind its predictions across different time horizons.
+
+#### 1. The Hierarchy of Drivers: Firm vs. Macro vs. Interaction
+
+![Feature Importance Categories](outputs/feature_importance/plots/importance_categories_rf_3cat.png)
+
+*Figure 5.1: Aggregated feature importance by category (Firm, Macro, Interaction) for the Champion Random Forest model across horizons.*
+
+**Key Insights**:
+- **Short-Term (1Y) = Macro Regime**: Interaction features (62.6%) and Macro features (19.8%) dominate. In the short run, NVDA's price is driven by how the market (VIX/TNX) prices growth assets, rather than company fundamentals alone.
+- **Mid-Term (3Y) = Fundamental Sweet Spot**: Firm features (66.3%) take over. This aligns with the "Champion Model" finding that 3Y is the most predictable horizon. Here, cash flows and revenue matter most.
+- **Long-Term (5Y/10Y) = Regime Shift**: Interaction features return to prominence. Long-term survival depends on how the firm adapts to changing macro environments (Regime Dependence).
+
+#### 2. Top-20 Specific Drivers (The "What")
+
+![Top-20 Features](ROOT_rf_top20_feature_matrix_paper.png)
+
+*Figure 5.2: Top-20 most important features for Random Forest across horizons. Darker red indicates higher importance.*
+
+**Top Drivers Identified**:
+1.  **Interest Rates (`tnx_yield`)**: The #1 driver for 1Y returns (18.6%). High rates compress valuations for long-duration assets like NVDA.
+2.  **Cash Flow (`fcf_ttm` / `ocf_ttm`)**: The #1 driver for 3Y returns (14.8%). This validates the V2 feature engineering—profitability is the ultimate anchor for mid-term value.
+3.  **Macro-Firm Interactions**: Features like `ix_tnx_yield__price_volatility` highlight that volatility regimes conditional on interest rates are critical for long-term risk assessment.
+
+**Economic Conclusion**:
+NVDA is not just a "growth stock"; it is a **macro-sensitive duration asset**. Short-term movements are dictated by the Fed (Rates), while mid-term returns are dictated by the Firm (Cash Flow).
+
 ---
 
 ## Results
