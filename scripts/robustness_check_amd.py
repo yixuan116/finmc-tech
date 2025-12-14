@@ -140,6 +140,11 @@ def train_and_validate(
     
     logger.info(f"  Horizon {horizon}: Train={len(X_train)}, Val={len(X_val)}")
     
+    # CRITICAL: Prevent crash if training set is empty (e.g. extremely long horizons with no history)
+    if len(X_train) == 0 or len(y_train) == 0:
+        logger.warning(f"  No training samples for {horizon}, skipping.")
+        return {}
+
     if len(X_val) == 0:
         logger.warning(f"  No validation samples for {horizon}")
         return {}
@@ -204,8 +209,9 @@ def main():
     df = load_features(Path(args.features_csv))
     
     # Create Targets
-    horizons = {'1Y': 4, '3Y': 12, '5Y': 20, '10Y': 40}
-    df = create_target_variables(df, horizons)
+    # Use lowercase keys to match unified pipeline conventions (ret_1y, ret_3y)
+    horizons_map = {'1y': 4, '3y': 12, '5y': 20, '10y': 40}
+    df = create_target_variables(df, horizons_map)
     
     # Prepare Features
     X_clean, feature_cols, _ = prepare_features(df)
@@ -217,24 +223,49 @@ def main():
     for col in feature_cols:
         df[col] = X_clean.loc[common_idx, col]
 
+    # CRITICAL: Ensure DatetimeIndex for temporal split
+    date_candidates = ['date', 'Date', 'px_date', 'period_end', 'timestamp']
+    date_col = next((c for c in date_candidates if c in df.columns), None)
+    
+    if date_col:
+        df[date_col] = pd.to_datetime(df[date_col])
+        df = df.sort_values(date_col).set_index(date_col)
+        logger.info(f"Set DatetimeIndex using column: {date_col}")
+    elif not isinstance(df.index, pd.DatetimeIndex):
+         # Try to parse index if it looks like dates
+        try:
+            df.index = pd.to_datetime(df.index)
+            logger.info("Converted index to DatetimeIndex")
+        except:
+            raise ValueError("No valid date column or DatetimeIndex found for time split.")
+
     # 2. Run Robustness Check
     all_results = {}
     
-    for h_name, h_quarters in horizons.items():
-        target = f'ret_{h_name}'
-        if target not in df.columns: continue
+    # Use keys from horizons_map (lowercase) but display as uppercase
+    for h_key, h_quarters in horizons_map.items():
+        h_display = h_key.upper() # 1Y, 3Y...
+        target = f'ret_{h_key}'   # ret_1y, ret_3y...
         
-        logger.info(f"Processing {h_name}...")
-        res = train_and_validate(df, feature_cols, target, h_name)
-        all_results[h_name] = res
+        if target not in df.columns: 
+            logger.warning(f"Target {target} not found in dataframe.")
+            continue
         
-    # 3. Format Outputs
+        logger.info(f"Processing {h_display} (target: {target})...")
+        res = train_and_validate(df, feature_cols, target, h_display)
+        all_results[h_display] = res
+        
+    # Format Outputs
     # R2 Matrix
     models = get_models().keys()
-    r2_matrix = pd.DataFrame(index=list(models), columns=horizons.keys())
-    n_matrix = pd.DataFrame(index=list(models), columns=horizons.keys())
+    # Ensure correct column order: 1Y, 3Y, 5Y, 10Y
+    horizon_cols = sorted(horizons_map.keys(), key=lambda k: horizons_map[k])
+    horizon_displays = [h.upper() for h in horizon_cols]
     
-    for h in horizons.keys():
+    r2_matrix = pd.DataFrame(index=list(models), columns=horizon_displays)
+    n_matrix = pd.DataFrame(index=list(models), columns=horizon_displays)
+    
+    for h in horizon_displays:
         if h in all_results:
             for m in models:
                 if m in all_results[h]:
