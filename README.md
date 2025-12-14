@@ -131,7 +131,7 @@ This table maps the 4 phases and 8 steps of the analysis pipeline to their corre
 | **A. Data & Features** | **1** | Data Engineering | `src/data/create_nvda_revenue_features.py`<br>**Run:** `python3 src/data/create_nvda_revenue_features.py`<br>**Source:** `yfinance` (Price), `NVDA_revenue.csv` (Firm), `yfinance` (`^TNX`, `^VIX`, `SPY`) | `nvda_revenue_features.csv`<br>(Data Engineering & Initial Features) |
 | | **2** | Feature Engineering | `scripts/add_cash_flow_features_v2.py` (Calls `src/data/create_extended_features.py`)<br>**Run:** `python3 scripts/add_cash_flow_features_v2.py` | `nvda_features_extended_v2.csv`<br>(**Final V2 Features**: Injects Cash Flow & Refines Interactions)<br>**Source:** `nvda_revenue_features.csv`, `nvda_firm_fundamentals_master.json` (PDF/XBRL parsed) |
 | **B. Model Training & Selection** | **3** | Model Training | `train_models.py`<br>**Run:** `python3 train_models.py` | **Files:** `models/champion_model.pkl`, `models/feature_scaler.pkl`<br>**Outcome:** 5 model families trained on Pre-2021 data (Validation 21-22) with standard hyperparameter grid. |
-| | **4** | Champion Model Selection | `scripts/unified_model_evaluation.py`<br>`scripts/robustness_check_amd.py` (Robustness Check)<br><br>**Run:** `python3 scripts/unified_model_evaluation.py`<br>**Run:** `python3 scripts/robustness_check_amd.py` | **Files:** `table_champion_summary.csv`, `table_val_r2_oos_matrix.csv`, `table_test_r2_oos_matrix.csv`<br>`unified_val_r2_oos_nonlinear.png`, `unified_test_r2_oos_nonlinear.png`<br>`validation_r2_matrix_amd.csv`<br>**Outcome:** 1. Champion Selection (RF wins 3Y with R²=0.68).<br>2. AMD Robustness Check. |
+| | **4** | Champion Model Selection | `scripts/unified_model_evaluation.py`<br>`scripts/robustness_check_amd.py` (Robustness Check)<br><br>**Run:** `python3 scripts/unified_model_evaluation.py`<br>**Run:** `python3 scripts/robustness_check_amd.py` | **Files:** `table_champion_summary.csv`, `table_val_r2_oos_matrix.csv`, `table_test_r2_oos_matrix.csv`<br>`unified_val_r2_oos_nonlinear.png`, `unified_test_r2_oos_nonlinear.png`<br>`validation_r2_matrix_amd.csv`<br>**Outcome:** 1. Champion Selection (RF wins 3Y with R²=0.68).<br>2. AMD Robustness Check (RF/XGB > 0 @ 3Y). |
 | **C. Drivers & Interpretation** | **5** | All Horizons Feature Importance | `scripts/generate_topk_feature_heatmaps.py`<br>`scripts/three_category_feature_importance.py`<br><br>**Run:** `python3 scripts/generate_topk_feature_heatmaps.py`<br>**Run:** `python3 scripts/three_category_feature_importance.py` | Top-K Heatmaps (`rf_top20_feature_matrix_paper.png`)<br>Category Heatmaps (`importance_categories_rf_3cat.png`)<br>Rankings CSV (`rf_top20_matrix.csv`)<br>(Source: `nvda_features_extended_v2.csv`) |
 | | **6** | Economic Interpretation | `README.md` (Analysis Section) | Narrative: "Short-term=Macro, Mid-term=Firm, Long-term=Regime" |
 | **D. Scenarios & Simulations** | **7** | Scenario-Based Monte Carlo | `finmc_tech/simulation/scenario_mc.py` | Fan Charts (`ROOT_MC_FAN_COMBINED.png`)<br>Terminal Distributions |
@@ -174,6 +174,20 @@ This table maps the 4 phases and 8 steps of the analysis pipeline to their corre
 | **Linear** | -1091.92 | - | - | - |
 
 *(Note: Test targets for 3Y/5Y/10Y are physically impossible to observe in 2025)*
+
+**Table 4: AMD Robustness Check (Validation R²)**
+*Cross-firm validation using AMD data. Validation windows are shifted per horizon to ensure target availability.*
+
+|               |        1Y |          3Y |        5Y |       10Y |
+|:--------------|----------:|------------:|----------:|----------:|
+| **RandomForest**  | -0.61 |   **0.08** | -21.89  |  -24.08 |
+| **XGBoost**       | -0.93 |   **0.12** | -14.42  |  -34.11 |
+| **NeuralNetwork** | -7.91 |  -3.53     |  -4.86  | -231.53 |
+| **Ridge**         | -2.88 | -18.39     | -35.43  | -220.47 |
+| **ElasticNet**    | -3.51 |  -8.31     | -13.80  | -167.91 |
+| **Linear**        | -4.55 | -15.97     | -80.29  | -225.93 |
+
+*Key Insight: While generally negative, tree-based models achieve positive OOS R² at the 3Y horizon, confirming the generalizability of the 3-Year predictive signal in the semiconductor sector.*
 
 ---
 
