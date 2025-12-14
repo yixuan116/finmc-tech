@@ -135,7 +135,7 @@ This table maps the 4 phases and 8 steps of the analysis pipeline to their corre
 | **C. Drivers & Interpretation** | **5** | All Horizons Feature Importance | `scripts/generate_topk_feature_heatmaps.py`<br>`scripts/three_category_feature_importance.py`<br><br>**Run:** `python3 scripts/generate_topk_feature_heatmaps.py`<br>**Run:** `python3 scripts/three_category_feature_importance.py` | Top-K Heatmaps (`outputs/feature_importance/plots/rf_top20_feature_matrix_paper.png`)<br>Category Heatmaps (`outputs/feature_importance/plots/importance_categories_rf_3cat.png`)<br>Rankings CSV (`rf_top20_matrix.csv`)<br>(Source: `nvda_features_extended_v2.csv`) |
 | | **6** | Economic Interpretation | `README.md` (Analysis Section) | Narrative: "Short-term=Macro, Mid-term=Firm, Long-term=Regime" |
 | **D. Scenarios & Simulations** | **7** | Scenario-Based Monte Carlo | `finmc_tech/simulation/scenario_mc.py` (Driver-Aware MC Engine)<br><br>**Run:** `python3 -m finmc_tech.simulation.scenario_mc --ticker NVDA --multi-horizon --n 10000` | Fan Charts (`results/step7/fan_chart_combined_baseline.png`)<br>Scenario Summary (`scenario_summary.csv`) |
-| | **8** | Performance Optimization (HPC) | `finmc_tech/simulation/numba_mc_demo.py`<br>`finmc_tech/hpc_demos/mpi_mc_demo.py` | HPC Benchmarks (NumPy vs Numba/MPI/OpenMP) |
+| | **8** | Performance Optimization (HPC) | `finmc_tech/simulation/numpy_mc_demo.py`<br>`finmc_tech/simulation/numba_mc_demo.py`<br>`finmc_tech/hpc_demos/mpi_mc_demo.py`<br>`finmc_tech/hpc_demos/openmp_mc_demo.c` | Scaling Curve (`results/step8/hpc_scaling_curve.png`)<br>Benchmark Data (`hpc_benchmark.csv`) |
 
 ### Pipeline Results Snapshot (from Step 4)
 
@@ -267,23 +267,40 @@ We simulate 4 distinct economic regimes:
 
 ### Step 8: Performance Engineering (HPC)
 
-**Objective**: To ensure the "Risk Engine" can scale to millions of paths for tail-risk estimation (VaR/CVaR) without computational bottlenecks.
+**Objective**: To ensure the "Risk Engine" can scale to **millions of paths** for robust tail-risk estimation (VaR/CVaR) without computational bottlenecks.
 
-#### Methodology: NumPy vs. Numba Parallel
-We benchmarked two implementations of the Monte Carlo engine:
-1.  **Baseline**: Vectorized NumPy (Single-core, memory-bound).
-2.  **HPC Optimized**: Numba JIT with Parallel Acceleration (Multi-core, cache-efficient).
+#### 1. Risk Metrics Definition
+Before optimizing, we define the computational target:
+-   **VaR (Value at Risk)**: The maximum loss expected (with 95% confidence) over the horizon.
+-   **CVaR (Conditional VaR)**: The average loss in the worst 5% of cases (tail mean), requiring deep simulation to converge.
 
-#### Benchmark Results (Scaling Curve)
+#### 2. Benchmark Workload
+-   **Total Simulations**: 1,000,000 paths per horizon.
+-   **Total Horizons**: 1Y (12) + 3Y (36) + 5Y (60) + 10Y (120) = 228 time steps.
+-   **Total Updates**: $1M \times 228 = 228,000,000$ Monte Carlo step updates.
 
-![HPC Scaling Curve](results/step8/hpc_scaling_curve.png)
+#### 3. Benchmark Results
+We compared four implementations:
+1.  **NumPy (Baseline)**: Vectorized single-core execution.
+2.  **MPI (4 Ranks)**: Multi-process parallelism (process overhead dominant at this scale).
+3.  **OpenMP (C)**: Low-level multi-threading (shared memory).
+4.  **Numba Parallel**: JIT-compiled parallel loop (shared memory, Python-native).
 
-*Figure 8.1: Runtime comparison as simulation paths increase from 10k to 500k.*
 
-**Performance Gains**:
-- **Small Scale (10k paths)**: ~3.3x speedup.
-- **Large Scale (500k paths)**: **~4.6x speedup**.
-- **Conclusion**: The Numba JIT compiler successfully parallelizes the path generation loop, effectively utilizing multi-core CPUs and breaking the Python GIL, making real-time risk dashboards feasible.
+![HPC Benchmark Summary](results/step8/hpc_benchmark_summary.png)
+
+*Figure 8.1: Runtime and Speedup comparison for 228M Monte Carlo updates.*
+
+| Backend | Runtime (s) | Speedup | Notes |
+| :--- | :--- | :--- | :--- |
+| **NumPy (Baseline)** | 36.64 s | 1.0x | Single-core, memory-bound |
+| **MPI (4 Ranks)** | 7.55 s | ~4.9x | Good scaling, but overhead limits speedup on small batches |
+| **OpenMP (C)** | 1.19 s | **~30.8x** | C-level efficiency, minimal overhead |
+| **Numba Parallel** | 1.26 s | **~29.2x** | **Best Trade-off**: Near-C speed with pure Python code |
+
+**Conclusion**:
+-   **Numba Parallel** is the production choice. It achieves **~29x speedup** over NumPy, matching highly optimized C code (OpenMP) while remaining in the Python ecosystem.
+-   **MPI** is viable for massive cluster-scale jobs (>100M simulations) but introduces unnecessary overhead for this workload size.
 
 ---
 
