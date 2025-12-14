@@ -238,6 +238,53 @@ Why do Interaction Features (`ix_...`) dominate long horizons?
 *   **Mechanism**: The relationship between NVDA's revenue and its stock price *changes* depending on the macro environment (e.g., Revenue growth is rewarded in low-rate regimes but questioned in high-rate regimes).
 *   **Evidence**: The dominance of interaction terms (Macro × Micro) at 5Y+ horizons shows that the model is learning *context-dependent* valuation rules, essentially capturing "Regime Shifts".
 
+### Step 7: Scenario-Based Monte Carlo Forecasting
+
+**Objective**: To move beyond single-point predictions and quantify "Regime Risk" using the feature importance hierarchy derived in Step 5.
+
+#### Methodology: Driver-Aware Shocks
+Instead of standard Gaussian shocks, we use **weighted shocks** based on our Champion Model's logic:
+- **1Y Horizon**: Shocks are 62% Macro-driven (Interest Rate stress tests).
+- **3Y Horizon**: Shocks are 66% Firm-driven (Revenue/Cash Flow misses).
+- **5Y+ Horizon**: Shocks are Interaction-driven (Regime Shift simulation).
+
+#### 1. Baseline Fan Charts (Multi-Horizon)
+
+![Baseline Fan Chart](results/step7/fan_chart_combined_baseline.png)
+
+*Figure 7.1: Baseline probabilistic forecast for 1Y, 3Y, 5Y, and 10Y horizons. The widening cone represents uncertainty propagation derived from historical volatility and driver-specific shocks.*
+
+#### 2. Risk Scenarios (Tail Risk Analysis)
+We simulate 4 distinct economic regimes:
+1.  **Base Case**: Historical drift and volatility.
+2.  **Macro Stress**: 50bp rate hike + VIX spike (Impacts 1Y valuation most).
+3.  **Fundamental Stress**: 20% revenue deceleration (Impacts 3Y price most).
+4.  **AI Supercycle (Bull)**: Favorable interactions + low rate volatility.
+
+**Key Findings**:
+- **Short-Term Risk is Asymmetric**: The 1Y distribution is negatively skewed by macro stress (rates), confirming the "Duration Risk" thesis.
+- **Mid-Term Certainty**: The 3Y horizon shows the most stable risk-adjusted returns (highest Sharpe ratio in simulation), reinforcing it as the "Sweet Spot".
+
+### Step 8: Performance Engineering (HPC)
+
+**Objective**: To ensure the "Risk Engine" can scale to millions of paths for tail-risk estimation (VaR/CVaR) without computational bottlenecks.
+
+#### Methodology: NumPy vs. Numba Parallel
+We benchmarked two implementations of the Monte Carlo engine:
+1.  **Baseline**: Vectorized NumPy (Single-core, memory-bound).
+2.  **HPC Optimized**: Numba JIT with Parallel Acceleration (Multi-core, cache-efficient).
+
+#### Benchmark Results (Scaling Curve)
+
+![HPC Scaling Curve](results/step8/hpc_scaling_curve.png)
+
+*Figure 8.1: Runtime comparison as simulation paths increase from 10k to 500k.*
+
+**Performance Gains**:
+- **Small Scale (10k paths)**: ~3.3x speedup.
+- **Large Scale (500k paths)**: **~4.6x speedup**.
+- **Conclusion**: The Numba JIT compiler successfully parallelizes the path generation loop, effectively utilizing multi-core CPUs and breaking the Python GIL, making real-time risk dashboards feasible.
+
 ---
 
 ## Results
