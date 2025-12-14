@@ -2092,78 +2092,71 @@ $$y_t = \text{Ret}_{t+1} = \frac{P_{t+1} - P_t}{P_t}$$
 
 This represents the **next-month return** we aim to predict.
 
-### Feature List
+## Appendix A: Feature List
 
-#### Base Features (7 features)
+This appendix details the **76 features** used in the final V2 datasets (`nvda_features_extended_v2.csv`). The feature space is designed to capture firm fundamentals, market sentiment, and their non-linear interactions.
 
-**Macro Features (5):**
+### A.1 Firm Fundamental Features (15)
+**Sources**: SEC XBRL filings (Revenue, Cash Flows) & Yahoo Finance (Price).
+**Frequency**: Quarterly (aligned to earnings release dates).
 
-| Feature | Description | Source |
-|---------|-------------|--------|
-| `CPI` | Consumer Price Index (CPIAUCSL) | FRED API |
-| `VIX` | CBOE Volatility Index (VIXCLS) | FRED API |
-| `DGS10` | 10-Year Treasury Constant Maturity Rate | FRED API |
-| `FEDFUNDS` | Effective Federal Funds Rate | FRED API |
-| `GDP` | Real Gross Domestic Product (GDPC1) | FRED API |
+| Feature | Description | Formula / Logic |
+| :--- | :--- | :--- |
+| **Revenue Metrics** | | |
+| `revenue` | Quarterly Revenue (USD) | Raw value from SEC filings |
+| `rev_qoq` | Revenue QoQ Growth | $(Revenue_t / Revenue_{t-1}) - 1$ |
+| `rev_yoy` | Revenue YoY Growth | $(Revenue_t / Revenue_{t-4}) - 1$ |
+| `rev_accel` | Revenue Acceleration | $Rev\_YoY_t - Rev\_YoY_{t-1}$ (Momentum of growth) |
+| **Cash Flow Metrics** | *(New in V2)* | |
+| `ocf_ttm` | Operating Cash Flow (TTM) | Trailing 12-month sum of OCF |
+| `capex_ttm` | Capital Expenditure (TTM) | Trailing 12-month sum of CapEx |
+| `fcf_ttm` | Free Cash Flow (TTM) | $OCF\_TTM - CapEx\_TTM$ |
+| **Price & Momentum** | | |
+| `adj_close` | Adjusted Close Price | Split-adjusted close price at quarter end |
+| `price_returns_1m` | 1-Month Return | $(P_t / P_{t-1m}) - 1$ |
+| `price_returns_3m` | 3-Month Return | $(P_t / P_{t-3m}) - 1$ |
+| `price_returns_6m` | 6-Month Return | $(P_t / P_{t-6m}) - 1$ |
+| `price_returns_12m` | 12-Month Return | $(P_t / P_{t-12m}) - 1$ |
+| `price_momentum` | Price Momentum | $P_t - P_{t-12m}$ (Absolute change) |
+| `price_volatility` | Realized Volatility | Standard deviation of daily returns (last 3 months) |
+| `price_to_ma_4q` | Trend Deviation | $P_t / MovingAverage(P, 4Q)$ |
 
-*Note: Macro features are forward-filled from quarterly/monthly frequency to match the data alignment frequency.*
+### A.2 Macroeconomic Features (5)
+**Sources**: FRED (Federal Reserve Economic Data) & Yahoo Finance.
+**Purpose**: To capture the external economic environment affecting valuation.
 
-**Firm Features (7):**
+| Feature | Description | Ticker / Logic |
+| :--- | :--- | :--- |
+| `vix_level` | Market Volatility Index | `^VIX` (Risk appetite proxy) |
+| `vix_change_3m` | VIX 3-Month Change | $(VIX_t / VIX_{t-3}) - 1$ |
+| `tnx_yield` | 10-Year Treasury Yield | `^TNX` (Risk-free rate proxy) |
+| `tnx_change_3m` | Yield 3-Month Change | $(TNX_t / TNX_{t-3}) - 1$ |
+| `cpi_yoy` | Inflation Rate | CPI YoY (Consumer Price Index) |
+| `gdp_growth` | Economic Growth | Real GDP Growth Rate |
+| `fedfunds` | Policy Rate | Effective Federal Funds Rate |
 
-| Feature | Description | Formula |
-|---------|-------------|---------|
-| `rev_qoq` | Revenue quarter-over-quarter growth | `rev_qoq_t = (Revenue_t / Revenue_{t-1}) - 1` |
-| `rev_yoy` | Revenue year-over-year growth | `rev_yoy_t = (Revenue_t / Revenue_{t-4}) - 1`<br>*For quarterly data, compares to same quarter previous year* |
-| `rev_accel` | Revenue acceleration (change in YoY growth rate) | `rev_accel_t = rev_yoy_t - rev_yoy_{t-1}`<br>*Measures the change in growth momentum* |
-| `vix_level` | VIX level (from firm data) | `vix_level_t = VIX_t`<br>*Current VIX index value* |
-| `tnx_yield` | 10-Year Treasury Yield (from firm data) | `tnx_yield_t = DGS10_t`<br>*Current 10-year Treasury yield* |
-| `vix_change_3m` | VIX 3-month change | `vix_change_3m_t = (VIX_t / VIX_{t-3}) - 1`<br>*3-month percentage change in VIX* |
-| `tnx_change_3m` | Treasury yield 3-month change | `tnx_change_3m_t = (DGS10_t / DGS10_{t-3}) - 1`<br>*3-month percentage change in 10Y yield* |
+### A.3 Interaction Features (52)
+**Logic**: Kronecker Product ($\text{Macro} \otimes \text{Firm}$).
+**Purpose**: To model **Regime Dependence** (e.g., "Revenue growth matters less when VIX is high").
 
-#### Extended Features (Optional, controlled by config flags)
+| Interaction Group | Base Macro Variable | Multiplied With (Micro Features) | Count |
+| :--- | :--- | :--- | :--- |
+| `ix_vix_level__*` | `vix_level` | All 13 Firm Features | 13 |
+| `ix_tnx_yield__*` | `tnx_yield` | All 13 Firm Features | 13 |
+| `ix_vix_change__*`| `vix_change_3m`| All 13 Firm Features | 13 |
+| `ix_tnx_change__*`| `tnx_change_3m`| All 13 Firm Features | 13 |
 
-**A. Price Momentum Features (7)** - `INCLUDE_PRICE_FEATURES=True`:
-- `price_returns_1m/3m/6m/12m` - Price returns over different horizons
-- `price_momentum` - Price momentum indicator
-- `price_volatility` - Price volatility measure
-- `price_to_ma_4q` - Price relative to 4-quarter moving average
+*Example*: `ix_tnx_yield__fcf_ttm` = $10Y\_Yield \times Free\_Cash\_Flow$. (Captures how interest rates discount future cash flows).
 
-**B. Technical Indicators (6)** - `INCLUDE_TECHNICAL_FEATURES=True`:
-- `rsi_14` - RSI (Relative Strength Index)
-- `macd`, `macd_signal` - MACD indicator and signal
-- `bb_position` - Bollinger Bands position
-- `stoch_k` - Stochastic oscillator
-- `atr` - Average True Range
+### A.4 Time & Metadata (4)
+**Purpose**: To handle seasonality and temporal sorting.
 
-**C. Market Macro Features (2)** - `INCLUDE_MARKET_FEATURES=True`:
-- `sp500_level` - S&P 500 index level
-- `sp500_returns` - S&P 500 returns
-
-**D. Time Features (4)** - `INCLUDE_TIME_FEATURES=True`:
-- `quarter` - Quarter (1-4)
-- `month` - Month (1-12)
-- `year` - Year
-- `days_since_start` - Days since start date
-
-**E. Interaction Features (4)** - `INCLUDE_INTERACTION_FEATURES=True`:
-- `rev_yoy_x_vix` - Revenue YoY × VIX
-- `rev_qoq_x_sp500` - Revenue QoQ × SP500
-- `price_momentum_x_volatility` - Price momentum × volatility
-- `vix_x_tnx` - VIX × Treasury yield
-
-#### Lag Features
-
-- All features (except `Ret`) have 1-period lag versions with `_L1` suffix
-- Example: `CPI_L1`, `VIX_L1`, `rev_qoq_L1`
-- Each original feature becomes 2 features: current value + lagged value
-
-#### Total Feature Count
-
-- **Base features**: 7 × 2 (with lags) = 14 features
-- **Extended features**: Up to 23 × 2 (with lags) = 46 features
-- **Total**: Up to 60 features (if all extended features are enabled)
-
-**Note**: By default, all extended feature flags are `True` in the configuration, so the full feature set is used.
+| Feature | Description |
+| :--- | :--- |
+| `quarter` | Fiscal/Calendar Quarter (1-4) |
+| `month` | Month of observation (1-12) |
+| `year` | Calendar Year |
+| `days_since` | Continuous time counter |
 
 <!-- FEAT_IMPORT_START -->
 ### Feature Importance Analysis (Light)
