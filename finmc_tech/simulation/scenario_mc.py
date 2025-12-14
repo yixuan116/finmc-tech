@@ -2539,42 +2539,44 @@ def run_driver_aware_mc_multi_horizon(
             )
 
             # --- URGENT: Save critical plots to ROOT for visibility ---
-            if scenario_label == "BASE":
-                try:
-                    # Save Base case fan chart to root
-                    root_fan_path = Path.cwd() / f"ROOT_MC_FAN_{horizon_name.upper()}.png"
-                    plot_fan_chart_multi_horizon(
-                        horizon_name, scenario_label, paths, S0, root_fan_path
-                    )
-                    print(f"[URGENT] Saved Base Fan Chart to: {root_fan_path}")
-                    
-                    # Save Base case distribution to root
-                    root_dist_path = Path.cwd() / f"ROOT_MC_DIST_{horizon_name.upper()}.png"
-                    plot_terminal_distribution(
-                        horizon_name, scenario_label, terminals, S0, root_dist_path
-                    )
-                    print(f"[URGENT] Saved Base Distribution to: {root_dist_path}")
-                except Exception as e:
-                    print(f"[ERROR] Failed to save ROOT plots: {e}")
+            # (Disabled to keep root directory clean - outputs are in results/step7)
+            # if scenario_label == "BASE":
+            #     try:
+            #         # Save Base case fan chart to root
+            #         root_fan_path = Path.cwd() / f"ROOT_MC_FAN_{horizon_name.upper()}.png"
+            #         plot_fan_chart_multi_horizon(
+            #             horizon_name, scenario_label, paths, S0, root_fan_path
+            #         )
+            #         print(f"[URGENT] Saved Base Fan Chart to: {root_fan_path}")
+            #         
+            #         # Save Base case distribution to root
+            #         root_dist_path = Path.cwd() / f"ROOT_MC_DIST_{horizon_name.upper()}.png"
+            #         plot_terminal_distribution(
+            #             horizon_name, scenario_label, terminals, S0, root_dist_path
+            #         )
+            #         print(f"[URGENT] Saved Base Distribution to: {root_dist_path}")
+            #     except Exception as e:
+            #         print(f"[ERROR] Failed to save ROOT plots: {e}")
 
             # --- URGENT: Save critical plots to ROOT for visibility ---
-            if scenario_label == "BASE":
-                try:
-                    # Save Base case fan chart to root
-                    root_fan_path = Path.cwd() / f"ROOT_MC_FAN_{horizon_name.upper()}.png"
-                    plot_fan_chart_multi_horizon(
-                        horizon_name, scenario_label, paths, S0, root_fan_path
-                    )
-                    print(f"[URGENT] Saved Base Fan Chart to: {root_fan_path}")
-                    
-                    # Save Base case distribution to root
-                    root_dist_path = Path.cwd() / f"ROOT_MC_DIST_{horizon_name.upper()}.png"
-                    plot_terminal_distribution(
-                        horizon_name, scenario_label, terminals, S0, root_dist_path
-                    )
-                    print(f"[URGENT] Saved Base Distribution to: {root_dist_path}")
-                except Exception as e:
-                    print(f"[ERROR] Failed to save ROOT plots: {e}")
+            # (Disabled to keep root directory clean - outputs are in results/step7)
+            # if scenario_label == "BASE":
+            #     try:
+            #         # Save Base case fan chart to root
+            #         root_fan_path = Path.cwd() / f"ROOT_MC_FAN_{horizon_name.upper()}.png"
+            #         plot_fan_chart_multi_horizon(
+            #             horizon_name, scenario_label, paths, S0, root_fan_path
+            #         )
+            #         print(f"[URGENT] Saved Base Fan Chart to: {root_fan_path}")
+            #         
+            #         # Save Base case distribution to root
+            #         root_dist_path = Path.cwd() / f"ROOT_MC_DIST_{horizon_name.upper()}.png"
+            #         plot_terminal_distribution(
+            #             horizon_name, scenario_label, terminals, S0, root_dist_path
+            #         )
+            #         print(f"[URGENT] Saved Base Distribution to: {root_dist_path}")
+            #     except Exception as e:
+            #         print(f"[ERROR] Failed to save ROOT plots: {e}")
             
             # Add to summary table
             scenario_summary_rows.append({

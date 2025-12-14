@@ -68,9 +68,10 @@ def get_models() -> Dict[str, Any]:
         ),
     }
 
-def get_split_dates(horizon: str) -> Dict[str, str]:
+def get_split_dates(horizon: str) -> Dict[str, pd.Timestamp]:
     """
     Define temporal splits per horizon to ensure validation targets exist.
+    Returns Timestamps for strict comparison.
     
     Logic:
     - 1Y: Standard (Val 2021-2022)
@@ -78,7 +79,7 @@ def get_split_dates(horizon: str) -> Dict[str, str]:
     - 5Y: Shift back 4 years (Val 2017-2018)
     - 10Y: Shift back 8 years (Val 2013-2014)
     """
-    splits = {
+    splits_str = {
         '1Y': {
             'train_end': '2020-12-31',
             'val_start': '2021-01-01', 'val_end': '2022-12-31',
@@ -100,7 +101,12 @@ def get_split_dates(horizon: str) -> Dict[str, str]:
             'test_start': '2015-01-01'
         }
     }
-    return splits.get(horizon)
+    
+    if horizon not in splits_str:
+        return {}
+        
+    # Convert all strings to Timestamps
+    return {k: pd.Timestamp(v) for k, v in splits_str[horizon].items()}
 
 # =============================================
 # 2. Evaluation Logic
@@ -119,7 +125,8 @@ def train_and_validate(
         logger.warning(f"Unknown horizon {horizon}")
         return {}
 
-    # 1. Split Data
+    # 1. Split Data (using Timestamps for reliable comparison)
+    # df.index is already ensured to be DatetimeIndex in main()
     train_mask = df.index <= dates['train_end']
     val_mask = (df.index >= dates['val_start']) & (df.index <= dates['val_end'])
     
@@ -228,16 +235,21 @@ def main():
     date_col = next((c for c in date_candidates if c in df.columns), None)
     
     if date_col:
-        df[date_col] = pd.to_datetime(df[date_col])
+        # Convert to datetime and remove timezone info to avoid comparison errors
+        df[date_col] = pd.to_datetime(df[date_col], utc=True).dt.tz_localize(None)
         df = df.sort_values(date_col).set_index(date_col)
         logger.info(f"Set DatetimeIndex using column: {date_col}")
     elif not isinstance(df.index, pd.DatetimeIndex):
          # Try to parse index if it looks like dates
         try:
-            df.index = pd.to_datetime(df.index)
+            df.index = pd.to_datetime(df.index, utc=True).tz_localize(None)
             logger.info("Converted index to DatetimeIndex")
         except:
             raise ValueError("No valid date column or DatetimeIndex found for time split.")
+    else:
+        # If already DatetimeIndex, ensure it's tz-naive
+        if df.index.tz is not None:
+             df.index = df.index.tz_localize(None)
 
     # 2. Run Robustness Check
     all_results = {}
