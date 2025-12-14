@@ -207,7 +207,7 @@ This table maps the 4 phases and 8 steps of the analysis pipeline to their corre
 
 #### 2. Top-20 Specific Drivers (The "What")
 
-![Top-20 Features](ROOT_rf_top20_feature_matrix_paper.png)
+![Top-20 Features](outputs/feature_importance/plots/rf_top20_feature_matrix_paper.png)
 
 *Figure 5.2: Top-20 most important features for Random Forest across horizons. Darker red indicates higher importance.*
 
