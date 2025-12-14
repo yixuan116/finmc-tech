@@ -218,6 +218,28 @@ This table maps the 4 phases and 8 steps of the analysis pipeline to their corre
 **Economic Conclusion**:
 NVDA is not just a "growth stock"; it is a **macro-sensitive duration asset**. Short-term movements are dictated by the Fed (Rates), while mid-term returns are dictated by the Firm (Cash Flow).
 
+### Step 6: Economic Interpretation (Why It Happens)
+
+**Objective**: To bridge the gap between Machine Learning outputs (Step 5) and Financial Theory.
+
+#### 1. The "Duration Risk" Theory (Explaining Short-Term Behavior)
+Why does `tnx_yield` dominate the 1-Year horizon?
+*   **Concept**: NVDA is a "Long Duration Asset". Its valuation depends heavily on cash flows expected far in the future.
+*   **Mechanism**: When interest rates (`tnx_yield`) rise, the discount rate increases, disproportionately punishing the present value of distant future cash flows.
+*   **Evidence**: The model picks `tnx_yield` as the #1 predictor for 1Y returns, confirming that short-term price action is mechanically tied to the Fed's rate cycle, not just AI hype.
+
+#### 2. The "Convergence to Fundamentals" (Explaining Mid-Term Behavior)
+Why does `fcf_ttm` dominate the 3-Year horizon?
+*   **Concept**: In the short run, the market is a voting machine (sentiment/macro); in the long run, it is a weighing machine (earnings).
+*   **Mechanism**: Over a 3-year period, macro noise cancels out, and the stock price must eventually align with the company's ability to generate cash.
+*   **Evidence**: The shift from Macro features (1Y) to Firm features (3Y) in our model perfectly empirically validates this classic Ben Graham investment philosophy.
+
+#### 3. The "Regime Dependence" (Explaining Long-Term Uncertainty)
+Why do Interaction Features (`ix_...`) dominate long horizons?
+*   **Concept**: A static linear relationship doesn't exist over 10 years.
+*   **Mechanism**: The relationship between NVDA's revenue and its stock price *changes* depending on the macro environment (e.g., Revenue growth is rewarded in low-rate regimes but questioned in high-rate regimes).
+*   **Evidence**: The dominance of interaction terms (Macro × Micro) at 5Y+ horizons shows that the model is learning *context-dependent* valuation rules, essentially capturing "Regime Shifts".
+
 ---
 
 ## Results
